@@ -219,7 +219,7 @@ jobs:
           APK_PATH: ${{ steps.sign-apk.outputs.apk_path }}
           CHECKSUM_PATH: ${{ steps.checksum.outputs.checksum_path }}
           APK_NAME: ${{ steps.sign-apk.outputs.apk_name }}
-          IS_PRERELEASE: ${{ github.event.inputs.is_prerelease || (github.ref == 'refs/heads/main' || contains(github.ref_name, 'beta')) }}
+          INPUT_PRERELEASE: ${{ github.event.inputs.is_prerelease }}
         run: |
           if [ "${{ github.ref_name }}" = "main" ]; then
             RELEASE_TAG="beta-latest"
@@ -230,7 +230,7 @@ jobs:
           fi
 
           PRERELEASE_FLAG=""
-          if [ "$IS_PRERELEASE" = "true" ]; then
+          if [ "$INPUT_PRERELEASE" = "true" ] || [ "${{ github.ref_name }}" = "main" ] || [[ "${{ github.ref_name }}" == *"beta"* ]]; then
             PRERELEASE_FLAG="--prerelease"
           fi
 

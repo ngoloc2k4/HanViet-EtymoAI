@@ -10,6 +10,7 @@ room = "2.6.1"
 coroutines = "1.9.0"
 desugarJdkLibs = "2.1.3"
 junit = "4.13.2"
+androidxTestCore = "1.6.1"
 androidxTestExt = "1.2.1"
 espresso = "3.6.1"
 robolectric = "4.13"
@@ -44,6 +45,7 @@ desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", ver
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-test-core = { group = "androidx.test", name = "core-ktx", version.ref = "androidxTestCore" }
 androidx-test-ext = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExt" }
 androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
