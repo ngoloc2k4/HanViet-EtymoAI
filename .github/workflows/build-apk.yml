@@ -37,57 +37,89 @@ jobs:
   # ==========================================================================
   # GIAI ĐOẠN 1: TEST TRƯỚC KHI BUILD (FAIL-FAST QUALITY GATE)
   # ==========================================================================
-  quality-gate:
-    name: Run Unit Tests & Lint
-    uses: ./.github/workflows/test.yml
+  test-and-lint:
+    name: Lint & Unit Tests Quality Gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK & Build Tools
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'build-tools;35.0.0 platforms;android-35'
+
+      - name: Restore Robolectric Offline Dependency Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: ${{ runner.os }}-robolectric-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-robolectric-
+
+      - name: Set up Gradle with Build Cache
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Grant Execute Permission for Gradle Wrapper
+        run: chmod +x gradlew
+
+      - name: Run Linter and Unit Tests
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
+        run: |
+          ./gradlew lintDebug testDebugUnitTest --continue --build-cache --parallel
 
   # ==========================================================================
   # GIAI ĐOẠN 2: BUILD, SIGN VÀ AUTO RELEASE BETA APK
   # ==========================================================================
   build-and-release:
     name: Build, Sign & Release APK
-    needs: [quality-gate]  # BẮT BUỘC: Chỉ build khi toàn bộ kiểm thử thành công 100%
+    needs: [test-and-lint]  # BẮT BUỘC: Chỉ build khi test-and-lint thành công 100%
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
-      contents: write       # Cần thiết để tạo GitHub Release và tải APK lên
+      contents: write       # Cần thiết để tạo GitHub Release và upload assets
 
     steps:
       - name: Checkout Codebase
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0    # Lấy toàn bộ commit history để tự động sinh changelog
+          fetch-depth: 0
 
       - name: Set up JDK 17 (Eclipse Temurin)
-        uses: actions/setup-java@7a6d8a8234af8eb26422e24052f73b12b0e46a27  # v4.6.0
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
       - name: Set up Android SDK & Build Tools
-        uses: android-actions/setup-android@b0c51b74d642ab6b9abdf78eec27361b7fcf76c0  # v3.2.1
+        uses: android-actions/setup-android@v3
         with:
-          packages: 'build-tools;34.0.0 platforms;android-34'
+          packages: 'build-tools;35.0.0 platforms;android-35'
 
       - name: Set up Gradle with Shared Build Cache
-        uses: gradle/actions/setup-gradle@94b5068f5732c944d6a40fa5ff03322f8732360f  # v4.1.1
+        uses: gradle/actions/setup-gradle@v4
         with:
-          cache-read-only: false  # Cho phép ghi và chia sẻ cache build trên nhánh main
+          cache-read-only: false
 
       - name: Grant Execute Permission for Gradle Wrapper
-        run: chmod +x gradlew || true
+        run: chmod +x gradlew
 
       - name: Assemble Release APK
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
         run: |
-          if [ -f "gradlew" ]; then
-            ./gradlew assembleRelease --build-cache --parallel
-          else
-            echo "[MOCK BUILD] gradlew chưa có, tạo file APK mẫu để kiểm chứng pipeline CI/CD."
-            mkdir -p app/build/outputs/apk/release
-            echo "HanVietEtymoAI mock binary content for CI/CD verification" > app/build/outputs/apk/release/app-release-unsigned.apk
-          fi
+          ./gradlew assembleRelease --build-cache --parallel
 
       # ----------------------------------------------------------------------
       # BẢO MẬT & KÝ SỐ APK (APK SIGNATURE SECRETS)
@@ -102,10 +134,10 @@ jobs:
         run: |
           RELEASE_DIR="app/build/outputs/apk/release"
           UNSIGNED_APK=$(find "$RELEASE_DIR" -name "*.apk" | head -n 1)
-          
-          # Đặt tên file APK phát hành chuẩn
+
+          # Tên file phát hành chính thức
           VERSION_TAG="${{ github.ref_name }}"
-          if [[ "$VERSION_TAG" == "main" ]]; then
+          if [ "$VERSION_TAG" = "main" ]; then
             OUTPUT_APK_NAME="HanVietEtymoAI-beta-b${{ github.run_number }}.apk"
           else
             OUTPUT_APK_NAME="HanVietEtymoAI-${VERSION_TAG}.apk"
@@ -113,12 +145,18 @@ jobs:
           OUTPUT_APK_PATH="${RELEASE_DIR}/${OUTPUT_APK_NAME}"
 
           if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ]; then
-            echo "[INFO] Giải mã keystore an toàn vào thư mục tạm..."
+            echo "[INFO] Đang giải mã keystore vào file tạm bảo mật..."
             KEYSTORE_FILE="/tmp/release.keystore"
             echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_FILE"
             chmod 600 "$KEYSTORE_FILE"
 
-            echo "[INFO] Zipalign và ký số APK bằng apksigner..."
+            echo "[INFO] Xác định đường dẫn Android Build Tools..."
+            BUILD_TOOLS_DIR=$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools" -maxdepth 1 -mindepth 1 2>/dev/null | sort -V | tail -n 1)
+            if [ -n "$BUILD_TOOLS_DIR" ]; then
+              export PATH="$BUILD_TOOLS_DIR:$PATH"
+            fi
+
+            echo "[INFO] Thực hiện zipalign và apksigner v1 + v2..."
             ALIGNED_APK="/tmp/aligned.apk"
             zipalign -v -p 4 "$UNSIGNED_APK" "$ALIGNED_APK" || cp "$UNSIGNED_APK" "$ALIGNED_APK"
 
@@ -128,11 +166,12 @@ jobs:
               --ks-pass "pass:$KEYSTORE_PASSWORD" \
               --key-pass "pass:$KEY_PASSWORD" \
               --out "$OUTPUT_APK_PATH" \
-              "$ALIGNED_APK" || cp "$ALIGNED_APK" "$OUTPUT_APK_PATH"
+              "$ALIGNED_APK"
 
-            apksigner verify --verbose "$OUTPUT_APK_PATH" || echo "[WARN] Bỏ qua xác thực chữ ký cho mock APK."
+            echo "[INFO] Kiểm chứng chữ ký APK:"
+            apksigner verify --verbose "$OUTPUT_APK_PATH"
           else
-            echo "[WARN] Chưa cấu hình GitHub Secrets cho Keystore. Giữ bản build chưa ký số để lưu trữ artifact."
+            echo "[WARN] Chưa phát hiện GitHub Secrets cho Keystore. Lưu bản build hiện tại."
             cp "$UNSIGNED_APK" "$OUTPUT_APK_PATH"
           fi
 
@@ -144,7 +183,7 @@ jobs:
         run: |
           if [ -f "/tmp/release.keystore" ]; then
             shred -u /tmp/release.keystore 2>/dev/null || rm -f /tmp/release.keystore
-            echo "[INFO] Đã xóa hủy bảo mật file keystore tạm trên runner."
+            echo "[INFO] Đã hủy file keystore tạm an toàn."
           fi
 
       # ----------------------------------------------------------------------
@@ -162,7 +201,7 @@ jobs:
           echo "checksum_path=$(dirname "$APK_PATH")/${APK_NAME}.sha256" >> "$GITHUB_OUTPUT"
 
       - name: Upload Signed APK to GitHub Actions Artifacts
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882  # v4.4.3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.sign-apk.outputs.apk_name }}
           path: |
@@ -176,13 +215,13 @@ jobs:
       - name: Publish Beta Release to GitHub Releases
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APK_PATH: ${{ steps.sign-apk.outputs.apk_path }}
           CHECKSUM_PATH: ${{ steps.checksum.outputs.checksum_path }}
           APK_NAME: ${{ steps.sign-apk.outputs.apk_name }}
           IS_PRERELEASE: ${{ github.event.inputs.is_prerelease || (github.ref == 'refs/heads/main' || contains(github.ref_name, 'beta')) }}
         run: |
-          # Xác định Tag và Tên Release
-          if [[ "${{ github.ref_name }}" == "main" ]]; then
+          if [ "${{ github.ref_name }}" = "main" ]; then
             RELEASE_TAG="beta-latest"
             RELEASE_TITLE="HanViet-EtymoAI Beta (Build #${{ github.run_number }})"
           else
@@ -195,9 +234,25 @@ jobs:
             PRERELEASE_FLAG="--prerelease"
           fi
 
-          echo "[INFO] Tạo hoặc cập nhật GitHub Release: ${RELEASE_TAG} (${RELEASE_TITLE})..."
+          echo "[INFO] Chuẩn bị release notes..."
+          cat << EOF > /tmp/release_notes.md
+### 🚀 HanViet-EtymoAI Automated Build
 
-          # Xóa release cũ nếu là rolling tag beta-latest để cập nhật bản mới nhất
+- **APK File**: \`${APK_NAME}\`
+- **Commit**: \`${{ github.sha }}\`
+- **Build Number**: \`#${{ github.run_number }}\`
+- **Chất Lượng**: Đã vượt qua Quality Gate (Lint & Unit Tests).
+- **Hỗ trợ thiết bị**: Android 8.0+ (API 26+)
+
+#### 🔒 SHA-256 Checksum:
+\`\`\`
+$(cat "$CHECKSUM_PATH")
+\`\`\`
+
+> *Bản phát hành được tự động đóng gói, ký số và kiểm tra toàn vẹn bởi GitHub Actions CI/CD.*
+EOF
+
+          echo "[INFO] Đang tạo hoặc cập nhật GitHub Release: ${RELEASE_TAG}..."
           if [ "$RELEASE_TAG" = "beta-latest" ]; then
             gh release delete "$RELEASE_TAG" --yes --cleanup-tag 2>/dev/null || true
           fi
@@ -205,19 +260,7 @@ jobs:
           gh release create "$RELEASE_TAG" \
             "$APK_PATH" \
             "$CHECKSUM_PATH" \
+            --target "${{ github.sha }}" \
             --title "$RELEASE_TITLE" \
-            --generate-notes \
-            $PRERELEASE_FLAG \
-            --notes "### 🚀 HanViet-EtymoAI Automated Build
-
-- **APK File**: \`$APK_NAME\`
-- **Commit**: \`${{ github.sha }}\`
-- **Build Number**: \`#${{ github.run_number }}\`
-- **Kiểm thử tự động**: Đã vượt qua Lint & Unit Tests.
-
-#### 🔒 SHA-256 Checksum:
-\`\`\`
-$(cat "$CHECKSUM_PATH")
-\`\`\`
-
-> *Bản phát hành được tự động đóng gói, ký số và kiểm tra toàn vẹn bởi GitHub Actions CI/CD.*"
+            --notes-file /tmp/release_notes.md \
+            $PRERELEASE_FLAG
