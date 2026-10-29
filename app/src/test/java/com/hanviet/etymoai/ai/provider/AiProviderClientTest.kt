@@ -3,7 +3,10 @@ package com.hanviet.etymoai.ai.provider
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class AiProviderClientTest {
 
     @Test
