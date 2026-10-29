@@ -92,7 +92,7 @@ class EtymologyRepositoryTest {
 
         val hakgyo = words.find { it.headword == "학교" }
         assertNotNull("Phải chứa '학교'", hakgyo)
-        assertTrue(hakgyo.meaningVi.contains("trường học"))
+        assertTrue(hakgyo!!.meaningVi.contains("trường học"))
     }
 
     @Test
