@@ -60,16 +60,16 @@ HanViet-EtymoAI/
 
 ---
 
-## 🚀 Kế Hoạch 8 Giai Đoạn (8-Phase Roadmap)
+## 🚀 Kế Hoạch 8 Giai Đoạn (8-Phase Roadmap - 100% COMPLETE)
 
-- [ ] **Phase 0: Data Feasibility & ETL Spike** (Rà soát nguồn mở NIKL/Wiktionary, schema SQLite core, ETL spike)
-- [ ] **Phase 1: Dual-Database Architecture & Search Core** (SQLite read-only + Room user workspace, search 5 tầng)
-- [ ] **Phase 2: Morphology Rule Engine** (Deconjugation 7 nhóm bất quy tắc: ㅂ, ㄷ, ㅅ, ㅎ, 르, 으, ㄹ)
-- [ ] **Phase 3: Contextual Hanja & Etymology Display** (Phân đoạn Hán tự, đồ thị từ nguyên, huy hiệu minh bạch)
-- [ ] **Phase 4: User Workspace & SRS Flashcards** (Sổ tay từ vựng, tag, ghi chú Markdown, thuật toán SuperMemo SM-2)
-- [ ] **Phase 5: Android System Integration** (`ACTION_PROCESS_TEXT` popup không cần quyền overlay)
-- [ ] **Phase 6: Optional AI Layer (BYOK & Local Grounding)** (Hỗ trợ đa provider, kiểm soát chống ảo giác)
-- [ ] **Phase 7: Packaging, Hardening & CI/CD** (GitHub Actions CI/CD, auto-release APK, kiểm tra mã băm SHA-256)
+- [x] **Phase 0: Data Feasibility & ETL Spike** (Rà soát nguồn mở NIKL/Wiktionary, schema SQLite core, ETL spike)
+- [x] **Phase 1: Dual-Database Architecture & Search Core** (SQLite read-only + Room user workspace, search 5 tầng)
+- [x] **Phase 2: Morphology Rule Engine** (Deconjugation 7 nhóm bất quy tắc: ㅂ, ㄷ, ㅅ, ㅎ, 르, 으, ㄹ)
+- [x] **Phase 3: Contextual Hanja & Etymology Display** (Phân đoạn Hán tự, đồ thị từ nguyên, huy hiệu minh bạch)
+- [x] **Phase 4: User Workspace & SRS Flashcards** (Sổ tay từ vựng, tag, ghi chú Markdown, thuật toán SuperMemo SM-2)
+- [x] **Phase 5: Android System Integration** (`ACTION_PROCESS_TEXT` popup không cần quyền overlay)
+- [x] **Phase 6: Optional AI Layer (BYOK & Local Grounding)** (Hỗ trợ đa provider OpenAI/Gemini/DeepSeek/Claude/Ollama, kiểm soát chống ảo giác GroundingGuard)
+- [x] **Phase 7: Packaging, Hardening & CI/CD** (GitHub Actions CI/CD, auto-release APK, kiểm tra mã băm SHA-256 DataPackIntegrityVerifier)
 
 Xem chi tiết từng kế hoạch hành động tại: [`project-meta/planning/ROADMAP.md`](project-meta/planning/ROADMAP.md)
 
