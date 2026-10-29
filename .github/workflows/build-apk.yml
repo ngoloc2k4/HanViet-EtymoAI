@@ -154,36 +154,59 @@ jobs:
           fi
           OUTPUT_APK_PATH="${RELEASE_DIR}/${OUTPUT_APK_NAME}"
 
+          echo "[INFO] Xác định đường dẫn Android Build Tools..."
+          BUILD_TOOLS_DIR=$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools" -maxdepth 1 -mindepth 1 2>/dev/null | sort -V | tail -n 1)
+          if [ -n "$BUILD_TOOLS_DIR" ]; then
+            export PATH="$BUILD_TOOLS_DIR:$PATH"
+          fi
+
+          KEYSTORE_FILE="/tmp/release.keystore"
           if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ]; then
-            echo "[INFO] Đang giải mã keystore vào file tạm bảo mật..."
-            KEYSTORE_FILE="/tmp/release.keystore"
+            echo "[INFO] Đang giải mã production keystore từ GitHub Secrets..."
             echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_FILE"
             chmod 600 "$KEYSTORE_FILE"
-
-            echo "[INFO] Xác định đường dẫn Android Build Tools..."
-            BUILD_TOOLS_DIR=$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools" -maxdepth 1 -mindepth 1 2>/dev/null | sort -V | tail -n 1)
-            if [ -n "$BUILD_TOOLS_DIR" ]; then
-              export PATH="$BUILD_TOOLS_DIR:$PATH"
-            fi
-
-            echo "[INFO] Thực hiện zipalign và apksigner v1 + v2..."
-            ALIGNED_APK="/tmp/aligned.apk"
-            zipalign -v -p 4 "$UNSIGNED_APK" "$ALIGNED_APK" || cp "$UNSIGNED_APK" "$ALIGNED_APK"
-
-            apksigner sign \
-              --ks "$KEYSTORE_FILE" \
-              --ks-key-alias "$KEY_ALIAS" \
-              --ks-pass "pass:$KEYSTORE_PASSWORD" \
-              --key-pass "pass:$KEY_PASSWORD" \
-              --out "$OUTPUT_APK_PATH" \
-              "$ALIGNED_APK"
-
-            echo "[INFO] Kiểm chứng chữ ký APK:"
-            apksigner verify --verbose "$OUTPUT_APK_PATH"
+            STORE_PASS="$KEYSTORE_PASSWORD"
+            ALIAS="$KEY_ALIAS"
+            KEY_PASS="${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
           else
-            echo "[WARN] Chưa phát hiện GitHub Secrets cho Keystore. Lưu bản build hiện tại."
-            cp "$UNSIGNED_APK" "$OUTPUT_APK_PATH"
+            echo "[WARN] Không tìm thấy GitHub Secrets cho Keystore. Tự động sinh Keystore dự phòng để đảm bảo APK luôn được ký số hợp lệ!"
+            STORE_PASS="fallbackReleasePass2026!"
+            ALIAS="fallback-release-key"
+            KEY_PASS="$STORE_PASS"
+            keytool -genkeypair -v \
+              -keystore "$KEYSTORE_FILE" \
+              -alias "$ALIAS" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass "$STORE_PASS" \
+              -keypass "$KEY_PASS" \
+              -dname "CN=HanVietEtymoAI Fallback, OU=Mobile, O=OpenSource, L=Hanoi, ST=Hanoi, C=VN"
+            chmod 600 "$KEYSTORE_FILE"
           fi
+
+          echo "[INFO] Thực hiện zipalign (4-byte alignment)..."
+          ALIGNED_APK="/tmp/aligned.apk"
+          if command -v zipalign >/dev/null 2>&1; then
+            zipalign -v -p 4 "$UNSIGNED_APK" "$ALIGNED_APK"
+          else
+            cp "$UNSIGNED_APK" "$ALIGNED_APK"
+          fi
+
+          echo "[INFO] Ký số APK bằng apksigner (hỗ trợ đầy đủ scheme v1 + v2 + v3 cho Android 8.0+)..."
+          apksigner sign \
+            --ks "$KEYSTORE_FILE" \
+            --ks-key-alias "$ALIAS" \
+            --ks-pass "pass:$STORE_PASS" \
+            --key-pass "pass:$KEY_PASS" \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out "$OUTPUT_APK_PATH" \
+            "$ALIGNED_APK"
+
+          echo "[INFO] Kiểm chứng chữ ký APK:"
+          apksigner verify --verbose "$OUTPUT_APK_PATH"
 
           echo "apk_name=${OUTPUT_APK_NAME}" >> "$GITHUB_OUTPUT"
           echo "apk_path=${OUTPUT_APK_PATH}" >> "$GITHUB_OUTPUT"
