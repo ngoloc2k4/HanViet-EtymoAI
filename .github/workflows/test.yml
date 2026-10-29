@@ -1,0 +1,76 @@
+name: Test & Lint Quality Gate
+
+on:
+  push:
+    branches: [main, develop]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'project-meta/**'
+  pull_request:
+    branches: [main, develop]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'project-meta/**'
+  workflow_call:
+    # Cho phép gọi tái sử dụng từ build-apk.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-lint:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Set up JDK 17 (Eclipse Temurin)
+        uses: actions/setup-java@7a6d8a8234af8eb26422e24052f73b12b0e46a27  # v4.6.0
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Restore Robolectric Offline Dependency Cache
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a  # v4.1.2
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: ${{ runner.os }}-robolectric-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-robolectric-
+
+      - name: Set up Gradle with Build Cache
+        uses: gradle/actions/setup-gradle@94b5068f5732c944d6a40fa5ff03322f8732360f  # v4.1.1
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Grant Execute Permission for Gradle Wrapper
+        run: chmod +x gradlew || true
+
+      - name: Run Linter and Unit Tests
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
+        run: |
+          if [ -f "gradlew" ]; then
+            ./gradlew lintDebug testDebugUnitTest --continue --build-cache --parallel
+          else
+            echo "[INFO] gradlew chưa được khởi tạo trong nhánh. Bỏ qua bước chạy Android Gradle tạm thời."
+          fi
+
+      - name: Upload Test Results (JUnit & Lint)
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882  # v4.4.3
+        with:
+          name: test-and-lint-reports
+          path: |
+            app/build/reports/tests/
+            app/build/reports/lint-results*.html
+          retention-days: 7
