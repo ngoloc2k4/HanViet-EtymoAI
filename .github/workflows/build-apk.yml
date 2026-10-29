@@ -235,22 +235,22 @@ jobs:
           fi
 
           echo "[INFO] Chuẩn bị release notes..."
-          cat << EOF > /tmp/release_notes.md
-### 🚀 HanViet-EtymoAI Automated Build
-
-- **APK File**: \`${APK_NAME}\`
-- **Commit**: \`${{ github.sha }}\`
-- **Build Number**: \`#${{ github.run_number }}\`
-- **Chất Lượng**: Đã vượt qua Quality Gate (Lint & Unit Tests).
-- **Hỗ trợ thiết bị**: Android 8.0+ (API 26+)
-
-#### 🔒 SHA-256 Checksum:
-\`\`\`
-$(cat "$CHECKSUM_PATH")
-\`\`\`
-
-> *Bản phát hành được tự động đóng gói, ký số và kiểm tra toàn vẹn bởi GitHub Actions CI/CD.*
-EOF
+          {
+            echo "### 🚀 HanViet-EtymoAI Automated Build"
+            echo ""
+            echo "- **APK File**: \`${APK_NAME}\`"
+            echo "- **Commit**: \`${{ github.sha }}\`"
+            echo "- **Build Number**: \`#${{ github.run_number }}\`"
+            echo "- **Chất Lượng**: Đã vượt qua Quality Gate (Lint & Unit Tests)."
+            echo "- **Hỗ trợ thiết bị**: Android 8.0+ (API 26+)"
+            echo ""
+            echo "#### 🔒 SHA-256 Checksum:"
+            echo "\`\`\`"
+            cat "$CHECKSUM_PATH"
+            echo "\`\`\`"
+            echo ""
+            echo "> *Bản phát hành được tự động đóng gói, ký số và kiểm tra toàn vẹn bởi GitHub Actions CI/CD.*"
+          } > /tmp/release_notes.md
 
           echo "[INFO] Đang tạo hoặc cập nhật GitHub Release: ${RELEASE_TAG}..."
           if [ "$RELEASE_TAG" = "beta-latest" ]; then
