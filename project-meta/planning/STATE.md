@@ -6,11 +6,11 @@ Tài liệu này phản ánh trạng thái thực thi hiện tại của **HanVi
 
 ## 1. Trạng Thái Hiện Tại (Current Execution State)
 
-- **Trạng thái quy trình**: **IN EXECUTION - PHASE 1 IN PROGRESS**
+- **Trạng thái quy trình**: **IN EXECUTION - PHASE 1 COMPLETED**
 - **Khóa kế hoạch (Planning Lock)**: **LOCKED** (Đặc tả đã chốt tại `SPEC.md`, sẵn sàng bước vào thực thi)
-- **Giai đoạn hiện tại**: **Phase 1 - Dual-DB Architecture & Search Core**
-- **Kế hoạch vừa hoàn thành**: `PLAN-01-01-dual-db-foundation.md` (Summary: `01-SUMMARY.md`)
-- **Kế hoạch tiếp theo**: `PLAN-01-02-fts5-search-pipeline.md`
+- **Giai đoạn vừa hoàn thành**: **Phase 1 - Dual-DB Architecture & Search Core**
+- **Kế hoạch vừa hoàn thành**: `PLAN-01-02-fts5-search-pipeline.md` (Summary: `02-SUMMARY.md`)
+- **Giai đoạn tiếp theo**: **Phase 2 - Morphology Rule Engine**
 - **Mã nguồn tiền nhiệm**: Đã đúc kết bài học tại `project-meta/history/LESSONS_LEARNED_FROM_V1.md`
 
 ---
@@ -20,8 +20,8 @@ Tài liệu này phản ánh trạng thái thực thi hiện tại của **HanVi
 | Giai đoạn | Tiêu đề | Kế hoạch hoàn thành | Trạng thái |
 | :---: | :--- | :---: | :---: |
 | **Phase 0** | Data Feasibility & ETL Spike | 2/2 | **COMPLETED** |
-| **Phase 1** | Dual-DB Architecture & Search Core | 1/2 | **IN PROGRESS** |
-| **Phase 2** | Morphology Rule Engine | 0/2 | BACKLOG |
+| **Phase 1** | Dual-DB Architecture & Search Core | 2/2 | **COMPLETED** |
+| **Phase 2** | Morphology Rule Engine | 0/2 | **READY** |
 | **Phase 3** | Contextual Hanja & Etymology Display | 0/2 | BACKLOG |
 | **Phase 4** | User Workspace & SRS Flashcards | 0/2 | BACKLOG |
 | **Phase 5** | Android System Integration | 0/2 | BACKLOG |
