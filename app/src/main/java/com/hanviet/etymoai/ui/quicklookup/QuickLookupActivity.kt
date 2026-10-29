@@ -14,7 +14,7 @@ import com.hanviet.etymoai.ui.MainActivity
  * QuickLookupActivity: Điểm chạm toàn hệ thống tiếp nhận văn bản bôi đen qua ACTION_PROCESS_TEXT.
  * Khởi chạy giao diện BottomSheet gọn nhẹ hiển thị từ nguyên trong thời gian cực nhanh.
  */
-class QuickLookupActivity : ComponentActivity() {
+open class QuickLookupActivity : ComponentActivity() {
 
     private lateinit var viewModel: QuickLookupViewModel
 
