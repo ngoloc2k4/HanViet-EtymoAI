@@ -420,7 +420,7 @@ class MorphologyEngine(
         return try {
             val cursor = db.rawQuery(
                 """
-                SELECT l.lexeme_id, l.topik_level, s.pos
+                SELECT l.lexeme_id, l.topik_level, s.part_of_speech
                 FROM lexemes l
                 LEFT JOIN senses s ON l.lexeme_id = s.lexeme_id
                 WHERE l.headword_nfc = ?

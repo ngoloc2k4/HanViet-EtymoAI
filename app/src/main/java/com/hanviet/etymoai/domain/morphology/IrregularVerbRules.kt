@@ -68,6 +68,18 @@ object IrregularVerbRules {
                 }
             }
 
+            // Dạng 5: Liên từ nguyên nhân/thứ tự '워서 / 와서' (e.g. 추워서, 더워서, 도와서, 고와서)
+            for (suffix in listOf("워서", "와서")) {
+                if (trimmed.endsWith(suffix) && trimmed.length >= suffix.length + 1) {
+                    val stemPrefix = trimmed.substring(0, trimmed.length - suffix.length - 1)
+                    val targetChar = trimmed[trimmed.length - suffix.length - 1]
+                    if (HangulUtil.isHangulSyllable(targetChar) && !HangulUtil.hasPatchim(targetChar)) {
+                        val restoredChar = HangulUtil.withPatchim(targetChar, HangulUtil.JONG_BIEUP)
+                        list.add(stemPrefix + restoredChar + "다")
+                    }
+                }
+            }
+
             list.distinct()
         },
 
