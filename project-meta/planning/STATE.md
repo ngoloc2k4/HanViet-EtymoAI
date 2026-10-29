@@ -6,11 +6,11 @@ Tài liệu này phản ánh trạng thái thực thi hiện tại của **HanVi
 
 ## 1. Trạng Thái Hiện Tại (Current Execution State)
 
-- **Trạng thái quy trình**: **IN EXECUTION - PHASE 1 COMPLETED**
+- **Trạng thái quy trình**: **IN EXECUTION - PHASE 2 IN PROGRESS**
 - **Khóa kế hoạch (Planning Lock)**: **LOCKED** (Đặc tả đã chốt tại `SPEC.md`, sẵn sàng bước vào thực thi)
-- **Giai đoạn vừa hoàn thành**: **Phase 1 - Dual-DB Architecture & Search Core**
-- **Kế hoạch vừa hoàn thành**: `PLAN-01-02-fts5-search-pipeline.md` (Summary: `02-SUMMARY.md`)
-- **Giai đoạn tiếp theo**: **Phase 2 - Morphology Rule Engine**
+- **Giai đoạn hiện tại**: **Phase 2 - Morphology Rule Engine**
+- **Kế hoạch vừa hoàn thành**: `PLAN-02-01-korean-irregular-rules.md` (Summary: `01-SUMMARY.md`)
+- **Kế hoạch tiếp theo**: `PLAN-02-02-deconjugation-ranking.md`
 - **Mã nguồn tiền nhiệm**: Đã đúc kết bài học tại `project-meta/history/LESSONS_LEARNED_FROM_V1.md`
 
 ---
@@ -21,7 +21,7 @@ Tài liệu này phản ánh trạng thái thực thi hiện tại của **HanVi
 | :---: | :--- | :---: | :---: |
 | **Phase 0** | Data Feasibility & ETL Spike | 2/2 | **COMPLETED** |
 | **Phase 1** | Dual-DB Architecture & Search Core | 2/2 | **COMPLETED** |
-| **Phase 2** | Morphology Rule Engine | 0/2 | **READY** |
+| **Phase 2** | Morphology Rule Engine | 1/2 | **IN PROGRESS** |
 | **Phase 3** | Contextual Hanja & Etymology Display | 0/2 | BACKLOG |
 | **Phase 4** | User Workspace & SRS Flashcards | 0/2 | BACKLOG |
 | **Phase 5** | Android System Integration | 0/2 | BACKLOG |
