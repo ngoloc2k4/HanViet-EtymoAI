@@ -80,6 +80,16 @@ object DatabaseModule {
     }
 
     /**
+     * Cung cấp SrsRepository
+     */
+    fun provideSrsRepository(
+        database: WorkspaceDatabase,
+        etymologyRepository: EtymologyRepository? = null
+    ): com.hanviet.etymoai.domain.srs.SrsRepository {
+        return com.hanviet.etymoai.domain.srs.SrsRepository(database, etymologyRepository)
+    }
+
+    /**
      * Cung cấp EtymologyRepository (Truy vấn từ nguyên và chiết tự Hán tự)
      */
     fun provideEtymologyRepository(helper: CoreDatabaseHelper): EtymologyRepository {

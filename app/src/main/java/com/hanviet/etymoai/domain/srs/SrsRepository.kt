@@ -4,11 +4,8 @@ import com.hanviet.etymoai.data.db.workspace.WorkspaceDatabase
 import com.hanviet.etymoai.domain.etymology.EtymologyRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class SrsRepository @Inject constructor(
+class SrsRepository(
     private val db: WorkspaceDatabase,
     private val etymologyRepository: EtymologyRepository? = null
 ) {

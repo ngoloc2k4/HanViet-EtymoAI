@@ -5,15 +5,12 @@ import com.hanviet.etymoai.data.db.workspace.entity.*
 import kotlinx.coroutines.flow.Flow
 import org.json.JSONArray
 import org.json.JSONObject
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * UserWorkspaceRepository: Quản trị toàn bộ dữ liệu cá nhân hóa của người học.
  * Độc lập với dictionary_core.db, đảm bảo an toàn dữ liệu và hỗ trợ Backup/Restore JSON.
  */
-@Singleton
-class UserWorkspaceRepository @Inject constructor(
+class UserWorkspaceRepository(
     private val db: WorkspaceDatabase
 ) {
     private val savedWordDao = db.savedWordDao()
