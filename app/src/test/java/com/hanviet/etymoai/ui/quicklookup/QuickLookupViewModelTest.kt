@@ -56,7 +56,8 @@ class QuickLookupViewModelTest {
             searchPipeline = searchPipeline,
             etymologyRepository = etymologyRepo,
             userWorkspaceRepository = userWsRepo,
-            srsRepository = srsRepo
+            srsRepository = srsRepo,
+            ioDispatcher = testDispatcher
         )
     }
 

@@ -27,7 +27,8 @@ class QuickLookupViewModel(
     private val searchPipeline: SearchPipeline,
     private val etymologyRepository: EtymologyRepository,
     private val userWorkspaceRepository: UserWorkspaceRepository,
-    private val srsRepository: SrsRepository? = null
+    private val srsRepository: SrsRepository? = null,
+    private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuickLookupUiState())
@@ -42,7 +43,7 @@ class QuickLookupViewModel(
 
         _uiState.value = _uiState.value.copy(query = query, isLoading = true, errorMessage = null)
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             try {
                 val results = searchPipeline.search(query, limit = 5)
                 if (results.isNotEmpty()) {
@@ -81,7 +82,7 @@ class QuickLookupViewModel(
         val current = _uiState.value
         val res = current.result ?: return
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val existing = userWorkspaceRepository.getSavedWordByStableKey(res.stableKey)
             if (existing != null) {
                 userWorkspaceRepository.removeWord(existing.id)

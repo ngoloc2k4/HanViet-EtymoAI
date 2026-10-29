@@ -67,11 +67,21 @@ class CoreDatabaseHelper(
 
         private fun copyFromAssets(context: Context, assetName: String, destinationFile: File) {
             try {
-                context.assets.open(assetName).use { inputStream ->
+                val inputStream = try {
+                    context.assets.open(assetName)
+                } catch (e: Exception) {
+                    val fallbackFile = File("src/main/assets/$assetName")
+                    if (fallbackFile.exists()) {
+                        fallbackFile.inputStream()
+                    } else {
+                        throw e
+                    }
+                }
+                inputStream.use { inStream ->
                     FileOutputStream(destinationFile).use { outputStream ->
                         val buffer = ByteArray(8192)
                         var bytesRead: Int
-                        while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                        while (inStream.read(buffer).also { bytesRead = it } != -1) {
                             outputStream.write(buffer, 0, bytesRead)
                         }
                         outputStream.flush()
