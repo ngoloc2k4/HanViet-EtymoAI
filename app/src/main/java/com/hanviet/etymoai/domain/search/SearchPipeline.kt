@@ -3,6 +3,7 @@ package com.hanviet.etymoai.domain.search
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import com.hanviet.etymoai.data.db.core.CoreDatabaseHelper
+import com.hanviet.etymoai.domain.morphology.MorphologyEngine
 import java.text.Normalizer
 import java.util.regex.Pattern
 
@@ -42,6 +43,10 @@ class SearchPipeline(
 
     private val db: SQLiteDatabase
         get() = dbProvider()
+
+    private val activeDeconjugator: MorphologyDeconjugator by lazy {
+        deconjugator ?: MorphologyEngine(dbProvider)
+    }
 
     // Mẫu kiểm tra ký tự Chosung Hangul thuần túy (ㄱ - ㅎ)
     private val chosungPattern = Pattern.compile("^[\\u3131-\\u314E\\u1100-\\u1112]+$")
@@ -83,19 +88,17 @@ class SearchPipeline(
         }
 
         // ------------------------------------------------------------------
-        // TẦNG 4: Bộ máy Phân tích Hình thái (Morphology Engine Hook)
+        // TẦNG 4: Bộ máy Phân tích Hình thái (Morphology Rule Engine)
         // ------------------------------------------------------------------
-        deconjugator?.let { engine ->
-            val candidates = engine.deconjugate(query)
-            for (cand in candidates) {
-                queryExactHeadword(cand.lemma)?.let { baseWord ->
-                    if (!resultsMap.containsKey(baseWord.lexemeId)) {
-                        resultsMap[baseWord.lexemeId] = baseWord.copy(
-                            matchTier = SearchMatchTier.MORPHOLOGY,
-                            confidenceScore = cand.confidence,
-                            matchNote = "${cand.grammarExplanation} (${cand.ruleApplied})"
-                        )
-                    }
+        val candidates = activeDeconjugator.deconjugate(query)
+        for (cand in candidates) {
+            queryExactHeadword(cand.lemma)?.let { baseWord ->
+                if (!resultsMap.containsKey(baseWord.lexemeId)) {
+                    resultsMap[baseWord.lexemeId] = baseWord.copy(
+                        matchTier = SearchMatchTier.MORPHOLOGY,
+                        confidenceScore = cand.confidence,
+                        matchNote = "${cand.grammarExplanation} (${cand.ruleApplied})"
+                    )
                 }
             }
         }

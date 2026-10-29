@@ -1,17 +1,6 @@
 package com.hanviet.etymoai.domain.morphology
 
 /**
- * Kết quả phân tích ứng viên từ gốc
- */
-data class CandidateLemma(
-    val lemma: String,
-    val ruleId: String,
-    val group: IrregularGroup,
-    val confidenceScore: Float,
-    val explanationVi: String
-)
-
-/**
  * Bộ quy tắc giải phân tích hình thái cho 7 nhóm động từ & tính từ bất quy tắc tiếng Hàn
  * (7 Irregular Verb & Adjective Rules Engine)
  */

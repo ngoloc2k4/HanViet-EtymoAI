@@ -96,6 +96,43 @@ class SearchPipelineTest {
     }
 
     @Test
+    fun testTier4_morphologyIntegrated_multipleCandidates() {
+        // Tra cứu "들었어요" phải trả về cả "듣다" (nghe) và "들다" (cầm/tốn)
+        val results = pipeline.search("들었어요")
+        assertFalse("Kết quả không được rỗng", results.isEmpty())
+
+        val deutda = results.find { it.headwordNfc == "듣다" }
+        assertNotNull("Phải tìm thấy '듣다' (nghe)", deutda)
+
+        val deulda = results.find { it.headwordNfc == "들다" }
+        assertNotNull("Phải tìm thấy '들다' (cầm/nhấc/tốn)", deulda)
+        assertEquals(SearchMatchTier.MORPHOLOGY, deulda!!.matchTier)
+        assertNotNull("Phải có ghi chú quy tắc hình thái", deulda.matchNote)
+    }
+
+    @Test
+    fun testTier4_morphologyIntegrated_irregularBieup() {
+        // "추워서" không nằm trong precomputed forms, phải được Tầng 4 khôi phục về "춥다"
+        val results = pipeline.search("추워서")
+        assertFalse("Phải có kết quả cho '추워서'", results.isEmpty())
+
+        val chupda = results.find { it.headwordNfc == "춥다" }
+        assertNotNull("Phải tìm thấy '춥다' từ '추워서'", chupda)
+        assertEquals(SearchMatchTier.MORPHOLOGY, chupda!!.matchTier)
+        assertTrue(chupda.matchNote?.contains("ㅂ") == true)
+    }
+
+    @Test
+    fun testTier4_morphologyIntegrated_irregularRieul() {
+        // "만듭니다" -> "만들다"
+        val results = pipeline.search("만듭니다")
+        assertFalse("Phải có kết quả cho '만듭니다'", results.isEmpty())
+
+        val mandeulda = results.find { it.headwordNfc == "만들다" }
+        assertNotNull("Phải tìm thấy '만들다'", mandeulda)
+    }
+
+    @Test
     fun testTier5_fts5UnaccentedVietnamese() {
         val results = pipeline.search("tam trang")
         assertFalse("Tra cứu tiếng Việt không dấu 'tam trang' phải ra kết quả", results.isEmpty())

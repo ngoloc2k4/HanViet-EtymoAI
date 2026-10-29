@@ -341,6 +341,28 @@ RAW_ENTRIES: List[Dict[str, Any]] = [
         ]
     },
     {
+        "stable_key": "ko_deulda_01",
+        "headword": "들다",
+        "origin_type": "NATIVE_KOREAN",
+        "origin_status": "VERIFIED_PRIMARY",
+        "phonetic_vi": "đưl-ta",
+        "topik_level": 1,
+        "source_dataset": "NIKL",
+        "source_id": "15003",
+        "senses": [
+            {
+                "pos": "Động từ",
+                "meaning_vi": "cầm, xách, nhấc lên; đi vào; tốn (thời gian, tiền bạc)",
+                "definition_ko": "손에 쥐거나 들거나, 어떤 장소로 들어가다.",
+                "examples": [{"ko": "가방을 들다.", "vi": "Cầm xách chiếc cặp sách."}]
+            }
+        ],
+        "hanja_segments": [],
+        "precomputed_forms": [
+            {"form": "듭니다", "rule": "RIEUL_DROP_FORMAL", "desc": "Kính ngữ trang trọng (-ㅂ니다)"}
+        ]
+    },
+    {
         "stable_key": "ko_chupda_01",
         "headword": "춥다",
         "origin_type": "NATIVE_KOREAN",
