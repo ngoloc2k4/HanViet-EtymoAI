@@ -291,31 +291,24 @@ object IrregularVerbRules {
             explanationVi = "Biến đổi rơi ㄹ: Phụ âm ㄹ bị rơi trước ㄴ, ㅂ, ㅅ được hoàn nguyên"
         ) { surface ->
             val list = mutableListOf<String>()
-            val trimmed = stripPoliteEnding(surface)
+            val clean = surface.trim()
 
             // Dạng 1: Đuôi trang trọng kính ngữ '-ㅂ니다 / -ㅂ니까' (e.g. 만듭니다, 삽니다, 압니다)
-            for (ending in listOf("ㅂ니다", "ㅂ니까", "ᆸ니다", "ᆸ니까")) {
-                if (trimmed.endsWith(ending) && trimmed.length > ending.length) {
-                    val stem = trimmed.substring(0, trimmed.length - ending.length)
+            for (ending in listOf("니다", "니까", "니")) {
+                if (clean.endsWith(ending) && clean.length > ending.length) {
+                    val stem = clean.substring(0, clean.length - ending.length)
                     val lastChar = stem.last()
-                    val restoredLast = HangulUtil.withPatchim(lastChar, HangulUtil.JONG_RIEUL)
-                    list.add(stem.dropLast(1) + restoredLast + "다")
-                }
-            }
-
-            // Xử lý dạng '만듭' khi '니다' bị tách
-            if (trimmed.endsWith("듭") || trimmed.endsWith("습") || trimmed.endsWith("압")) {
-                val lastChar = trimmed.last()
-                val dec = HangulUtil.decompose(lastChar)
-                if (dec != null && dec.jong == HangulUtil.JONG_BIEUP) {
-                    val restoredLast = HangulUtil.compose(dec.cho, dec.jung, HangulUtil.JONG_RIEUL)
-                    list.add(trimmed.dropLast(1) + restoredLast + "다")
+                    val dec = HangulUtil.decompose(lastChar)
+                    if (dec != null && dec.jong == HangulUtil.JONG_BIEUP) {
+                        val restoredLast = HangulUtil.compose(dec.cho, dec.jung, HangulUtil.JONG_RIEUL)
+                        list.add(stem.dropLast(1) + restoredLast + "다")
+                    }
                 }
             }
 
             // Dạng 2: Đuôi định từ hiện tại '-는' (e.g. 만드는, 사는, 아는, 여는)
-            if (trimmed.endsWith("는") && trimmed.length >= 2) {
-                val stem = trimmed.dropLast(1)
+            if (clean.endsWith("는") && clean.length >= 2) {
+                val stem = clean.dropLast(1)
                 val lastChar = stem.last()
                 if (!HangulUtil.hasPatchim(lastChar)) {
                     val restoredLast = HangulUtil.withPatchim(lastChar, HangulUtil.JONG_RIEUL)
@@ -325,12 +318,26 @@ object IrregularVerbRules {
 
             // Dạng 3: Đuôi tôn kính '-세요 / -십니까' (e.g. 만드세요, 사세요, 아세요)
             for (ending in listOf("세요", "셔요", "시", "셔")) {
-                if (trimmed.endsWith(ending) && trimmed.length > ending.length) {
-                    val stem = trimmed.substring(0, trimmed.length - ending.length)
+                if (clean.endsWith(ending) && clean.length > ending.length) {
+                    val stem = clean.substring(0, clean.length - ending.length)
                     val lastChar = stem.last()
                     if (!HangulUtil.hasPatchim(lastChar)) {
                         val restoredLast = HangulUtil.withPatchim(lastChar, HangulUtil.JONG_RIEUL)
                         list.add(stem.dropLast(1) + restoredLast + "다")
+                    }
+                }
+            }
+
+            val trimmed = stripPoliteEnding(surface)
+            if (trimmed != clean) {
+                for (ending in listOf("세", "셔")) {
+                    if (trimmed.endsWith(ending) && trimmed.length > ending.length) {
+                        val stem = trimmed.substring(0, trimmed.length - ending.length)
+                        val lastChar = stem.last()
+                        if (!HangulUtil.hasPatchim(lastChar)) {
+                            val restoredLast = HangulUtil.withPatchim(lastChar, HangulUtil.JONG_RIEUL)
+                            list.add(stem.dropLast(1) + restoredLast + "다")
+                        }
                     }
                 }
             }
