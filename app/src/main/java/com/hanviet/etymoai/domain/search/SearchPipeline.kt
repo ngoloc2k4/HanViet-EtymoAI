@@ -28,7 +28,7 @@ data class MorphologyCandidate(
  * Tầng 2: Khớp Chosung / Alias gõ tắt (ㄱㅂ -> 기분) - Confidence 0.95
  * Tầng 3: Khớp biến thể ngữ pháp tính sẵn (갔어요 -> 가다) - Confidence 0.92
  * Tầng 4: Bộ máy Hình thái (Morphology Rule Engine Hook) - Confidence 0.88
- * Tầng 5: Toàn văn FTS5 (Tiếng Việt không dấu / Prefix) - Confidence 0.75
+ * Tầng 5: Toàn văn FTS5 / Nét nghĩa tiếng Việt có dấu & không dấu - Confidence 0.75
  */
 class SearchPipeline(
     private val dbProvider: () -> SQLiteDatabase,
@@ -101,7 +101,7 @@ class SearchPipeline(
         }
 
         // ------------------------------------------------------------------
-        // TẦNG 5: Full-Text Search FTS5 (Tiếng Việt không dấu / Tiếng Hàn Prefix)
+        // TẦNG 5: Full-Text Search FTS5 / Nghĩa tiếng Việt không dấu & có dấu
         // ------------------------------------------------------------------
         queryFts5(query, limit).forEach { ftsResult ->
             if (!resultsMap.containsKey(ftsResult.lexemeId)) {
@@ -172,7 +172,16 @@ class SearchPipeline(
             if (cursor.moveToFirst()) return true
         }
 
-        // 3. Kiểm tra FTS5
+        // 3. Kiểm tra nghĩa tiếng Việt trong bảng senses
+        val unaccented = removeVietnameseDiacritics(cleanTerm)
+        db.rawQuery(
+            "SELECT 1 FROM senses WHERE meaning_vi LIKE ? OR meaning_vi_normalized LIKE ? LIMIT 1",
+            arrayOf("%$cleanTerm%", "%$unaccented%")
+        ).use { cursor ->
+            if (cursor.moveToFirst()) return true
+        }
+
+        // 4. Kiểm tra FTS5 nếu có
         val sanitized = cleanFtsQuery(cleanTerm)
         if (sanitized.isNotBlank()) {
             val ftsQuery = "\"$sanitized\"*"
@@ -181,11 +190,20 @@ class SearchPipeline(
                     if (cursor.moveToFirst()) return true
                 }
             } catch (_: Exception) {
-                // Fallback nếu FTS gặp ký tự đặc biệt
+                // Fallback nếu FTS không khả dụng
             }
         }
 
         return false
+    }
+
+    /**
+     * Hàm loại bỏ dấu tiếng Việt chuẩn Unicode NFD
+     */
+    fun removeVietnameseDiacritics(str: String): String {
+        val nfd = Normalizer.normalize(str, Normalizer.Form.NFD)
+        val withoutDiacritics = nfd.replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+        return withoutDiacritics.replace('đ', 'd').replace('Đ', 'D')
     }
 
     // ======================================================================
@@ -280,33 +298,68 @@ class SearchPipeline(
         val clean = cleanFtsQuery(query)
         if (clean.isBlank()) return emptyList()
 
+        val list = mutableListOf<SearchResult>()
+        val seenLexemeIds = mutableSetOf<Long>()
+
+        // 1. Thử tìm kiếm FTS5
         val ftsExpression = "\"$clean\"*"
-        val sql = """
+        val ftsSql = """
             SELECT l.lexeme_id, l.stable_key, l.headword_nfc, l.origin_type, l.phonetic_vi, l.topik_level,
                    (SELECT meaning_vi FROM senses s WHERE s.lexeme_id = l.lexeme_id ORDER BY s.display_order ASC LIMIT 1) AS primary_meaning
-            FROM search_fts f
-            JOIN lexemes l ON f.rowid = l.lexeme_id
+            FROM search_fts
+            JOIN lexemes l ON search_fts.rowid = l.lexeme_id
             WHERE search_fts MATCH ?
             LIMIT ?
         """.trimIndent()
 
-        val list = mutableListOf<SearchResult>()
         try {
-            db.rawQuery(sql, arrayOf(ftsExpression, limit.toString())).use { cursor ->
+            db.rawQuery(ftsSql, arrayOf(ftsExpression, limit.toString())).use { cursor ->
                 while (cursor.moveToNext()) {
-                    list.add(
-                        cursorToSearchResult(
-                            cursor,
-                            SearchMatchTier.FTS_FULLTEXT,
-                            0.75f,
-                            "Khớp toàn văn"
-                        )
+                    val result = cursorToSearchResult(
+                        cursor,
+                        SearchMatchTier.FTS_FULLTEXT,
+                        0.75f,
+                        "Khớp toàn văn"
                     )
+                    if (seenLexemeIds.add(result.lexemeId)) {
+                        list.add(result)
+                    }
                 }
             }
         } catch (_: Exception) {
-            // Trường hợp lỗi cú pháp FTS, trả về danh sách rỗng an toàn
+            // Khi FTS5 không khả dụng trong môi trường runtime (như một số phiên bản Robolectric/SQLite), tiếp tục fallback
         }
+
+        // 2. Dự phòng tra cứu bảng senses (meaning_vi và meaning_vi_normalized) nếu FTS5 chưa đủ kết quả
+        if (list.size < limit) {
+            val unaccented = removeVietnameseDiacritics(clean)
+            val sensesSql = """
+                SELECT DISTINCT l.lexeme_id, l.stable_key, l.headword_nfc, l.origin_type, l.phonetic_vi, l.topik_level,
+                       (SELECT s2.meaning_vi FROM senses s2 WHERE s2.lexeme_id = l.lexeme_id ORDER BY s2.display_order ASC LIMIT 1) AS primary_meaning
+                FROM senses s
+                JOIN lexemes l ON s.lexeme_id = l.lexeme_id
+                WHERE s.meaning_vi_normalized LIKE ? OR s.meaning_vi LIKE ?
+                LIMIT ?
+            """.trimIndent()
+
+            try {
+                db.rawQuery(sensesSql, arrayOf("%$unaccented%", "%$clean%", (limit - list.size).toString())).use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val result = cursorToSearchResult(
+                            cursor,
+                            SearchMatchTier.FTS_FULLTEXT,
+                            0.75f,
+                            "Khớp nét nghĩa tiếng Việt"
+                        )
+                        if (seenLexemeIds.add(result.lexemeId)) {
+                            list.add(result)
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+            }
+        }
+
         return list
     }
 
