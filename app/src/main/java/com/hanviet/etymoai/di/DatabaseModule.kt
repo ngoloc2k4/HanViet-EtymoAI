@@ -102,4 +102,38 @@ object DatabaseModule {
     fun provideSearchPipeline(helper: CoreDatabaseHelper): com.hanviet.etymoai.domain.search.SearchPipeline {
         return com.hanviet.etymoai.domain.search.SearchPipeline(helper)
     }
+
+    /**
+     * Cung cấp ApiKeyStorage (BYOK Encrypted SharedPreferences)
+     */
+    fun provideApiKeyStorage(context: Context): com.hanviet.etymoai.ai.security.ApiKeyStorage {
+        return com.hanviet.etymoai.ai.security.SecureApiKeyStorage.create(context)
+    }
+
+    /**
+     * Cung cấp GroundingGuard (Bộ lọc chống ảo giác Hán tự kèm AiCache)
+     */
+    fun provideGroundingGuard(database: WorkspaceDatabase): com.hanviet.etymoai.ai.grounding.GroundingGuard {
+        return com.hanviet.etymoai.ai.grounding.GroundingGuard(database.aiCacheDao())
+    }
+
+    /**
+     * Cung cấp AiProvider động theo cấu hình người dùng
+     */
+    fun provideAiProvider(
+        providerType: com.hanviet.etymoai.ai.provider.AiProviderType,
+        apiKeyStorage: com.hanviet.etymoai.ai.security.ApiKeyStorage
+    ): com.hanviet.etymoai.ai.provider.AiProvider {
+        return when (providerType) {
+            com.hanviet.etymoai.ai.provider.AiProviderType.GEMINI ->
+                com.hanviet.etymoai.ai.provider.GeminiClient(
+                    apiKeyProvider = { apiKeyStorage.getApiKey(com.hanviet.etymoai.ai.provider.AiProviderType.GEMINI) }
+                )
+            else ->
+                com.hanviet.etymoai.ai.provider.OpenAiCompatibleClient(
+                    providerType = providerType,
+                    apiKeyProvider = { apiKeyStorage.getApiKey(providerType) }
+                )
+        }
+    }
 }

@@ -1,0 +1,81 @@
+package com.hanviet.etymoai.ai.security
+
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import com.hanviet.etymoai.ai.provider.AiProviderType
+import org.junit.Assert.*
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+
+@RunWith(RobolectricTestRunner::class)
+class ApiKeyStorageTest {
+
+    private lateinit var storage: SecureApiKeyStorage
+
+    @Before
+    fun setUp() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val prefs = context.getSharedPreferences("test_byok_keys", Context.MODE_PRIVATE)
+        prefs.edit().clear().commit()
+
+        // 256-bit test AES key để kiểm thử tính mã hóa
+        val testKey = ByteArray(32) { (it + 1).toByte() }
+        storage = SecureApiKeyStorage(prefs, testKey)
+    }
+
+    @Test
+    fun testSaveAndRetrieveApiKey() {
+        assertFalse(storage.hasApiKey(AiProviderType.OPENAI))
+        assertNull(storage.getApiKey(AiProviderType.OPENAI))
+
+        val fakeKey = "sk-proj-test1234567890abcdef"
+        storage.saveApiKey(AiProviderType.OPENAI, fakeKey)
+
+        assertTrue(storage.hasApiKey(AiProviderType.OPENAI))
+        assertEquals(fakeKey, storage.getApiKey(AiProviderType.OPENAI))
+    }
+
+    @Test
+    fun testMultipleProvidersIsolation() {
+        val openAiKey = "sk-openai-key-999"
+        val geminiKey = "AIzaSyGemini-key-888"
+        val deepSeekKey = "sk-deepseek-key-777"
+
+        storage.saveApiKey(AiProviderType.OPENAI, openAiKey)
+        storage.saveApiKey(AiProviderType.GEMINI, geminiKey)
+        storage.saveApiKey(AiProviderType.DEEPSEEK, deepSeekKey)
+
+        assertEquals(openAiKey, storage.getApiKey(AiProviderType.OPENAI))
+        assertEquals(geminiKey, storage.getApiKey(AiProviderType.GEMINI))
+        assertEquals(deepSeekKey, storage.getApiKey(AiProviderType.DEEPSEEK))
+
+        // Provider không cần API key luôn trả về true cho hasApiKey
+        assertTrue(storage.hasApiKey(AiProviderType.LOCAL_GGUF))
+    }
+
+    @Test
+    fun testClearApiKey() {
+        storage.saveApiKey(AiProviderType.CLAUDE, "sk-ant-claude-key")
+        assertTrue(storage.hasApiKey(AiProviderType.CLAUDE))
+
+        storage.clearApiKey(AiProviderType.CLAUDE)
+        assertFalse(storage.hasApiKey(AiProviderType.CLAUDE))
+        assertNull(storage.getApiKey(AiProviderType.CLAUDE))
+    }
+
+    @Test
+    fun testClearAllKeys() {
+        storage.saveApiKey(AiProviderType.OPENAI, "key-1")
+        storage.saveApiKey(AiProviderType.GEMINI, "key-2")
+
+        assertTrue(storage.hasApiKey(AiProviderType.OPENAI))
+        assertTrue(storage.hasApiKey(AiProviderType.GEMINI))
+
+        storage.clearAllKeys()
+
+        assertFalse(storage.hasApiKey(AiProviderType.OPENAI))
+        assertFalse(storage.hasApiKey(AiProviderType.GEMINI))
+    }
+}
