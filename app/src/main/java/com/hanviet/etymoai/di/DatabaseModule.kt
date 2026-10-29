@@ -6,6 +6,8 @@ import com.hanviet.etymoai.data.db.workspace.WorkspaceDatabase
 import com.hanviet.etymoai.data.db.workspace.dao.AiCacheDao
 import com.hanviet.etymoai.data.db.workspace.dao.SavedWordDao
 import com.hanviet.etymoai.data.db.workspace.dao.SearchHistoryDao
+import com.hanviet.etymoai.domain.etymology.DefaultEtymologyRepository
+import com.hanviet.etymoai.domain.etymology.EtymologyRepository
 
 /**
  * DatabaseModule: Thiết lập DI phân tách rõ ràng hai luồng cơ sở dữ liệu:
@@ -47,5 +49,12 @@ object DatabaseModule {
      */
     fun provideAiCacheDao(database: WorkspaceDatabase): AiCacheDao {
         return database.aiCacheDao()
+    }
+
+    /**
+     * Cung cấp EtymologyRepository (Truy vấn từ nguyên và chiết tự Hán tự)
+     */
+    fun provideEtymologyRepository(helper: CoreDatabaseHelper): EtymologyRepository {
+        return DefaultEtymologyRepository(helper)
     }
 }
