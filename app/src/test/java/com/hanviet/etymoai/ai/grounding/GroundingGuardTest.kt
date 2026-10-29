@@ -140,7 +140,7 @@ class GroundingGuardTest {
             lexemeId = 100L,
             headword = "학교",
             originType = OriginType.SINO_KOREAN,
-            verificationStatus = VerificationStatus.VERIFIED_OFFICIAL,
+            verificationStatus = VerificationStatus.VERIFIED_PRIMARY,
             segments = listOf(
                 HanjaSegment(0, "학", "學", "học", "học tập"),
                 HanjaSegment(1, "교", "校", "hiệu", "trường học")
