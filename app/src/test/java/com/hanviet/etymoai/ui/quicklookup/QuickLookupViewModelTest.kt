@@ -70,12 +70,21 @@ class QuickLookupViewModelTest {
 
     @Test
     fun testLookup_exactSinoKoreanWord() = runTest(testDispatcher) {
-        viewModel.lookup("기분")
+        val vm = QuickLookupViewModel(
+            searchPipeline = searchPipeline,
+            etymologyRepository = etymologyRepo,
+            userWorkspaceRepository = userWsRepo,
+            srsRepository = srsRepo,
+            ioDispatcher = testDispatcher,
+            coroutineScope = this
+        )
+        vm.lookup("기분")
         advanceUntilIdle()
 
-        val state = viewModel.uiState.value
+        val state = vm.uiState.value
         assertFalse(state.isLoading)
-        assertNotNull(state.result)
+        assertNull("Không được có lỗi: ${state.errorMessage}", state.errorMessage)
+        assertNotNull("Result không được null", state.result)
         assertEquals("기분", state.result!!.headwordNfc)
         assertNotNull(state.etymology)
         assertEquals(2, state.etymology!!.segments.size)
@@ -86,36 +95,53 @@ class QuickLookupViewModelTest {
 
     @Test
     fun testLookup_andToggleSave() = runTest(testDispatcher) {
-        viewModel.lookup("학생")
+        val vm = QuickLookupViewModel(
+            searchPipeline = searchPipeline,
+            etymologyRepository = etymologyRepo,
+            userWorkspaceRepository = userWsRepo,
+            srsRepository = srsRepo,
+            ioDispatcher = testDispatcher,
+            coroutineScope = this
+        )
+        vm.lookup("학생")
         advanceUntilIdle()
 
-        var state = viewModel.uiState.value
-        assertNotNull(state.result)
+        var state = vm.uiState.value
+        assertNull("Không được có lỗi: ${state.errorMessage}", state.errorMessage)
+        assertNotNull("Result không được null", state.result)
         assertFalse(state.isSaved)
 
         // Lưu vào sổ tay
-        viewModel.toggleSave()
+        vm.toggleSave()
         advanceUntilIdle()
 
-        state = viewModel.uiState.value
+        state = vm.uiState.value
         assertTrue("Sau khi lưu thì isSaved phải là true", state.isSaved)
         assertEquals(1, userWsRepo.getWordCount())
 
         // Bỏ lưu khỏi sổ tay
-        viewModel.toggleSave()
+        vm.toggleSave()
         advanceUntilIdle()
 
-        state = viewModel.uiState.value
+        state = vm.uiState.value
         assertFalse("Sau khi bỏ lưu thì isSaved phải là false", state.isSaved)
         assertEquals(0, userWsRepo.getWordCount())
     }
 
     @Test
     fun testLookup_nonExistentWord() = runTest(testDispatcher) {
-        viewModel.lookup("zzzzzzzz")
+        val vm = QuickLookupViewModel(
+            searchPipeline = searchPipeline,
+            etymologyRepository = etymologyRepo,
+            userWorkspaceRepository = userWsRepo,
+            srsRepository = srsRepo,
+            ioDispatcher = testDispatcher,
+            coroutineScope = this
+        )
+        vm.lookup("zzzzzzzz")
         advanceUntilIdle()
 
-        val state = viewModel.uiState.value
+        val state = vm.uiState.value
         assertFalse(state.isLoading)
         assertNull(state.result)
         assertNull(state.etymology)
