@@ -48,7 +48,7 @@ class QuickLookupViewModelTest {
 
         wsDb = WorkspaceDatabase.createInMemory(context)
         searchPipeline = SearchPipeline(coreHelper)
-        etymologyRepo = DefaultEtymologyRepository(coreHelper)
+        etymologyRepo = DefaultEtymologyRepository(coreHelper, testDispatcher)
         userWsRepo = UserWorkspaceRepository(wsDb)
         srsRepo = SrsRepository(wsDb, etymologyRepo)
 

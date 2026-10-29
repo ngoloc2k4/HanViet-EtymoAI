@@ -26,15 +26,22 @@ interface EtymologyRepository {
  * Triển khai mặc định của EtymologyRepository truy vấn trực tiếp CSDL Core SQLite
  */
 class DefaultEtymologyRepository(
-    private val dbProvider: () -> SQLiteDatabase
+    private val dbProvider: () -> SQLiteDatabase,
+    private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.IO
 ) : EtymologyRepository {
 
-    constructor(helper: CoreDatabaseHelper) : this(dbProvider = { helper.getReadableDatabase() })
+    constructor(
+        helper: CoreDatabaseHelper,
+        ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.IO
+    ) : this(
+        dbProvider = { helper.getReadableDatabase() },
+        ioDispatcher = ioDispatcher
+    )
 
     private val db: SQLiteDatabase
         get() = dbProvider()
 
-    override suspend fun getEtymologyForWord(lexemeId: Long): WordEtymology? = withContext(Dispatchers.IO) {
+    override suspend fun getEtymologyForWord(lexemeId: Long): WordEtymology? = withContext(ioDispatcher) {
         val lexSql = """
             SELECT l.lexeme_id, l.headword_nfc, l.origin_type, l.origin_status, l.phonetic_vi,
                    wo.adaptation_note, wo.verification_status
@@ -101,7 +108,7 @@ class DefaultEtymologyRepository(
         wordEtymology?.copy(segments = segments)
     }
 
-    override suspend fun getEtymologyForWordByHeadword(headword: String): WordEtymology? = withContext(Dispatchers.IO) {
+    override suspend fun getEtymologyForWordByHeadword(headword: String): WordEtymology? = withContext(ioDispatcher) {
         val cleanHw = headword.trim()
         if (cleanHw.isEmpty()) return@withContext null
         var lexId: Long? = null
@@ -115,9 +122,9 @@ class DefaultEtymologyRepository(
 
     override fun getEtymologyForWordFlow(lexemeId: Long): Flow<WordEtymology?> = flow {
         emit(getEtymologyForWord(lexemeId))
-    }.flowOn(Dispatchers.IO)
+    }.flowOn(ioDispatcher)
 
-    override suspend fun getEtymologyFamily(hanjaChar: String): EtymologyFamilyNode? = withContext(Dispatchers.IO) {
+    override suspend fun getEtymologyFamily(hanjaChar: String): EtymologyFamilyNode? = withContext(ioDispatcher) {
         val cleanHanja = hanjaChar.trim()
         if (cleanHanja.isEmpty()) return@withContext null
 
@@ -182,9 +189,9 @@ class DefaultEtymologyRepository(
 
     override fun getEtymologyFamilyFlow(hanjaChar: String): Flow<EtymologyFamilyNode?> = flow {
         emit(getEtymologyFamily(hanjaChar))
-    }.flowOn(Dispatchers.IO)
+    }.flowOn(ioDispatcher)
 
-    override suspend fun getHanjaMaster(hanjaChar: String): HanjaMaster? = withContext(Dispatchers.IO) {
+    override suspend fun getHanjaMaster(hanjaChar: String): HanjaMaster? = withContext(ioDispatcher) {
         val sql = "SELECT hanja_char, radical, stroke_count, meaning_vi, general_level FROM hanja_master WHERE hanja_char = ? LIMIT 1"
         db.rawQuery(sql, arrayOf(hanjaChar.trim())).use { cursor ->
             if (cursor.moveToFirst()) {
