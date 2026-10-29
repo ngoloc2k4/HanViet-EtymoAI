@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
  */
 interface EtymologyRepository {
     suspend fun getEtymologyForWord(lexemeId: Long): WordEtymology?
+    suspend fun getEtymologyForWordByHeadword(headword: String): WordEtymology?
     fun getEtymologyForWordFlow(lexemeId: Long): Flow<WordEtymology?>
 
     suspend fun getEtymologyFamily(hanjaChar: String): EtymologyFamilyNode?
@@ -98,6 +99,18 @@ class DefaultEtymologyRepository(
         }
 
         wordEtymology?.copy(segments = segments)
+    }
+
+    override suspend fun getEtymologyForWordByHeadword(headword: String): WordEtymology? = withContext(Dispatchers.IO) {
+        val cleanHw = headword.trim()
+        if (cleanHw.isEmpty()) return@withContext null
+        var lexId: Long? = null
+        db.rawQuery("SELECT lexeme_id FROM lexemes WHERE headword_nfc = ? LIMIT 1", arrayOf(cleanHw)).use { cursor ->
+            if (cursor.moveToFirst()) {
+                lexId = cursor.getLong(0)
+            }
+        }
+        lexId?.let { getEtymologyForWord(it) }
     }
 
     override fun getEtymologyForWordFlow(lexemeId: Long): Flow<WordEtymology?> = flow {

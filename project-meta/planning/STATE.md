@@ -6,11 +6,11 @@ Tài liệu này phản ánh trạng thái thực thi hiện tại của **HanVi
 
 ## 1. Trạng Thái Hiện Tại (Current Execution State)
 
-- **Trạng thái quy trình**: **PHASE 3 COMPLETED - READY FOR PHASE 4**
+- **Trạng thái quy trình**: **PHASE 4 COMPLETED - READY FOR PHASE 5**
 - **Khóa kế hoạch (Planning Lock)**: **LOCKED** (Đặc tả đã chốt tại `SPEC.md`, sẵn sàng bước vào thực thi)
-- **Giai đoạn hiện tại**: **Phase 4 - User Workspace & SRS Flashcards**
-- **Kế hoạch vừa hoàn thành**: `PLAN-03-02-etymology-badges-ui.md` (Summary: `02-SUMMARY.md`)
-- **Kế hoạch tiếp theo**: `PLAN-04-01-user-workspace-storage.md`
+- **Giai đoạn hiện tại**: **Phase 5 - Android System Integration**
+- **Kế hoạch vừa hoàn thành**: `PLAN-04-02-srs-sm2-review-system.md` (Summary: `02-SUMMARY.md`)
+- **Kế hoạch tiếp theo**: `PLAN-05-01-process-text-intent.md`
 - **Mã nguồn tiền nhiệm**: Đã đúc kết bài học tại `project-meta/history/LESSONS_LEARNED_FROM_V1.md`
 
 ---
@@ -23,8 +23,8 @@ Tài liệu này phản ánh trạng thái thực thi hiện tại của **HanVi
 | **Phase 1** | Dual-DB Architecture & Search Core | 2/2 | **COMPLETED** |
 | **Phase 2** | Morphology Rule Engine | 2/2 | **COMPLETED** |
 | **Phase 3** | Contextual Hanja & Etymology Display | 2/2 | **COMPLETED** |
-| **Phase 4** | User Workspace & SRS Flashcards | 0/2 | **IN PROGRESS** |
-| **Phase 5** | Android System Integration | 0/2 | BACKLOG |
+| **Phase 4** | User Workspace & SRS Flashcards | 2/2 | **COMPLETED** |
+| **Phase 5** | Android System Integration | 0/2 | **IN PROGRESS** |
 | **Phase 6** | Optional AI Layer (BYOK & Grounding) | 0/2 | BACKLOG |
 | **Phase 7** | Packaging, Hardening & CI/CD | 0/2 | BACKLOG |
 
@@ -48,6 +48,13 @@ Tài liệu này phản ánh trạng thái thực thi hiện tại của **HanVi
     - Viết `IrregularVerbRulesTest.kt` với 8 unit tests kiểm tra phân rã/ghép âm Hangul và 7 nhóm quy tắc.
     - Sửa lỗi formal ending '-ㅂ니다' trong nhóm RIEUL drop. Đã pass 25/25 unit tests và đóng gói APK Beta #8.
   - **Hoàn thành Phase 3 (Contextual Hanja & Etymology Display)**:
+    - Triển khai `HanjaSegmentModel.kt`, `EtymologyRepository.kt` hỗ trợ truy vấn cấu trúc từ nguyên và cây gia đình chữ Hán qua Reactive Flow.
+    - Xây dựng giao diện Jetpack Compose: `OriginTypeBadge`, `VerificationStatusBadge`, `EtymologyBreakdownView`, `WordDetailScreen` với BottomSheet tra cứu họ hàng chữ Hán.
+    - Đã xác thực 100% unit tests và phát hành bản Beta APK #12 trên GitHub Releases `beta-latest`.
+  - **Bắt đầu Phase 4 (User Workspace & SRS Flashcards)**:
+    - Thực thi Plan 4.1: Quản lý sổ tay từ vựng, nhãn (tags), ghi chú cá nhân (notes) và xuất/nhập sao lưu JSON.
+    - Thực thi Plan 4.2: Thuật toán SuperMemo SM-2 và màn hình Flashcard SRS.
+
     - Triển khai `HanjaSegmentModel.kt` (`OriginType`, `VerificationStatus`, `HanjaMaster`, `HanjaSegment`, `WordEtymology`, `EtymologyFamilyNode`).
     - Triển khai `EtymologyRepository.kt` hỗ trợ truy vấn chiết tự và trích xuất đồ thị họ từ vựng theo chữ Hán chung (`getEtymologyFamily`).
     - Viết `EtymologyRepositoryTest.kt` kiểm định trích xuất phân đoạn `기분` (氣 + 分) và họ từ của `學` (`학생`, `학교`).

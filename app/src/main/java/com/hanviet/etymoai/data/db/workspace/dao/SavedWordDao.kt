@@ -2,6 +2,7 @@ package com.hanviet.etymoai.data.db.workspace.dao
 
 import androidx.room.*
 import com.hanviet.etymoai.data.db.workspace.entity.SavedWordEntity
+import com.hanviet.etymoai.data.db.workspace.entity.SavedWordWithTags
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -31,6 +32,24 @@ interface SavedWordDao {
     @Query("SELECT * FROM saved_words WHERE stable_key = :stableKey LIMIT 1")
     suspend fun getByStableKey(stableKey: String): SavedWordEntity?
 
+    @Transaction
+    @Query("SELECT * FROM saved_words ORDER BY updated_at DESC")
+    fun getAllWithTagsFlow(): Flow<List<SavedWordWithTags>>
+
+    @Transaction
+    @Query("SELECT * FROM saved_words ORDER BY updated_at DESC")
+    suspend fun getAllWithTagsSync(): List<SavedWordWithTags>
+
+    @Transaction
+    @Query("SELECT * FROM saved_words WHERE id = :id LIMIT 1")
+    suspend fun getWithTagsById(id: Long): SavedWordWithTags?
+
     @Query("SELECT COUNT(*) FROM saved_words")
     suspend fun getCount(): Int
+
+    @Query("UPDATE saved_words SET is_favorite = :isFavorite, updated_at = :updatedAt WHERE id = :id")
+    suspend fun updateFavorite(id: Long, isFavorite: Boolean, updatedAt: Long = System.currentTimeMillis()): Int
+
+    @Query("DELETE FROM saved_words")
+    suspend fun clearAll(): Int
 }

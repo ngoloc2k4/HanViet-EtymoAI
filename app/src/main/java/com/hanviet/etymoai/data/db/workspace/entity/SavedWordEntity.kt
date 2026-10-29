@@ -13,7 +13,8 @@ import androidx.room.PrimaryKey
     tableName = "saved_words",
     indices = [
         Index(value = ["stable_key"], unique = false),
-        Index(value = ["created_at"])
+        Index(value = ["created_at"]),
+        Index(value = ["updated_at"])
     ]
 )
 data class SavedWordEntity(
@@ -32,11 +33,14 @@ data class SavedWordEntity(
     @ColumnInfo(name = "phonetic_snapshot")
     val phoneticSnapshot: String? = null,
 
+    @ColumnInfo(name = "origin_type")
+    val originType: String = "SINO_KOREAN",
+
     @ColumnInfo(name = "personal_notes")
     val personalNotes: String? = null,
 
     @ColumnInfo(name = "tags")
-    val tags: String? = null, // Phân loại theo nhãn dạng chuỗi (ví dụ: "TOPIK 1, Công sở")
+    val tags: String? = null, // Phân loại theo nhãn dạng chuỗi dự phòng
 
     @ColumnInfo(name = "is_favorite")
     val isFavorite: Boolean = false,

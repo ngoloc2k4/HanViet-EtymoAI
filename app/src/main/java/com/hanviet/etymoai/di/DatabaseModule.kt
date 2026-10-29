@@ -52,6 +52,34 @@ object DatabaseModule {
     }
 
     /**
+     * Cung cấp WordTagDao
+     */
+    fun provideWordTagDao(database: WorkspaceDatabase): com.hanviet.etymoai.data.db.workspace.dao.WordTagDao {
+        return database.wordTagDao()
+    }
+
+    /**
+     * Cung cấp PersonalNoteDao
+     */
+    fun providePersonalNoteDao(database: WorkspaceDatabase): com.hanviet.etymoai.data.db.workspace.dao.PersonalNoteDao {
+        return database.personalNoteDao()
+    }
+
+    /**
+     * Cung cấp SrsCardDao
+     */
+    fun provideSrsCardDao(database: WorkspaceDatabase): com.hanviet.etymoai.data.db.workspace.dao.SrsCardDao {
+        return database.srsCardDao()
+    }
+
+    /**
+     * Cung cấp UserWorkspaceRepository
+     */
+    fun provideUserWorkspaceRepository(database: WorkspaceDatabase): com.hanviet.etymoai.data.repository.UserWorkspaceRepository {
+        return com.hanviet.etymoai.data.repository.UserWorkspaceRepository(database)
+    }
+
+    /**
      * Cung cấp EtymologyRepository (Truy vấn từ nguyên và chiết tự Hán tự)
      */
     fun provideEtymologyRepository(helper: CoreDatabaseHelper): EtymologyRepository {

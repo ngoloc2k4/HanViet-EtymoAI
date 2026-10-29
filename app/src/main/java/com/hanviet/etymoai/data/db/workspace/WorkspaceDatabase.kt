@@ -5,11 +5,18 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.hanviet.etymoai.data.db.workspace.dao.AiCacheDao
+import com.hanviet.etymoai.data.db.workspace.dao.PersonalNoteDao
 import com.hanviet.etymoai.data.db.workspace.dao.SavedWordDao
 import com.hanviet.etymoai.data.db.workspace.dao.SearchHistoryDao
+import com.hanviet.etymoai.data.db.workspace.dao.SrsCardDao
+import com.hanviet.etymoai.data.db.workspace.dao.WordTagDao
 import com.hanviet.etymoai.data.db.workspace.entity.AiCacheEntity
+import com.hanviet.etymoai.data.db.workspace.entity.PersonalNoteEntity
 import com.hanviet.etymoai.data.db.workspace.entity.SavedWordEntity
 import com.hanviet.etymoai.data.db.workspace.entity.SearchHistoryEntity
+import com.hanviet.etymoai.data.db.workspace.entity.SrsCardEntity
+import com.hanviet.etymoai.data.db.workspace.entity.WordTagCrossRef
+import com.hanviet.etymoai.data.db.workspace.entity.WordTagEntity
 
 /**
  * WorkspaceDatabase: Cơ sở dữ liệu Room có thể GHI (Writable) dành riêng cho người dùng.
@@ -19,9 +26,13 @@ import com.hanviet.etymoai.data.db.workspace.entity.SearchHistoryEntity
     entities = [
         SavedWordEntity::class,
         SearchHistoryEntity::class,
-        AiCacheEntity::class
+        AiCacheEntity::class,
+        WordTagEntity::class,
+        WordTagCrossRef::class,
+        PersonalNoteEntity::class,
+        SrsCardEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class WorkspaceDatabase : RoomDatabase() {
@@ -29,6 +40,9 @@ abstract class WorkspaceDatabase : RoomDatabase() {
     abstract fun savedWordDao(): SavedWordDao
     abstract fun searchHistoryDao(): SearchHistoryDao
     abstract fun aiCacheDao(): AiCacheDao
+    abstract fun wordTagDao(): WordTagDao
+    abstract fun personalNoteDao(): PersonalNoteDao
+    abstract fun srsCardDao(): SrsCardDao
 
     companion object {
         const val DB_NAME = "user_workspace.db"
