@@ -68,6 +68,7 @@ abstract class WorkspaceDatabase : RoomDatabase() {
 
         /**
          * Khởi tạo database trong bộ nhớ (In-Memory) chuyên dùng cho Unit Test.
+         * Sử dụng synchronous direct executor để tránh race condition trong Coroutines Unit Tests.
          */
         fun createInMemory(context: Context): WorkspaceDatabase {
             return Room.inMemoryDatabaseBuilder(
@@ -75,6 +76,8 @@ abstract class WorkspaceDatabase : RoomDatabase() {
                 WorkspaceDatabase::class.java
             )
             .allowMainThreadQueries()
+            .setQueryExecutor { it.run() }
+            .setTransactionExecutor { it.run() }
             .build()
         }
     }

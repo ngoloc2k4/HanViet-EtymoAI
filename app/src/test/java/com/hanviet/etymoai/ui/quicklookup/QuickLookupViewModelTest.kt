@@ -33,7 +33,6 @@ class QuickLookupViewModelTest {
     private lateinit var etymologyRepo: DefaultEtymologyRepository
     private lateinit var userWsRepo: UserWorkspaceRepository
     private lateinit var srsRepo: SrsRepository
-    private lateinit var viewModel: QuickLookupViewModel
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -51,14 +50,6 @@ class QuickLookupViewModelTest {
         etymologyRepo = DefaultEtymologyRepository(coreHelper, testDispatcher)
         userWsRepo = UserWorkspaceRepository(wsDb)
         srsRepo = SrsRepository(wsDb, etymologyRepo)
-
-        viewModel = QuickLookupViewModel(
-            searchPipeline = searchPipeline,
-            etymologyRepository = etymologyRepo,
-            userWorkspaceRepository = userWsRepo,
-            srsRepository = srsRepo,
-            ioDispatcher = testDispatcher
-        )
     }
 
     @After
