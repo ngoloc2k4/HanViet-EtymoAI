@@ -6,11 +6,11 @@ Tài liệu này phản ánh trạng thái thực thi hiện tại của **HanVi
 
 ## 1. Trạng Thái Hiện Tại (Current Execution State)
 
-- **Trạng thái quy trình**: **PHASE 4 COMPLETED - READY FOR PHASE 5**
+- **Trạng thái quy trình**: **PHASE 5 COMPLETED - READY FOR PHASE 6**
 - **Khóa kế hoạch (Planning Lock)**: **LOCKED** (Đặc tả đã chốt tại `SPEC.md`, sẵn sàng bước vào thực thi)
-- **Giai đoạn hiện tại**: **Phase 5 - Android System Integration**
-- **Kế hoạch vừa hoàn thành**: `PLAN-04-02-srs-sm2-review-system.md` (Summary: `02-SUMMARY.md`)
-- **Kế hoạch tiếp theo**: `PLAN-05-01-process-text-intent.md`
+- **Giai đoạn hiện tại**: **Phase 6 - Optional AI Layer (BYOK & Grounding)**
+- **Kế hoạch vừa hoàn thành**: `PLAN-05-02-quick-lookup-bottom-sheet.md` (Summary: `02-SUMMARY.md`)
+- **Kế hoạch tiếp theo**: `PLAN-06-01-byok-multi-provider-client.md`
 - **Mã nguồn tiền nhiệm**: Đã đúc kết bài học tại `project-meta/history/LESSONS_LEARNED_FROM_V1.md`
 
 ---
@@ -24,8 +24,8 @@ Tài liệu này phản ánh trạng thái thực thi hiện tại của **HanVi
 | **Phase 2** | Morphology Rule Engine | 2/2 | **COMPLETED** |
 | **Phase 3** | Contextual Hanja & Etymology Display | 2/2 | **COMPLETED** |
 | **Phase 4** | User Workspace & SRS Flashcards | 2/2 | **COMPLETED** |
-| **Phase 5** | Android System Integration | 0/2 | **IN PROGRESS** |
-| **Phase 6** | Optional AI Layer (BYOK & Grounding) | 0/2 | BACKLOG |
+| **Phase 5** | Android System Integration | 2/2 | **COMPLETED** |
+| **Phase 6** | Optional AI Layer (BYOK & Grounding) | 0/2 | **IN PROGRESS** |
 | **Phase 7** | Packaging, Hardening & CI/CD | 0/2 | BACKLOG |
 
 ---

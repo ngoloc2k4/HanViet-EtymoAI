@@ -95,4 +95,11 @@ object DatabaseModule {
     fun provideEtymologyRepository(helper: CoreDatabaseHelper): EtymologyRepository {
         return DefaultEtymologyRepository(helper)
     }
+
+    /**
+     * Cung cấp SearchPipeline
+     */
+    fun provideSearchPipeline(helper: CoreDatabaseHelper): com.hanviet.etymoai.domain.search.SearchPipeline {
+        return com.hanviet.etymoai.domain.search.SearchPipeline(helper)
+    }
 }
