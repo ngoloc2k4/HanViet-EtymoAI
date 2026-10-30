@@ -103,55 +103,52 @@ sealed interface AppScreen {
     data object SearchHistory : AppScreen
 }
 
-private val AppScreenSaver: Saver<AppScreen, String> = Saver(
-    save = { screen ->
-        when (screen) {
-            is AppScreen.Home -> "Home"
-            is AppScreen.SearchResults -> "SearchResults|${screen.query}"
-            is AppScreen.WordDetail -> "WordDetail|${screen.lexemeId}|${screen.headword}"
-            is AppScreen.MyVocabulary -> "MyVocabulary"
-            is AppScreen.SrsReview -> "SrsReview"
-            is AppScreen.StudyStats -> "StudyStats"
-            is AppScreen.AiChat -> "AiChat"
-            is AppScreen.AiDetailAnalysis -> "AiDetailAnalysis|${screen.headword}"
-            is AppScreen.SentenceAnalyzer -> "SentenceAnalyzer"
-            is AppScreen.SecuritySettings -> "SecuritySettings"
-            is AppScreen.DataPackManager -> "DataPackManager"
-            is AppScreen.AppearanceSettings -> "AppearanceSettings"
-            is AppScreen.SettingsOverview -> "SettingsOverview"
-            is AppScreen.AboutDataLicense -> "AboutDataLicense"
-            is AppScreen.SrsDeckList -> "SrsDeckList"
-            is AppScreen.HanjaExplorer -> "HanjaExplorer|${screen.initialHanja}"
-            is AppScreen.SearchHistory -> "SearchHistory"
-        }
-    },
-    restore = { str ->
-        val parts = str.split("|")
-        when (parts[0]) {
-            "Home" -> AppScreen.Home
-            "SearchResults" -> AppScreen.SearchResults(parts.getOrElse(1) { "도서관" })
-            "WordDetail" -> AppScreen.WordDetail(
-                lexemeId = parts.getOrNull(1)?.toLongOrNull() ?: 1L,
-                headword = parts.getOrElse(2) { "" }
-            )
-            "MyVocabulary" -> AppScreen.MyVocabulary
-            "SrsReview" -> AppScreen.SrsReview
-            "StudyStats" -> AppScreen.StudyStats
-            "AiChat" -> AppScreen.AiChat
-            "AiDetailAnalysis" -> AppScreen.AiDetailAnalysis(parts.getOrElse(1) { "" })
-            "SentenceAnalyzer" -> AppScreen.SentenceAnalyzer
-            "SecuritySettings" -> AppScreen.SecuritySettings
-            "DataPackManager" -> AppScreen.DataPackManager
-            "AppearanceSettings" -> AppScreen.AppearanceSettings
-            "SettingsOverview" -> AppScreen.SettingsOverview
-            "AboutDataLicense" -> AppScreen.AboutDataLicense
-            "SrsDeckList" -> AppScreen.SrsDeckList
-            "HanjaExplorer" -> AppScreen.HanjaExplorer(parts.getOrElse(1) { "學" })
-            "SearchHistory" -> AppScreen.SearchHistory
-            else -> AppScreen.Home
-        }
+private fun serializeScreen(screen: AppScreen): String = when (screen) {
+    is AppScreen.Home -> "Home"
+    is AppScreen.SearchResults -> "SearchResults|${screen.query}"
+    is AppScreen.WordDetail -> "WordDetail|${screen.lexemeId}|${screen.headword}"
+    is AppScreen.MyVocabulary -> "MyVocabulary"
+    is AppScreen.SrsReview -> "SrsReview"
+    is AppScreen.StudyStats -> "StudyStats"
+    is AppScreen.AiChat -> "AiChat"
+    is AppScreen.AiDetailAnalysis -> "AiDetailAnalysis|${screen.headword}"
+    is AppScreen.SentenceAnalyzer -> "SentenceAnalyzer"
+    is AppScreen.SecuritySettings -> "SecuritySettings"
+    is AppScreen.DataPackManager -> "DataPackManager"
+    is AppScreen.AppearanceSettings -> "AppearanceSettings"
+    is AppScreen.SettingsOverview -> "SettingsOverview"
+    is AppScreen.AboutDataLicense -> "AboutDataLicense"
+    is AppScreen.SrsDeckList -> "SrsDeckList"
+    is AppScreen.HanjaExplorer -> "HanjaExplorer|${screen.initialHanja}"
+    is AppScreen.SearchHistory -> "SearchHistory"
+}
+
+private fun deserializeScreen(str: String): AppScreen {
+    val parts = str.split("|")
+    return when (parts[0]) {
+        "Home" -> AppScreen.Home
+        "SearchResults" -> AppScreen.SearchResults(parts.getOrElse(1) { "도서관" })
+        "WordDetail" -> AppScreen.WordDetail(
+            lexemeId = parts.getOrNull(1)?.toLongOrNull() ?: 1L,
+            headword = parts.getOrElse(2) { "" }
+        )
+        "MyVocabulary" -> AppScreen.MyVocabulary
+        "SrsReview" -> AppScreen.SrsReview
+        "StudyStats" -> AppScreen.StudyStats
+        "AiChat" -> AppScreen.AiChat
+        "AiDetailAnalysis" -> AppScreen.AiDetailAnalysis(parts.getOrElse(1) { "" })
+        "SentenceAnalyzer" -> AppScreen.SentenceAnalyzer
+        "SecuritySettings" -> AppScreen.SecuritySettings
+        "DataPackManager" -> AppScreen.DataPackManager
+        "AppearanceSettings" -> AppScreen.AppearanceSettings
+        "SettingsOverview" -> AppScreen.SettingsOverview
+        "AboutDataLicense" -> AppScreen.AboutDataLicense
+        "SrsDeckList" -> AppScreen.SrsDeckList
+        "HanjaExplorer" -> AppScreen.HanjaExplorer(parts.getOrElse(1) { "學" })
+        "SearchHistory" -> AppScreen.SearchHistory
+        else -> AppScreen.Home
     }
-)
+}
 
 class MainActivity : ComponentActivity() {
 
@@ -174,14 +171,13 @@ class MainActivity : ComponentActivity() {
                         save = { list ->
                             val arrayList = ArrayList<String>(list.size)
                             list.forEach { screen ->
-                                val serialized = AppScreenSaver.save(this, screen) ?: "Home"
-                                arrayList.add(serialized)
+                                arrayList.add(serializeScreen(screen))
                             }
                             arrayList
                         },
                         restore = { savedList ->
                             mutableStateListOf<AppScreen>().apply {
-                                val restored = savedList.mapNotNull { AppScreenSaver.restore(it) }
+                                val restored = savedList.map { deserializeScreen(it) }
                                 if (restored.isEmpty()) add(AppScreen.Home) else addAll(restored)
                             }
                         }
