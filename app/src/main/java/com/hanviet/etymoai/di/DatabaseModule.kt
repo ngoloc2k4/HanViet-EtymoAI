@@ -124,15 +124,21 @@ object DatabaseModule {
         providerType: com.hanviet.etymoai.ai.provider.AiProviderType,
         apiKeyStorage: com.hanviet.etymoai.ai.security.ApiKeyStorage
     ): com.hanviet.etymoai.ai.provider.AiProvider {
+        val endpoint = apiKeyStorage.getEndpoint(providerType)
+        val model = apiKeyStorage.getModel(providerType)
         return when (providerType) {
             com.hanviet.etymoai.ai.provider.AiProviderType.GEMINI ->
                 com.hanviet.etymoai.ai.provider.GeminiClient(
-                    apiKeyProvider = { apiKeyStorage.getApiKey(com.hanviet.etymoai.ai.provider.AiProviderType.GEMINI) }
+                    apiKeyProvider = { apiKeyStorage.getApiKey(com.hanviet.etymoai.ai.provider.AiProviderType.GEMINI) },
+                    baseUrl = endpoint,
+                    modelName = model
                 )
             else ->
                 com.hanviet.etymoai.ai.provider.OpenAiCompatibleClient(
                     providerType = providerType,
-                    apiKeyProvider = { apiKeyStorage.getApiKey(providerType) }
+                    apiKeyProvider = { apiKeyStorage.getApiKey(providerType) },
+                    baseUrl = endpoint,
+                    modelName = model
                 )
         }
     }

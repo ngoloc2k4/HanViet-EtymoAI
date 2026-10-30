@@ -20,6 +20,10 @@ interface ApiKeyStorage {
     fun clearApiKey(provider: AiProviderType)
     fun hasApiKey(provider: AiProviderType): Boolean
     fun clearAllKeys()
+    fun saveEndpoint(provider: AiProviderType, endpoint: String)
+    fun getEndpoint(provider: AiProviderType): String
+    fun saveModel(provider: AiProviderType, model: String)
+    fun getModel(provider: AiProviderType): String
 }
 
 /**
@@ -35,6 +39,8 @@ class SecureApiKeyStorage(
         private const val PREFS_NAME = "secure_byok_api_keys"
         private const val KEY_PREFIX = "byok_key_"
         private const val IV_PREFIX = "byok_iv_"
+        private const val ENDPOINT_PREFIX = "byok_endpoint_"
+        private const val MODEL_PREFIX = "byok_model_"
         private const val MASTER_KEY_STORAGE = "app_master_entropy_v1"
         private const val AES_GCM_TAG_LENGTH = 128
         private const val GCM_IV_LENGTH = 12 // 96 bits chuẩn cho AES-GCM
@@ -138,7 +144,37 @@ class SecureApiKeyStorage(
         AiProviderType.entries.forEach { p ->
             editor.remove(IV_PREFIX + p.name)
             editor.remove(KEY_PREFIX + p.name)
+            editor.remove(ENDPOINT_PREFIX + p.name)
+            editor.remove(MODEL_PREFIX + p.name)
         }
         editor.apply()
+    }
+
+    override fun saveEndpoint(provider: AiProviderType, endpoint: String) {
+        val trimmed = endpoint.trim()
+        if (trimmed.isEmpty()) {
+            prefs.edit().remove(ENDPOINT_PREFIX + provider.name).apply()
+        } else {
+            prefs.edit().putString(ENDPOINT_PREFIX + provider.name, trimmed).apply()
+        }
+    }
+
+    override fun getEndpoint(provider: AiProviderType): String {
+        val custom = prefs.getString(ENDPOINT_PREFIX + provider.name, null)
+        return if (!custom.isNullOrBlank()) custom else provider.defaultBaseUrl
+    }
+
+    override fun saveModel(provider: AiProviderType, model: String) {
+        val trimmed = model.trim()
+        if (trimmed.isEmpty()) {
+            prefs.edit().remove(MODEL_PREFIX + provider.name).apply()
+        } else {
+            prefs.edit().putString(MODEL_PREFIX + provider.name, trimmed).apply()
+        }
+    }
+
+    override fun getModel(provider: AiProviderType): String {
+        val custom = prefs.getString(MODEL_PREFIX + provider.name, null)
+        return if (!custom.isNullOrBlank()) custom else provider.defaultModel
     }
 }

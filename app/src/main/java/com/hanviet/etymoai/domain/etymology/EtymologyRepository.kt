@@ -105,7 +105,86 @@ class DefaultEtymologyRepository(
             }
         }
 
-        wordEtymology?.copy(segments = segments)
+        // Truy vấn nghĩa từ điển, từ loại và ví dụ từ bảng senses
+        val senseSql = """
+            SELECT part_of_speech, meaning_vi, definition_ko, examples_json
+            FROM senses
+            WHERE lexeme_id = ?
+            ORDER BY display_order ASC
+            LIMIT 1
+        """.trimIndent()
+
+        var partOfSpeech: String? = null
+        var meaningVi: String? = null
+        var definitionKo: String? = null
+        val examples = mutableListOf<WordExample>()
+
+        db.rawQuery(senseSql, arrayOf(lexemeId.toString())).use { cursor ->
+            if (cursor.moveToFirst()) {
+                partOfSpeech = if (!cursor.isNull(0)) cursor.getString(0) else null
+                meaningVi = if (!cursor.isNull(1)) cursor.getString(1) else null
+                definitionKo = if (!cursor.isNull(2)) cursor.getString(2) else null
+                val exJson = if (!cursor.isNull(3)) cursor.getString(3) else null
+                if (!exJson.isNullOrBlank()) {
+                    try {
+                        val jsonArray = org.json.JSONArray(exJson)
+                        for (i in 0 until jsonArray.length()) {
+                            val obj = jsonArray.getJSONObject(i)
+                            val ko = obj.optString("ko", "")
+                            val vi = obj.optString("vi", "")
+                            if (ko.isNotBlank()) {
+                                examples.add(WordExample(korean = ko, vietnamese = vi))
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+
+        // Truy vấn các từ vựng liên quan có chung chữ Hán
+        val relatedWords = mutableListOf<RelatedWordSummary>()
+        val hanjaChars = segments.mapNotNull { it.hanjaChar }.distinct()
+        if (hanjaChars.isNotEmpty()) {
+            val placeholders = hanjaChars.joinToString(",") { "?" }
+            val relSql = """
+                SELECT DISTINCT l.lexeme_id, l.headword_nfc, l.phonetic_vi, l.origin_type,
+                       (SELECT meaning_vi FROM senses s WHERE s.lexeme_id = l.lexeme_id ORDER BY s.display_order ASC LIMIT 1) AS primary_meaning
+                FROM lexeme_hanja_segments seg
+                JOIN lexemes l ON seg.lexeme_id = l.lexeme_id
+                WHERE seg.hanja_char IN ($placeholders) AND l.lexeme_id != ?
+                LIMIT 10
+            """.trimIndent()
+            val args = (hanjaChars + lexemeId.toString()).toTypedArray()
+            db.rawQuery(relSql, args).use { cursor ->
+                while (cursor.moveToNext()) {
+                    val rId = cursor.getLong(0)
+                    val rHw = cursor.getString(1)
+                    val rPhonetic = if (!cursor.isNull(2)) cursor.getString(2) else null
+                    val rOrigType = OriginType.fromString(cursor.getString(3))
+                    val rMeaning = if (!cursor.isNull(4)) cursor.getString(4) else ""
+                    relatedWords.add(
+                        RelatedWordSummary(
+                            lexemeId = rId,
+                            headword = rHw,
+                            phoneticVi = rPhonetic,
+                            meaningVi = rMeaning,
+                            originType = rOrigType
+                        )
+                    )
+                }
+            }
+        }
+
+        wordEtymology?.copy(
+            segments = segments,
+            partOfSpeech = partOfSpeech,
+            meaningVi = meaningVi,
+            definitionKo = definitionKo,
+            examples = examples,
+            relatedWords = relatedWords
+        )
     }
 
     override suspend fun getEtymologyForWordByHeadword(headword: String): WordEtymology? = withContext(ioDispatcher) {

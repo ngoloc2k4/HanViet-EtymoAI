@@ -566,6 +566,15 @@ class MainActivity : ComponentActivity() {
                                             3 -> navigateTo(AppScreen.MyVocabulary, isTabSwitch = true)
                                             4 -> navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
                                         }
+                                    },
+                                    onNavigateToSearch = {
+                                        navigateTo(AppScreen.SearchResults(), isTabSwitch = true)
+                                    },
+                                    onNavigateToHanja = {
+                                        navigateTo(AppScreen.HanjaExplorer("學"))
+                                    },
+                                    onOpenSentenceAnalyzer = {
+                                        navigateTo(AppScreen.SentenceAnalyzer)
                                     }
                                 )
                             }

@@ -29,12 +29,16 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -46,6 +50,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -78,11 +83,15 @@ fun AiChatScreen(
     onOpenDetailAnalysis: (String) -> Unit = {},
     onSaveWord: (String) -> Unit = {},
     onSpeakWord: (String) -> Unit = {},
-    onNavigateTab: (Int) -> Unit = {}
+    onNavigateTab: (Int) -> Unit = {},
+    onNavigateToSearch: () -> Unit = {},
+    onNavigateToHanja: () -> Unit = {},
+    onOpenSentenceAnalyzer: () -> Unit = {}
 ) {
     var inputText by remember { mutableStateOf("") }
     var selectedModeIndex by remember { mutableIntStateOf(2) } // 2 = [ 💬 AI Chat ]
     var selectedBottomTab by remember { mutableIntStateOf(2) } // 2 = AI Chat
+    var showToolsDialog by remember { mutableStateOf(false) }
 
     // Danh sách câu hỏi chat mẫu
     val starterQuestions = listOf(
@@ -193,7 +202,15 @@ fun AiChatScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(32.dp)
-                                .clickable { selectedModeIndex = index }
+                                .clickable {
+                                    selectedModeIndex = index
+                                    when (index) {
+                                        0 -> onNavigateToSearch()
+                                        1 -> onNavigateToHanja()
+                                        2 -> { /* Đang ở tab AI Chat */ }
+                                        3 -> showToolsDialog = true
+                                    }
+                                }
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
@@ -537,6 +554,90 @@ fun AiChatScreen(
                     }
                 }
             }
+        }
+
+        // Dialog Công Cụ Mở Rộng AI khi bấm nút ⊞ Thêm
+        if (showToolsDialog) {
+            AlertDialog(
+                onDismissRequest = { showToolsDialog = false },
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Extension,
+                        contentDescription = null,
+                        tint = Color(0xFF4F46E5)
+                    )
+                },
+                title = {
+                    Text(
+                        text = "Công Cụ Mở Rộng AI",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Chọn tính năng bạn muốn sử dụng cùng trợ lý AI:",
+                            fontSize = 13.sp,
+                            color = Color(0xFF64748B)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Button(
+                            onClick = {
+                                showToolsDialog = false
+                                onOpenSentenceAnalyzer()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C3AED))
+                        ) {
+                            Text("✨ AI Phân tích câu & Ngữ pháp", fontSize = 12.sp)
+                        }
+
+                        Button(
+                            onClick = {
+                                showToolsDialog = false
+                                onOpenDetailAnalysis("도서관")
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
+                        ) {
+                            Text("📊 Sơ đồ Phân tích từ nguyên chi tiết", fontSize = 12.sp)
+                        }
+
+                        Button(
+                            onClick = {
+                                showToolsDialog = false
+                                onNavigateToHanja()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669))
+                        ) {
+                            Text("文A Khám phá Chữ Hán (Hanja Explorer)", fontSize = 12.sp)
+                        }
+
+                        Button(
+                            onClick = {
+                                showToolsDialog = false
+                                onNavigateToSearch()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF475569))
+                        ) {
+                            Text("🔍 Tra cứu từ điển FTS5", fontSize = 12.sp)
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showToolsDialog = false }) {
+                        Text("Đóng")
+                    }
+                }
+            )
         }
     }
 }

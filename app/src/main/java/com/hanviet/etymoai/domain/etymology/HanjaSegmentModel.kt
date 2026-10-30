@@ -91,6 +91,14 @@ data class EtymologyFamilyNode(
 )
 
 /**
+ * Ví dụ câu thực tế của từ vựng tiếng Hàn và bản dịch tiếng Việt.
+ */
+data class WordExample(
+    val korean: String,
+    val vietnamese: String
+)
+
+/**
  * Hồ sơ từ nguyên hoàn chỉnh của một mục từ tiếng Hàn.
  */
 data class WordEtymology(
@@ -100,5 +108,10 @@ data class WordEtymology(
     val verificationStatus: VerificationStatus,
     val phoneticVi: String? = null,
     val segments: List<HanjaSegment> = emptyList(),
-    val adaptationNote: String? = null
+    val adaptationNote: String? = null,
+    val partOfSpeech: String? = null,
+    val meaningVi: String? = null,
+    val definitionKo: String? = null,
+    val examples: List<WordExample> = emptyList(),
+    val relatedWords: List<RelatedWordSummary> = emptyList()
 )

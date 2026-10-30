@@ -86,6 +86,7 @@ import com.hanviet.etymoai.domain.etymology.OriginType
 import com.hanviet.etymoai.domain.etymology.RelatedWordSummary
 import com.hanviet.etymoai.domain.etymology.VerificationStatus
 import com.hanviet.etymoai.domain.etymology.WordEtymology
+import com.hanviet.etymoai.domain.etymology.WordExample
 import kotlinx.coroutines.launch
 
 /**
@@ -164,7 +165,20 @@ fun WordDetailScreen(
                         meaningVi = "tòa nhà, quán, cơ quan, viện"
                     )
                 ),
-                adaptationNote = "Đồ + Thư + Quán → Thư viện: nơi lưu trữ sách và tài liệu công cộng."
+                adaptationNote = "Đồ + Thư + Quán → Thư viện: nơi lưu trữ sách và tài liệu công cộng.",
+                partOfSpeech = "Danh từ",
+                meaningVi = "thư viện, nhà sách công cộng phục vụ đọc và mượn tư liệu",
+                definitionKo = "온갖 도서, 문서, 기록, 출판물 따위의 자료를 모아 두고 일반이 열람하게 하는 시설.",
+                examples = listOf(
+                    WordExample("주말에는 국립중앙도서관에서 책을 읽거나 공부해요.", "Vào cuối tuần, tôi đọc sách hoặc học bài ở Thư viện Quốc gia."),
+                    WordExample("도서관에서 책을 대출하고 반납했습니다.", "Tôi đã mượn và trả sách tại thư viện.")
+                ),
+                relatedWords = listOf(
+                    RelatedWordSummary(101L, "도서", "Đồ thư", "sách vở, tư liệu"),
+                    RelatedWordSummary(102L, "독서", "Độc thư", "việc đọc sách"),
+                    RelatedWordSummary(103L, "서점", "Thư tiệm", "hiệu sách"),
+                    RelatedWordSummary(104L, "박물관", "Bác vật quán", "viện bảo tàng")
+                )
             )
         }
         isLoading = false
@@ -223,74 +237,115 @@ fun WordDetailScreen(
                     )
                 }
 
-                // 3. Khối ♊ Phân tích từ nguyên (Visual Morpheme Equation)
-                item {
-                    VisualMorphemeEquationCard(
-                        word = word,
-                        onHanjaClick = { hanja ->
-                            scope.launch {
-                                val node = repository?.getEtymologyFamily(hanja) ?: EtymologyFamilyNode(
-                                    hanjaChar = hanja,
-                                    readingVi = when (hanja) {
-                                        "圖" -> "Đồ"
-                                        "書" -> "Thư"
-                                        "館" -> "Quán"
-                                        else -> "Hán"
-                                    },
-                                    meaningVi = when (hanja) {
-                                        "圖" -> "bản vẽ, hình ảnh, mưu toan"
-                                        "書" -> "sách vở, viết văn"
-                                        "館" -> "tòa nhà, dinh quán, viện"
-                                        else -> "Ý nghĩa Hán tự"
-                                    },
-                                    radical = when (hanja) {
-                                        "圖" -> "囗"
-                                        "書" -> "曰"
-                                        "館" -> "食"
-                                        else -> null
-                                    },
-                                    strokeCount = when (hanja) {
-                                        "圖" -> 14
-                                        "書" -> 10
-                                        "館" -> 16
-                                        else -> null
-                                    },
-                                    relatedWords = listOf(
-                                        RelatedWordSummary(101L, "도서", "Đồ thư", "sách, tư liệu"),
-                                        RelatedWordSummary(102L, "독서", "Độc thư", "việc đọc sách"),
-                                        RelatedWordSummary(103L, "서점", "Thư tiệm", "hiệu sách")
-                                    )
+                // 3. Nội dung hiển thị chuyển đổi theo Tab được kích hoạt
+                when (selectedTabIndex) {
+                    0 -> {
+                        // TAB 0: TỔNG QUAN (Thông tin từ điển + Chiết tự tóm tắt + Ví dụ mẫu)
+                        item {
+                            DictionaryInfoCard(
+                                word = word,
+                                onSpeak = { onSpeakWord(word.headword) }
+                            )
+                        }
+                        item {
+                            VisualMorphemeEquationCard(
+                                word = word,
+                                onHanjaClick = { hanja ->
+                                    scope.launch {
+                                        val node = repository?.getEtymologyFamily(hanja) ?: EtymologyFamilyNode(
+                                            hanjaChar = hanja,
+                                            readingVi = when (hanja) {
+                                                "圖" -> "Đồ"
+                                                "書" -> "Thư"
+                                                "館" -> "Quán"
+                                                else -> "Hán"
+                                            },
+                                            meaningVi = when (hanja) {
+                                                "圖" -> "bản vẽ, hình ảnh, mưu toan"
+                                                "書" -> "sách vở, viết văn"
+                                                "館" -> "tòa nhà, dinh quán, viện"
+                                                else -> "Ý nghĩa Hán tự"
+                                            },
+                                            radical = when (hanja) {
+                                                "圖" -> "囗"
+                                                "書" -> "曰"
+                                                "館" -> "食"
+                                                else -> null
+                                            },
+                                            strokeCount = when (hanja) {
+                                                "圖" -> 14
+                                                "書" -> 10
+                                                "館" -> 16
+                                                else -> null
+                                            },
+                                            relatedWords = listOf(
+                                                RelatedWordSummary(101L, "도서", "Đồ thư", "sách, tư liệu"),
+                                                RelatedWordSummary(102L, "독서", "Độc thư", "việc đọc sách"),
+                                                RelatedWordSummary(103L, "서점", "Thư tiệm", "hiệu sách")
+                                            )
+                                        )
+                                        selectedFamilyNode = node
+                                        sheetState.show()
+                                    }
+                                }
+                            )
+                        }
+                        if (word.examples.isNotEmpty()) {
+                            item {
+                                ExampleSentenceCard(
+                                    examples = word.examples.take(2),
+                                    onSpeakSentence = onSpeakWord
                                 )
-                                selectedFamilyNode = node
-                                sheetState.show()
                             }
                         }
-                    )
-                }
+                    }
 
-                // 4. Khối 🕘 Thông tin từ điển (Dictionary Info Table)
-                item {
-                    DictionaryInfoCard(
-                        word = word,
-                        onSpeak = { onSpeakWord(word.headword) }
-                    )
-                }
-
-                // 5. Khối 🔗 Nguồn gốc & Liên quan (Origin & Co-etymology)
-                item {
-                    OriginAndRelatedCard(
-                        onChipClick = { phrase ->
-                            onAskAiClick(phrase)
+                    1 -> {
+                        // TAB 1: TỪ NGUYÊN (Visual Morpheme Equation chi tiết + Phả hệ chiết tự + Thích ứng ngữ âm)
+                        item {
+                            VisualMorphemeEquationCard(
+                                word = word,
+                                onHanjaClick = { hanja ->
+                                    scope.launch {
+                                        val node = repository?.getEtymologyFamily(hanja) ?: EtymologyFamilyNode(
+                                            hanjaChar = hanja,
+                                            readingVi = "Hán",
+                                            meaningVi = "Ý nghĩa Hán tự"
+                                        )
+                                        selectedFamilyNode = node
+                                        sheetState.show()
+                                    }
+                                }
+                            )
                         }
-                    )
-                }
+                        item {
+                            EtymologyAdaptationCard(word = word)
+                        }
+                    }
 
-                // 6. Khối 📖 Ví dụ câu thực tế
-                item {
-                    ExampleSentenceCard(
-                        koreanSentence = "주말에는 국립중앙도서관에서 책을 읽거나 공부해요.",
-                        vietnameseSentence = "Vào cuối tuần, tôi đọc sách hoặc học bài ở Thư viện Quốc gia."
-                    )
+                    2 -> {
+                        // TAB 2: VÍ DỤ (Toàn bộ các câu ví dụ từ điển NIKL kèm âm thanh)
+                        item {
+                            ExampleSentenceCard(
+                                examples = if (word.examples.isNotEmpty()) word.examples else listOf(
+                                    WordExample("${word.headword} 문장을 공부합니다.", "Tôi học câu ví dụ với từ ${word.headword}."),
+                                    WordExample("선생님께서 ${word.headword}에 대해 설명하셨습니다.", "Thầy giáo đã giải thích về ${word.headword}.")
+                                ),
+                                onSpeakSentence = onSpeakWord
+                            )
+                        }
+                    }
+
+                    3 -> {
+                        // TAB 3: LIÊN QUAN (Từ vựng đồng gốc Hán tự + Cụm từ thường gặp)
+                        item {
+                            OriginAndRelatedCard(
+                                word = word,
+                                onWordClick = onWordClick,
+                                onChipClick = onAskAiClick
+                            )
+                        }
+                    }
                 }
 
                 // 7. Cụm Nút Hành Động Cuối Trang (Bottom Action Area)
@@ -831,15 +886,26 @@ private fun DictionaryInfoCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            val hanjaFull = word.segments.mapNotNull { it.hanjaChar }.joinToString("").ifBlank { "圖書館" }
-            val hanVietFull = word.segments.mapNotNull { it.readingVi }.joinToString(" - ").ifBlank { "Đồ - Thư - Quán" }
+            val hanjaFull = word.segments.mapNotNull { it.hanjaChar }.joinToString("").ifBlank { "—" }
+            val hanVietFull = word.segments.mapNotNull { it.readingVi }.joinToString(" - ").ifBlank { word.phoneticVi ?: "—" }
 
-            DictionaryInfoRow(label = "Từ gốc Hán tự", value = hanjaFull, isHanja = true)
+            DictionaryInfoRow(label = "Từ gốc Hán tự", value = hanjaFull, isHanja = hanjaFull != "—")
             DictionaryInfoRow(label = "Âm Hán-Việt", value = hanVietFull, isHighlight = true)
-            DictionaryInfoRow(label = "Từ loại", value = "Danh từ")
-            DictionaryInfoRow(label = "Cấp độ", value = "Trung cấp (TOPIK 3-4)")
-            DictionaryInfoPronounceRow(label = "Phát âm", hangul = "[도서관]", roman = "do-seo-gwan", onSpeak = onSpeak)
-            DictionaryInfoRow(label = "Nghĩa tiếng Việt", value = "thư viện, nhà sách (công cộng)")
+            DictionaryInfoRow(label = "Từ loại", value = word.partOfSpeech ?: "Danh từ")
+            DictionaryInfoRow(label = "Nguồn gốc", value = word.originType.titleVi)
+            DictionaryInfoPronounceRow(
+                label = "Phát âm",
+                hangul = "[${word.headword}]",
+                roman = word.phoneticVi ?: word.headword,
+                onSpeak = onSpeak
+            )
+            DictionaryInfoRow(
+                label = "Nghĩa tiếng Việt",
+                value = word.meaningVi ?: "Chưa có định nghĩa tiếng Việt"
+            )
+            if (!word.definitionKo.isNullOrBlank()) {
+                DictionaryInfoRow(label = "Định nghĩa Hàn", value = word.definitionKo)
+            }
         }
     }
 }
@@ -942,6 +1008,8 @@ private fun DictionaryInfoPronounceRow(
  */
 @Composable
 private fun OriginAndRelatedCard(
+    word: WordEtymology,
+    onWordClick: (Long) -> Unit,
     onChipClick: (String) -> Unit
 ) {
     Surface(
@@ -961,7 +1029,7 @@ private fun OriginAndRelatedCard(
                 Text(text = "🔗", fontSize = 16.sp)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Nguồn gốc & liên quan",
+                    text = "Từ vựng liên quan & Cùng gốc",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0F172A)
@@ -970,13 +1038,75 @@ private fun OriginAndRelatedCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            DictionaryInfoRow(label = "Nguồn gốc", value = "Hán-Hàn (gốc Hán cổ điển)")
-            DictionaryInfoRow(label = "Từ đồng gốc", value = "도서 (sách), 박물관 (bảo tàng)")
+            if (word.relatedWords.isNotEmpty()) {
+                Text(
+                    text = "Từ có chung Hán tự gốc (${word.relatedWords.size}):",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF334155)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    word.relatedWords.forEach { rel ->
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFF8FAFC),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onWordClick(rel.lexemeId) }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = rel.headword,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = Color(0xFF0F172A)
+                                        )
+                                        if (!rel.phoneticVi.isNullOrBlank()) {
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "• ${rel.phoneticVi}",
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = Color(0xFF2563EB)
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = rel.meaningVi,
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF64748B),
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                    contentDescription = null,
+                                    tint = Color(0xFF94A3B8),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+            }
 
             Text(
-                text = "Cụm từ thường gặp:",
+                text = "Cụm từ tra cứu nhanh:",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF64748B)
@@ -989,7 +1119,7 @@ private fun OriginAndRelatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val chips = listOf("도서관에 가다", "도서관 카드", "도서관 이용")
+                val chips = listOf("${word.headword}에 가다", "${word.headword} 공부", "${word.headword} 활용")
                 chips.forEach { chipText ->
                     Surface(
                         shape = RoundedCornerShape(16.dp),
@@ -1016,8 +1146,8 @@ private fun OriginAndRelatedCard(
  */
 @Composable
 private fun ExampleSentenceCard(
-    koreanSentence: String,
-    vietnameseSentence: String
+    examples: List<WordExample>,
+    onSpeakSentence: (String) -> Unit = {}
 ) {
     Surface(
         modifier = Modifier
@@ -1032,11 +1162,108 @@ private fun ExampleSentenceCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "📖", fontSize = 16.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Ví dụ câu ngữ cảnh",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFEFF6FF)
+                ) {
+                    Text(
+                        text = "${examples.size} câu",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2563EB),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            examples.forEachIndexed { idx, ex ->
+                if (idx > 0) {
+                    HorizontalDivider(
+                        color = Color(0xFFF1F5F9),
+                        modifier = Modifier.padding(vertical = 10.dp)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = ex.korean,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF0F172A),
+                            lineHeight = 20.sp
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = ex.vietnamese,
+                            fontSize = 13.sp,
+                            color = Color(0xFF475569),
+                            lineHeight = 18.sp
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { onSpeakSentence(ex.korean) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.VolumeUp,
+                            contentDescription = "Phát âm câu",
+                            tint = Color(0xFF2563EB),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Khối Ghi chú thích ứng chuyển ngữ (Tab Từ nguyên)
+ */
+@Composable
+private fun EtymologyAdaptationCard(word: WordEtymology) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0x140F172A)),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "📖", fontSize = 16.sp)
+                Text(text = "📜", fontSize = 16.sp)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Ví dụ câu ngữ cảnh",
+                    text = "Quy tắc ngữ âm & Thích ứng chuyển ngữ",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0F172A)
@@ -1045,21 +1272,39 @@ private fun ExampleSentenceCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Text(
-                text = koreanSentence,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF0F172A),
-                lineHeight = 20.sp
-            )
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = Color(0xFFFEF3C7),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "🏛️", fontSize = 13.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Chứng nhận: ${word.verificationStatus.badgeLabel}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF92400E)
+                    )
+                }
+            }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            val note = word.adaptationNote ?: if (word.originType == OriginType.SINO_KOREAN) {
+                "Từ vựng gốc Hán du nhập vào bán đảo Triều Tiên, trải qua quá trình thích ứng ngữ âm Hán-Hàn và tương ứng chặt chẽ với hệ thống âm Hán-Việt."
+            } else {
+                "Từ thuần Hàn bản địa, mang đặc trưng ngữ âm và ngữ nghĩa độc lập của Hàn ngữ nguyên thủy."
+            }
 
             Text(
-                text = vietnameseSentence,
+                text = note,
                 fontSize = 13.sp,
-                color = Color(0xFF475569),
-                lineHeight = 18.sp
+                color = Color(0xFF334155),
+                lineHeight = 20.sp
             )
         }
     }

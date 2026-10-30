@@ -78,4 +78,25 @@ class ApiKeyStorageTest {
         assertFalse(storage.hasApiKey(AiProviderType.OPENAI))
         assertFalse(storage.hasApiKey(AiProviderType.GEMINI))
     }
+
+    @Test
+    fun testEndpointAndModelPersistence() {
+        // Defaults
+        assertEquals(AiProviderType.GEMINI.defaultBaseUrl, storage.getEndpoint(AiProviderType.GEMINI))
+        assertEquals(AiProviderType.GEMINI.defaultModel, storage.getModel(AiProviderType.GEMINI))
+
+        // Custom endpoint and model
+        val customEndpoint = "https://custom.gemini-proxy.com/v1/"
+        val customModel = "gemini-2.5-pro"
+        storage.saveEndpoint(AiProviderType.GEMINI, customEndpoint)
+        storage.saveModel(AiProviderType.GEMINI, customModel)
+
+        assertEquals(customEndpoint, storage.getEndpoint(AiProviderType.GEMINI))
+        assertEquals(customModel, storage.getModel(AiProviderType.GEMINI))
+
+        // Clear all keys also resets endpoint/model
+        storage.clearAllKeys()
+        assertEquals(AiProviderType.GEMINI.defaultBaseUrl, storage.getEndpoint(AiProviderType.GEMINI))
+        assertEquals(AiProviderType.GEMINI.defaultModel, storage.getModel(AiProviderType.GEMINI))
+    }
 }

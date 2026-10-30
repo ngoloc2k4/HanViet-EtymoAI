@@ -10,14 +10,14 @@ enum class AiProviderType(
     val requiresApiKey: Boolean = true
 ) {
     OPENAI(
-        displayName = "OpenAI (GPT-4o Mini / GPT-4o)",
+        displayName = "OpenAI (GPT-4o / GPT-4o-mini / o3-mini)",
         defaultBaseUrl = "https://api.openai.com/v1/",
         defaultModel = "gpt-4o-mini"
     ),
     GEMINI(
-        displayName = "Google Gemini (1.5 Flash / Pro)",
+        displayName = "Google Gemini (2.5 / 2.0 / 1.5 Flash)",
         defaultBaseUrl = "https://generativelanguage.googleapis.com/v1beta/",
-        defaultModel = "gemini-1.5-flash"
+        defaultModel = "gemini-2.0-flash"
     ),
     DEEPSEEK(
         displayName = "DeepSeek (V3 / R1)",
@@ -25,12 +25,12 @@ enum class AiProviderType(
         defaultModel = "deepseek-chat"
     ),
     CLAUDE(
-        displayName = "Anthropic Claude (Haiku / Sonnet)",
+        displayName = "Anthropic Claude (3.7 Sonnet / 3.5 Haiku)",
         defaultBaseUrl = "https://api.anthropic.com/v1/",
-        defaultModel = "claude-3-haiku-20240307"
+        defaultModel = "claude-3-5-haiku-20241022"
     ),
     LOCAL_GGUF(
-        displayName = "Mô hình cục bộ (Ollama / Local)",
+        displayName = "Tùy biến / Cục bộ (Ollama / OpenRouter / vLLM)",
         defaultBaseUrl = "http://localhost:11434/v1/",
         defaultModel = "qwen2.5:latest",
         requiresApiKey = false
@@ -39,6 +39,39 @@ enum class AiProviderType(
     companion object {
         fun fromString(name: String?): AiProviderType {
             return entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: GEMINI
+        }
+
+        fun getRecommendedModels(provider: AiProviderType): List<String> = when (provider) {
+            GEMINI -> listOf(
+                "gemini-2.5-flash",
+                "gemini-2.5-pro",
+                "gemini-2.0-flash",
+                "gemini-2.0-flash-lite",
+                "gemini-1.5-flash",
+                "gemini-1.5-pro"
+            )
+            OPENAI -> listOf(
+                "gpt-4o",
+                "gpt-4o-mini",
+                "o3-mini",
+                "o1",
+                "o1-mini"
+            )
+            DEEPSEEK -> listOf(
+                "deepseek-chat",
+                "deepseek-reasoner"
+            )
+            CLAUDE -> listOf(
+                "claude-3-7-sonnet-20250219",
+                "claude-3-5-sonnet-20241022",
+                "claude-3-5-haiku-20241022"
+            )
+            LOCAL_GGUF -> listOf(
+                "qwen2.5:latest",
+                "deepseek-r1:8b",
+                "llama3.3:latest",
+                "mistral:latest"
+            )
         }
     }
 }
