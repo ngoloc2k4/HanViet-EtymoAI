@@ -168,9 +168,6 @@ fun MyVocabularyScreen(
                 )
             }
         },
-        bottomBar = {
-            MyVocabularyBottomBar(onTabClick = onNavigateTab)
-        },
         containerColor = Color(0xFFF4F7FB)
     ) { innerPadding ->
         Column(

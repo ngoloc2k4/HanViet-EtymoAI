@@ -124,15 +124,6 @@ fun AiDetailAnalysisScreen(
                 )
             )
         },
-        bottomBar = {
-            AiDetailBottomNavigationBar(
-                selectedTab = selectedBottomTab,
-                onTabSelected = { tab ->
-                    selectedBottomTab = tab
-                    onNavigateTab(tab)
-                }
-            )
-        },
         containerColor = Color(0xFFF4F7FB),
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->

@@ -209,15 +209,6 @@ fun AiChatScreen(
     }
 
     Scaffold(
-        bottomBar = {
-            AiChatBottomNavigationBar(
-                selectedTab = selectedBottomTab,
-                onTabSelected = { tab ->
-                    selectedBottomTab = tab
-                    onNavigateTab(tab)
-                }
-            )
-        },
         containerColor = Color(0xFFF4F7FB),
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
@@ -226,14 +217,14 @@ fun AiChatScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // ================= 1. HEADER & MODE SWITCHER =================
+            // ================= 1. HEADER & DUAL-MODE CARDS =================
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.White)
                     .padding(top = 8.dp, bottom = 10.dp)
             ) {
-                // Hàng 1: Menu ☰, Logo + Tên App, Trạng thái Offline
+                // Hàng 1: Menu ☰, Logo + Tên App, Trạng thái Offline/Online
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -296,41 +287,106 @@ fun AiChatScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Hàng 2: Mode Switcher (Tìm từ, Hán tự, AI Chat, Thêm)
+                // Hàng 2: Hai Thẻ Phân Loại Chế Độ (Offline vs Online AI)
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                 ) {
-                    val modes = listOf("🔍 Tìm từ", "文A Hán tự", "💬 AI Chat", "⊞ Thêm")
-                    modes.forEachIndexed { index, title ->
-                        val isSelected = selectedModeIndex == index
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = if (isSelected) Color(0xFF4F46E5) else Color(0xFFF1F5F9),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(32.dp)
-                                .clickable {
-                                    selectedModeIndex = index
-                                    when (index) {
-                                        0 -> onNavigateToSearch()
-                                        1 -> onNavigateToHanja()
-                                        2 -> { /* Đang ở tab AI Chat */ }
-                                        3 -> showToolsDialog = true
-                                    }
-                                }
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.fillMaxSize()
+                    // Thẻ 1: Offline CSDL 50k
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { isOfflineMode = true },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isOfflineMode) Color(0xFFF0FDF4) else Color(0xFFF8FAFC)
+                        ),
+                        border = BorderStroke(
+                            width = if (isOfflineMode) 1.5.dp else 1.dp,
+                            color = if (isOfflineMode) Color(0xFF16A34A) else Color(0xFFE2E8F0)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = if (isOfflineMode) 2.dp else 0.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("⚡", fontSize = 15.sp)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Offline 50k",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isOfflineMode) Color(0xFF15803D) else Color(0xFF1E293B)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = "Chiết tự Hán-Hàn, âm Hán-Việt tức thì không mạng",
+                                fontSize = 10.5.sp,
+                                color = Color(0xFF64748B),
+                                lineHeight = 14.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = if (isOfflineMode) Color(0xFFDCFCE7) else Color(0xFFE2E8F0)
                             ) {
                                 Text(
-                                    text = title,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) Color.White else Color(0xFF475569)
+                                    text = if (isOfflineMode) "✓ Đang dùng" else "Bật Offline",
+                                    fontSize = 9.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isOfflineMode) Color(0xFF15803D) else Color(0xFF64748B),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // Thẻ 2: Online AI (BYOK)
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { isOfflineMode = false },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (!isOfflineMode) Color(0xFFEEF2FF) else Color(0xFFF8FAFC)
+                        ),
+                        border = BorderStroke(
+                            width = if (!isOfflineMode) 1.5.dp else 1.dp,
+                            color = if (!isOfflineMode) Color(0xFF4F46E5) else Color(0xFFE2E8F0)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = if (!isOfflineMode) 2.dp else 0.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🤖", fontSize = 15.sp)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Online AI",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (!isOfflineMode) Color(0xFF4338CA) else Color(0xFF1E293B)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = "Hỏi đáp tự do, phân tích ngữ pháp Gemini/OpenAI",
+                                fontSize = 10.5.sp,
+                                color = Color(0xFF64748B),
+                                lineHeight = 14.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = if (!isOfflineMode) Color(0xFFE0E7FF) else Color(0xFFE2E8F0)
+                            ) {
+                                Text(
+                                    text = if (!isOfflineMode) "✓ Đang dùng" else "Bật Online",
+                                    fontSize = 9.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (!isOfflineMode) Color(0xFF4338CA) else Color(0xFF64748B),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
                         }

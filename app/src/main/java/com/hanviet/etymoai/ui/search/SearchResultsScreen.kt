@@ -157,7 +157,7 @@ private fun SearchResult.toItem(): SearchResultItem {
  */
 @Composable
 fun SearchResultsScreen(
-    initialQuery: String = "도서관",
+    initialQuery: String = "",
     onWordClick: (Long, String) -> Unit = { _, _ -> },
     onBackClick: () -> Unit = {},
     onSpeakWord: (String) -> Unit = {},
@@ -165,7 +165,7 @@ fun SearchResultsScreen(
     searchPipeline: SearchPipeline? = null,
     onRecordHistory: ((String) -> Unit)? = null
 ) {
-    var searchQuery by remember { mutableStateOf(initialQuery) }
+    var searchQuery by remember(initialQuery) { mutableStateOf(initialQuery) }
     var selectedOriginFilter by remember { mutableStateOf<OriginType?>(null) } // null = "Tất cả"
     var selectedSort by remember { mutableStateOf(SearchSortOption.RELEVANCE) }
     var showSortMenu by remember { mutableStateOf(false) }
@@ -220,9 +220,6 @@ fun SearchResultsScreen(
     }
 
     Scaffold(
-        bottomBar = {
-            SearchResultsBottomBar(onTabClick = onNavigateTab)
-        },
         containerColor = Color(0xFFF4F7FB)
     ) { innerPadding ->
         Column(

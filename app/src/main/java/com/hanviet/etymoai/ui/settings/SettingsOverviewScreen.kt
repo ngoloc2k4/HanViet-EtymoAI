@@ -79,9 +79,6 @@ fun SettingsOverviewScreen(
         topBar = {
             SettingsOverviewTopBar(onBackClick = onBackClick)
         },
-        bottomBar = {
-            SettingsOverviewBottomBar(onTabClick = onNavigateTab)
-        },
         containerColor = Color(0xFFF4F7FB)
     ) { innerPadding ->
         LazyColumn(

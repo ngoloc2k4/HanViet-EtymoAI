@@ -6,10 +6,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,10 +18,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -32,6 +36,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -90,7 +98,7 @@ import kotlinx.coroutines.withContext
  */
 sealed interface AppScreen {
     data object Home : AppScreen
-    data class SearchResults(val query: String = "도서관") : AppScreen
+    data class SearchResults(val query: String = "") : AppScreen
     data class WordDetail(val lexemeId: Long, val headword: String) : AppScreen
     data object MyVocabulary : AppScreen
     data object SrsReview : AppScreen
@@ -132,7 +140,7 @@ private fun deserializeScreen(str: String): AppScreen {
     val parts = str.split("|")
     return when (parts[0]) {
         "Home" -> AppScreen.Home
-        "SearchResults" -> AppScreen.SearchResults(parts.getOrElse(1) { "도서관" })
+        "SearchResults" -> AppScreen.SearchResults(parts.getOrElse(1) { "" })
         "WordDetail" -> AppScreen.WordDetail(
             lexemeId = parts.getOrNull(1)?.toLongOrNull() ?: 1L,
             headword = parts.getOrElse(2) { "" }
@@ -258,12 +266,44 @@ class MainActivity : ComponentActivity() {
                         navigateBack()
                     }
 
-                    AnimatedContent(
-                        targetState = currentScreen,
-                        transitionSpec = { fadeIn() togetherWith fadeOut() },
-                        label = "ScreenTransition"
-                    ) { screen ->
-                        when (screen) {
+                    val currentTabIndex = when (currentScreen) {
+                        is AppScreen.Home -> 0
+                        is AppScreen.SearchResults, is AppScreen.WordDetail, is AppScreen.HanjaExplorer, is AppScreen.SearchHistory -> 1
+                        is AppScreen.AiChat, is AppScreen.AiDetailAnalysis, is AppScreen.SentenceAnalyzer -> 2
+                        is AppScreen.MyVocabulary, is AppScreen.SrsReview, is AppScreen.SrsDeckList, is AppScreen.StudyStats -> 3
+                        is AppScreen.SettingsOverview, is AppScreen.SecuritySettings, is AppScreen.DataPackManager, is AppScreen.AppearanceSettings, is AppScreen.AboutDataLicense -> 4
+                    }
+
+                    val onTabSelected: (Int) -> Unit = { tabIndex ->
+                        when (tabIndex) {
+                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
+                            1 -> navigateTo(AppScreen.SearchResults(searchQuery.trim()), isTabSwitch = true)
+                            2 -> navigateTo(AppScreen.AiChat, isTabSwitch = true)
+                            3 -> navigateTo(AppScreen.MyVocabulary, isTabSwitch = true)
+                            4 -> navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
+                        }
+                    }
+
+                    Scaffold(
+                        bottomBar = {
+                            AppBottomNavigationBar(
+                                selectedTab = currentTabIndex,
+                                onTabSelected = onTabSelected
+                            )
+                        },
+                        containerColor = MaterialTheme.colorScheme.background
+                    ) { innerPadding ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding)
+                        ) {
+                            Crossfade(
+                                targetState = currentScreen,
+                                animationSpec = tween(durationMillis = 150),
+                                label = "ScreenCrossfade"
+                            ) { screen ->
+                                when (screen) {
                             is AppScreen.Home -> {
                                 HomeScreen(
                                     searchQuery = searchQuery,
@@ -327,7 +367,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onNavigateToDictionary = {
-                                        navigateTo(AppScreen.SearchResults(searchQuery.ifBlank { "도서관" }), isTabSwitch = true)
+                                        navigateTo(AppScreen.SearchResults(searchQuery.trim()), isTabSwitch = true)
                                     },
                                     onNavigateToHanja = {
                                         navigateTo(AppScreen.HanjaExplorer("學"))
@@ -378,15 +418,7 @@ class MainActivity : ComponentActivity() {
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     },
-                                    onNavigateTab = { tabIndex ->
-                                        when (tabIndex) {
-                                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
-                                            1 -> { /* Đang ở Tra cứu */ }
-                                            2 -> navigateTo(AppScreen.AiChat, isTabSwitch = true)
-                                            3 -> navigateTo(AppScreen.MyVocabulary, isTabSwitch = true)
-                                            4 -> navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
-                                        }
-                                    }
+                                    onNavigateTab = onTabSelected
                                 )
                             }
 
@@ -436,15 +468,7 @@ class MainActivity : ComponentActivity() {
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     },
-                                    onNavigateTab = { tabIndex ->
-                                        when (tabIndex) {
-                                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
-                                            1 -> navigateTo(AppScreen.SearchResults(), isTabSwitch = true)
-                                            2 -> navigateTo(AppScreen.AiChat, isTabSwitch = true)
-                                            3 -> navigateTo(AppScreen.SrsDeckList, isTabSwitch = true)
-                                            4 -> navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
-                                        }
-                                    }
+                                    onNavigateTab = onTabSelected
                                 )
                             }
 
@@ -530,15 +554,7 @@ class MainActivity : ComponentActivity() {
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     },
-                                    onNavigateTab = { tabIndex ->
-                                        when (tabIndex) {
-                                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
-                                            1 -> navigateTo(AppScreen.SearchResults(), isTabSwitch = true)
-                                            2 -> navigateTo(AppScreen.AiChat, isTabSwitch = true)
-                                            3 -> navigateTo(AppScreen.SrsDeckList, isTabSwitch = true)
-                                            4 -> navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
-                                        }
-                                    }
+                                    onNavigateTab = onTabSelected
                                 )
                             }
 
@@ -573,15 +589,7 @@ class MainActivity : ComponentActivity() {
                                     onStartSrsReview = {
                                         navigateTo(AppScreen.SrsDeckList)
                                     },
-                                    onNavigateTab = { tabIndex ->
-                                        when (tabIndex) {
-                                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
-                                            1 -> navigateTo(AppScreen.SearchResults(), isTabSwitch = true)
-                                            2 -> navigateTo(AppScreen.AiChat, isTabSwitch = true)
-                                            3 -> { /* Đang ở tab Từ vựng */ }
-                                            4 -> navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
-                                        }
-                                    }
+                                    onNavigateTab = onTabSelected
                                 )
                             }
 
@@ -716,15 +724,7 @@ class MainActivity : ComponentActivity() {
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     },
-                                    onNavigateTab = { tabIndex ->
-                                        when (tabIndex) {
-                                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
-                                            1 -> navigateTo(AppScreen.SearchResults(), isTabSwitch = true)
-                                            2 -> { /* Đang ở tab AI Chat */ }
-                                            3 -> navigateTo(AppScreen.MyVocabulary, isTabSwitch = true)
-                                            4 -> navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
-                                        }
-                                    },
+                                    onNavigateTab = onTabSelected,
                                     onNavigateToSearch = {
                                         navigateTo(AppScreen.SearchResults(), isTabSwitch = true)
                                     },
@@ -773,15 +773,7 @@ class MainActivity : ComponentActivity() {
                                     onFindSimilar = { word ->
                                         navigateTo(AppScreen.AiDetailAnalysis(word))
                                     },
-                                    onNavigateTab = { tabIndex ->
-                                        when (tabIndex) {
-                                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
-                                            1 -> navigateTo(AppScreen.SearchResults(), isTabSwitch = true)
-                                            2 -> navigateTo(AppScreen.AiChat, isTabSwitch = true)
-                                            3 -> navigateTo(AppScreen.MyVocabulary, isTabSwitch = true)
-                                            4 -> navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
-                                        }
-                                    }
+                                    onNavigateTab = onTabSelected
                                 )
                             }
 
@@ -799,15 +791,7 @@ class MainActivity : ComponentActivity() {
                                     onNavigateToHistory = { navigateTo(AppScreen.SearchHistory) },
                                     onNavigateToAbout = { navigateTo(AppScreen.AboutDataLicense) },
                                     onOpenQuickLookupGuide = { showQuickLookupGuide = true },
-                                    onNavigateTab = { tabIndex ->
-                                        when (tabIndex) {
-                                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
-                                            1 -> navigateTo(AppScreen.SearchResults(), isTabSwitch = true)
-                                            2 -> navigateTo(AppScreen.AiChat, isTabSwitch = true)
-                                            3 -> navigateTo(AppScreen.MyVocabulary, isTabSwitch = true)
-                                            4 -> { /* Đang ở Cài đặt */ }
-                                        }
-                                    }
+                                    onNavigateTab = onTabSelected
                                 )
                             }
 
@@ -882,6 +866,8 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+                }
+            }
 
                     // Dialog Cài đặt & Phím tắt tính năng nâng cao
                     if (showSettingsDialog) {
@@ -1020,6 +1006,59 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Thanh điều hướng đáy đồng bộ toàn ứng dụng (Unified Persistent Bottom Navigation Bar)
+ * Cố định ở cấp gốc MainActivity, loại bỏ triệt để hiện tượng nháy màn hình khi đổi tab.
+ */
+@Composable
+private fun AppBottomNavigationBar(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit
+) {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 8.dp,
+        modifier = Modifier.height(64.dp)
+    ) {
+        val navItems = listOf(
+            Triple("Trang chủ", Icons.Default.Home, 0),
+            Triple("Tra cứu", Icons.Default.Search, 1),
+            Triple("AI Chat", Icons.Default.Psychology, 2),
+            Triple("Từ vựng", Icons.Default.BookmarkBorder, 3),
+            Triple("Cài đặt", Icons.Default.Person, 4)
+        )
+
+        navItems.forEach { (label, icon, index) ->
+            val isSelected = selectedTab == index
+            NavigationBarItem(
+                selected = isSelected,
+                onClick = { onTabSelected(index) },
+                icon = {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = label,
+                        modifier = Modifier.size(22.dp)
+                    )
+                },
+                label = {
+                    Text(
+                        text = label,
+                        fontSize = 11.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    )
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color(0xFF2563EB),
+                    selectedTextColor = Color(0xFF2563EB),
+                    unselectedIconColor = Color(0xFF64748B),
+                    unselectedTextColor = Color(0xFF64748B),
+                    indicatorColor = Color(0xFFDBEAFE)
+                )
+            )
         }
     }
 }

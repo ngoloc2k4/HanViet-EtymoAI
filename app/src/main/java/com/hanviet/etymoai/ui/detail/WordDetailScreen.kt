@@ -118,15 +118,13 @@ fun WordDetailScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
-    val targetWord = headword ?: "도서관"
-
     LaunchedEffect(lexemeId, headword) {
         isLoading = true
         if (repository != null) {
             try {
-                var data = repository.getEtymologyForWord(lexemeId)
+                var data = if (lexemeId > 0) repository.getEtymologyForWord(lexemeId) else null
                 if (data == null && !headword.isNullOrBlank()) {
-                    data = repository.getEtymologyForWordByHeadword(headword)
+                    data = repository.getEtymologyForWordByHeadword(headword.trim())
                 }
                 etymology = data
             } catch (e: Exception) {
@@ -136,6 +134,7 @@ fun WordDetailScreen(
 
         // Dữ liệu hiển thị nếu chưa có trong core db
         if (etymology == null) {
+            val targetWord = if (!headword.isNullOrBlank()) headword.trim() else ""
             if (targetWord == "도서관") {
                 etymology = WordEtymology(
                     lexemeId = if (lexemeId > 0) lexemeId else 101L,
@@ -182,17 +181,18 @@ fun WordDetailScreen(
                     )
                 )
             } else {
+                val displayWord = targetWord.ifBlank { if (lexemeId > 0) "Từ #$lexemeId" else "Từ vựng" }
                 etymology = WordEtymology(
                     lexemeId = if (lexemeId > 0) lexemeId else System.currentTimeMillis(),
-                    headword = targetWord,
+                    headword = displayWord,
                     originType = OriginType.NATIVE_KOREAN,
                     verificationStatus = VerificationStatus.INFERRED,
                     phoneticVi = null,
                     segments = emptyList(),
-                    adaptationNote = "Từ vựng: $targetWord. Dữ liệu đang được chuẩn hóa trong CSDL offline.",
+                    adaptationNote = "Từ vựng: $displayWord. Dữ liệu đang được chuẩn hóa trong CSDL offline.",
                     partOfSpeech = "Từ vựng",
-                    meaningVi = "Từ vựng tiếng Hàn: $targetWord",
-                    definitionKo = targetWord,
+                    meaningVi = "Từ vựng tiếng Hàn: $displayWord",
+                    definitionKo = displayWord,
                     examples = emptyList(),
                     relatedWords = emptyList()
                 )
@@ -212,9 +212,6 @@ fun WordDetailScreen(
                 },
                 onMenuClick = { /* More actions */ }
             )
-        },
-        bottomBar = {
-            WordDetailBottomBar(onTabClick = onNavigateTab)
         },
         containerColor = Color(0xFFF4F7FB)
     ) { innerPadding ->
@@ -510,7 +507,8 @@ private fun HeroSummaryCard(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    val repChar = word.segments.firstOrNull { it.hanjaChar?.isNotBlank() == true }?.hanjaChar ?: "書"
+                    val repChar = word.segments.firstOrNull { it.hanjaChar?.isNotBlank() == true }?.hanjaChar
+                        ?: word.headword.take(1)
                     Text(
                         text = repChar,
                         fontSize = 26.sp,
@@ -556,8 +554,13 @@ private fun HeroSummaryCard(
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val pronunciationDisplay = if (!word.phoneticVi.isNullOrBlank()) {
+                            "[${word.headword} • ${word.phoneticVi}]"
+                        } else {
+                            "[${word.headword}]"
+                        }
                         Text(
-                            text = "[${word.headword} / do-seo-gwan]",
+                            text = pronunciationDisplay,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color(0xFF64748B)
@@ -580,11 +583,14 @@ private fun HeroSummaryCard(
 
                     Spacer(modifier = Modifier.height(2.dp))
 
+                    val meaningDisplay = word.meaningVi ?: word.definitionKo ?: "Từ vựng tiếng Hàn"
                     Text(
-                        text = "thư viện, nhà sách công cộng",
+                        text = meaningDisplay,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF334155)
+                        color = Color(0xFF334155),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -593,7 +599,7 @@ private fun HeroSummaryCard(
             HorizontalDivider(color = Color(0xFFF1F5F9))
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Thanh 3 thông số xác thực: 📖 Danh từ | 📊 Trung cấp | 🛡️ KRDICT
+            // Thanh 3 thông số xác thực: 📖 Từ loại | 📊 Cấp độ | 🛡️ Nguồn
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround,
@@ -604,7 +610,7 @@ private fun HeroSummaryCard(
                     Text(text = "📖", fontSize = 13.sp)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Danh từ",
+                        text = word.partOfSpeech ?: "Từ vựng",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF475569)
@@ -740,34 +746,50 @@ private fun VisualMorphemeEquationCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 3 thẻ chữ Hán nối với nhau bằng dấu +
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val segments = word.segments.ifEmpty {
-                    listOf(
-                        HanjaSegment(0, "도", "圖", "Đồ", "bản vẽ, hình ảnh"),
-                        HanjaSegment(1, "서", "書", "Thư", "sách, văn bản"),
-                        HanjaSegment(2, "관", "館", "Quán", "tòa nhà, quán")
-                    )
+            if (word.segments.isNotEmpty()) {
+                // Các thẻ chữ Hán nối với nhau bằng dấu +
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val segments = word.segments
+
+                    segments.forEachIndexed { index, seg ->
+                        MorphemeSegmentBox(
+                            segment = seg,
+                            onClick = { onHanjaClick(seg.hanjaChar ?: "") },
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        if (index < segments.size - 1) {
+                            Text(
+                                text = "+",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF94A3B8),
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+                        }
+                    }
                 }
-
-                segments.forEachIndexed { index, seg ->
-                    MorphemeSegmentBox(
-                        segment = seg,
-                        onClick = { onHanjaClick(seg.hanjaChar ?: "") },
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    if (index < segments.size - 1) {
+            } else {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF8FAFC),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "ℹ️", fontSize = 15.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "+",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF94A3B8),
-                            modifier = Modifier.padding(horizontal = 4.dp)
+                            text = "Từ vựng thuộc nhóm ${word.originType.titleVi}, không cấu tạo từ các thành tố Hán tự.",
+                            fontSize = 12.5.sp,
+                            color = Color(0xFF475569)
                         )
                     }
                 }
@@ -800,8 +822,14 @@ private fun VisualMorphemeEquationCard(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
+                    val defaultNote = if (!word.meaningVi.isNullOrBlank()) {
+                        "${word.headword}: ${word.meaningVi}"
+                    } else {
+                        "Từ vựng tiếng Hàn: ${word.headword}"
+                    }
+
                     Text(
-                        text = word.adaptationNote ?: "Đồ + Thư + Quán → Thư viện: nơi lưu trữ sách và tài liệu công cộng.",
+                        text = word.adaptationNote ?: defaultNote,
                         fontSize = 13.sp,
                         color = Color(0xFF78350F),
                         lineHeight = 18.sp

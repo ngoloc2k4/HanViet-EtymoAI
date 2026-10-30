@@ -118,9 +118,6 @@ fun SrsReviewScreen(
         topBar = {
             SrsTopBar(onBackClick = onBackClick)
         },
-        bottomBar = {
-            SrsBottomBar(onTabClick = onNavigateTab)
-        },
         containerColor = Color(0xFFF4F7FB),
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->

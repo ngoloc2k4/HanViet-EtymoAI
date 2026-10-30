@@ -143,20 +143,6 @@ fun HomeScreen(
     val focusManager = LocalFocusManager.current
 
     Scaffold(
-        bottomBar = {
-            HomeBottomNavigationBar(
-                selectedTab = selectedTab,
-                onTabSelected = { tabIndex ->
-                    selectedTab = tabIndex
-                    when (tabIndex) {
-                        1 -> onNavigateToDictionary()
-                        2 -> onNavigateToAi()
-                        3 -> onNavigateToSrs()
-                        4 -> onOpenSettings()
-                    }
-                }
-            )
-        },
         containerColor = Color(0xFFF4F7FB),
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
