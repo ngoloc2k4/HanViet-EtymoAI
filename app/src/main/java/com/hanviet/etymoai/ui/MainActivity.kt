@@ -38,6 +38,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -117,7 +118,29 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFFF4F7FB)
                 ) {
-                    var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.Home) }
+                    val backStack = remember { mutableStateListOf<AppScreen>(AppScreen.Home) }
+                    val currentScreen = backStack.lastOrNull() ?: AppScreen.Home
+
+                    fun navigateTo(screen: AppScreen, isTabSwitch: Boolean = false) {
+                        if (isTabSwitch) {
+                            if (screen == AppScreen.Home) {
+                                backStack.clear()
+                                backStack.add(AppScreen.Home)
+                            } else {
+                                backStack.removeAll { it != AppScreen.Home }
+                                backStack.add(screen)
+                            }
+                        } else {
+                            backStack.add(screen)
+                        }
+                    }
+
+                    fun navigateBack() {
+                        if (backStack.size > 1) {
+                            backStack.removeAt(backStack.lastIndex)
+                        }
+                    }
+
                     var searchQuery by remember { mutableStateOf("") }
                     var searchResults by remember { mutableStateOf<List<SearchResult>>(emptyList()) }
                     var showSettingsDialog by remember { mutableStateOf(false) }
@@ -144,26 +167,9 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    // Xử lý nút Back của Android
+                    // Xử lý nút Back của Android đồng bộ với stack điều hướng
                     BackHandler(enabled = currentScreen !is AppScreen.Home) {
-                        currentScreen = when (currentScreen) {
-                            is AppScreen.AiDetailAnalysis -> AppScreen.AiChat
-                            is AppScreen.SentenceAnalyzer -> AppScreen.AiChat
-                            is AppScreen.WordDetail -> AppScreen.SearchResults()
-                            is AppScreen.SearchResults -> AppScreen.Home
-                            is AppScreen.StudyStats -> AppScreen.SrsReview
-                            is AppScreen.SrsReview -> AppScreen.SrsDeckList
-                            is AppScreen.SrsDeckList -> AppScreen.MyVocabulary
-                            is AppScreen.HanjaExplorer -> AppScreen.Home
-                            is AppScreen.SearchHistory -> AppScreen.SettingsOverview
-                            is AppScreen.MyVocabulary -> AppScreen.Home
-                            is AppScreen.SecuritySettings,
-                            is AppScreen.DataPackManager,
-                            is AppScreen.AppearanceSettings,
-                            is AppScreen.AboutDataLicense -> AppScreen.SettingsOverview
-                            is AppScreen.SettingsOverview -> AppScreen.Home
-                            else -> AppScreen.Home
-                        }
+                        navigateBack()
                     }
 
                     AnimatedContent(
@@ -178,9 +184,11 @@ class MainActivity : ComponentActivity() {
                                     onSearchQueryChange = { searchQuery = it },
                                     searchResults = searchResults,
                                     onSearchResultClick = { result ->
-                                        currentScreen = AppScreen.WordDetail(
-                                            lexemeId = result.lexemeId,
-                                            headword = result.headwordNfc
+                                        navigateTo(
+                                            AppScreen.WordDetail(
+                                                lexemeId = result.lexemeId,
+                                                headword = result.headwordNfc
+                                            )
                                         )
                                     },
                                     onWordClick = { word ->
@@ -189,48 +197,54 @@ class MainActivity : ComponentActivity() {
                                                 val etymo = etymologyRepository.getEtymologyForWordByHeadword(word)
                                                 withContext(Dispatchers.Main) {
                                                     if (etymo != null) {
-                                                        currentScreen = AppScreen.WordDetail(
-                                                            lexemeId = etymo.lexemeId,
-                                                            headword = etymo.headword
+                                                        navigateTo(
+                                                            AppScreen.WordDetail(
+                                                                lexemeId = etymo.lexemeId,
+                                                                headword = etymo.headword
+                                                            )
                                                         )
                                                     } else {
                                                         // Nếu chưa có trong core db, chuyển sang lexemeId giả định để xem giao diện
-                                                        currentScreen = AppScreen.WordDetail(
-                                                            lexemeId = 1L,
-                                                            headword = word
+                                                        navigateTo(
+                                                            AppScreen.WordDetail(
+                                                                lexemeId = 1L,
+                                                                headword = word
+                                                            )
                                                         )
                                                     }
                                                 }
                                             } catch (e: Exception) {
                                                 withContext(Dispatchers.Main) {
-                                                    currentScreen = AppScreen.WordDetail(
-                                                        lexemeId = 1L,
-                                                        headword = word
+                                                    navigateTo(
+                                                        AppScreen.WordDetail(
+                                                            lexemeId = 1L,
+                                                            headword = word
+                                                        )
                                                     )
                                                 }
                                             }
                                         }
                                     },
                                     onNavigateToDictionary = {
-                                        currentScreen = AppScreen.SearchResults(searchQuery.ifBlank { "도서관" })
+                                        navigateTo(AppScreen.SearchResults(searchQuery.ifBlank { "도서관" }), isTabSwitch = true)
                                     },
                                     onNavigateToHanja = {
-                                        currentScreen = AppScreen.HanjaExplorer("學")
+                                        navigateTo(AppScreen.HanjaExplorer("學"))
                                     },
                                     onNavigateToMorphology = {
-                                        currentScreen = AppScreen.SearchResults("들었어요")
+                                        navigateTo(AppScreen.SearchResults("들었어요"))
                                     },
                                     onNavigateToAi = {
-                                        currentScreen = AppScreen.AiChat
+                                        navigateTo(AppScreen.AiChat, isTabSwitch = true)
                                     },
                                     onNavigateToSrs = {
-                                        currentScreen = AppScreen.MyVocabulary
+                                        navigateTo(AppScreen.MyVocabulary, isTabSwitch = true)
                                     },
                                     onNavigateToQuickLookupGuide = {
                                         showQuickLookupGuide = true
                                     },
                                     onOpenSettings = {
-                                        currentScreen = AppScreen.SettingsOverview
+                                        navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
                                     }
                                 )
                             }
@@ -239,12 +253,14 @@ class MainActivity : ComponentActivity() {
                                 SearchResultsScreen(
                                     initialQuery = screen.query,
                                     onWordClick = { headword ->
-                                        currentScreen = AppScreen.WordDetail(
-                                            lexemeId = 101L,
-                                            headword = headword
+                                        navigateTo(
+                                            AppScreen.WordDetail(
+                                                lexemeId = 101L,
+                                                headword = headword
+                                            )
                                         )
                                     },
-                                    onBackClick = { currentScreen = AppScreen.Home },
+                                    onBackClick = { navigateBack() },
                                     onSpeakWord = { word ->
                                         Toast.makeText(
                                             this@MainActivity,
@@ -254,11 +270,11 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onNavigateTab = { tabIndex ->
                                         when (tabIndex) {
-                                            0 -> currentScreen = AppScreen.Home
+                                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
                                             1 -> { /* Đang ở Tra cứu */ }
-                                            2 -> currentScreen = AppScreen.AiChat
-                                            3 -> currentScreen = AppScreen.MyVocabulary
-                                            4 -> currentScreen = AppScreen.SettingsOverview
+                                            2 -> navigateTo(AppScreen.AiChat, isTabSwitch = true)
+                                            3 -> navigateTo(AppScreen.MyVocabulary, isTabSwitch = true)
+                                            4 -> navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
                                         }
                                     }
                                 )
@@ -269,15 +285,17 @@ class MainActivity : ComponentActivity() {
                                     lexemeId = screen.lexemeId,
                                     headword = screen.headword,
                                     repository = etymologyRepository,
-                                    onBackClick = { currentScreen = AppScreen.SearchResults() },
+                                    onBackClick = { navigateBack() },
                                     onWordClick = { nextLexemeId ->
-                                        currentScreen = AppScreen.WordDetail(
-                                            lexemeId = nextLexemeId,
-                                            headword = ""
+                                        navigateTo(
+                                            AppScreen.WordDetail(
+                                                lexemeId = nextLexemeId,
+                                                headword = ""
+                                            )
                                         )
                                     },
                                     onAskAiClick = { word ->
-                                        currentScreen = AppScreen.AiDetailAnalysis(word)
+                                        navigateTo(AppScreen.AiDetailAnalysis(word))
                                     },
                                     onSaveWord = { word ->
                                         Toast.makeText(
@@ -295,11 +313,11 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onNavigateTab = { tabIndex ->
                                         when (tabIndex) {
-                                            0 -> currentScreen = AppScreen.Home
-                                            1 -> currentScreen = AppScreen.SearchResults()
-                                            2 -> currentScreen = AppScreen.AiChat
-                                            3 -> currentScreen = AppScreen.SrsDeckList
-                                            4 -> currentScreen = AppScreen.SettingsOverview
+                                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
+                                            1 -> navigateTo(AppScreen.SearchResults(), isTabSwitch = true)
+                                            2 -> navigateTo(AppScreen.AiChat, isTabSwitch = true)
+                                            3 -> navigateTo(AppScreen.SrsDeckList, isTabSwitch = true)
+                                            4 -> navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
                                         }
                                     }
                                 )
@@ -378,8 +396,8 @@ class MainActivity : ComponentActivity() {
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     },
-                                    onBackClick = { currentScreen = AppScreen.SrsDeckList },
-                                    onNavigateToStats = { currentScreen = AppScreen.StudyStats },
+                                    onBackClick = { navigateBack() },
+                                    onNavigateToStats = { navigateTo(AppScreen.StudyStats) },
                                     onSpeakWord = { word ->
                                         Toast.makeText(
                                             this@MainActivity,
@@ -389,11 +407,11 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onNavigateTab = { tabIndex ->
                                         when (tabIndex) {
-                                            0 -> currentScreen = AppScreen.Home
-                                            1 -> currentScreen = AppScreen.SearchResults()
-                                            2 -> currentScreen = AppScreen.AiChat
-                                            3 -> currentScreen = AppScreen.SrsDeckList
-                                            4 -> currentScreen = AppScreen.SettingsOverview
+                                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
+                                            1 -> navigateTo(AppScreen.SearchResults(), isTabSwitch = true)
+                                            2 -> navigateTo(AppScreen.AiChat, isTabSwitch = true)
+                                            3 -> navigateTo(AppScreen.SrsDeckList, isTabSwitch = true)
+                                            4 -> navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
                                         }
                                     }
                                 )
@@ -402,12 +420,14 @@ class MainActivity : ComponentActivity() {
                             is AppScreen.MyVocabulary -> {
                                 MyVocabularyScreen(
                                     onWordClick = { headword ->
-                                        currentScreen = AppScreen.WordDetail(
-                                            lexemeId = 101L,
-                                            headword = headword
+                                        navigateTo(
+                                            AppScreen.WordDetail(
+                                                lexemeId = 101L,
+                                                headword = headword
+                                            )
                                         )
                                     },
-                                    onBackClick = { currentScreen = AppScreen.Home },
+                                    onBackClick = { navigateBack() },
                                     onSpeakWord = { word ->
                                         Toast.makeText(
                                             this@MainActivity,
@@ -416,15 +436,15 @@ class MainActivity : ComponentActivity() {
                                         ).show()
                                     },
                                     onStartSrsReview = {
-                                        currentScreen = AppScreen.SrsDeckList
+                                        navigateTo(AppScreen.SrsDeckList)
                                     },
                                     onNavigateTab = { tabIndex ->
                                         when (tabIndex) {
-                                            0 -> currentScreen = AppScreen.Home
-                                            1 -> currentScreen = AppScreen.SearchResults()
-                                            2 -> currentScreen = AppScreen.AiChat
+                                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
+                                            1 -> navigateTo(AppScreen.SearchResults(), isTabSwitch = true)
+                                            2 -> navigateTo(AppScreen.AiChat, isTabSwitch = true)
                                             3 -> { /* Đang ở tab Từ vựng */ }
-                                            4 -> currentScreen = AppScreen.SettingsOverview
+                                            4 -> navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
                                         }
                                     }
                                 )
@@ -432,11 +452,13 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.StudyStats -> {
                                 StudyStatsScreen(
-                                    onBackClick = { currentScreen = AppScreen.SettingsOverview },
+                                    onBackClick = { navigateBack() },
                                     onWordClick = { headword ->
-                                        currentScreen = AppScreen.WordDetail(
-                                            lexemeId = 101L,
-                                            headword = headword
+                                        navigateTo(
+                                            AppScreen.WordDetail(
+                                                lexemeId = 101L,
+                                                headword = headword
+                                            )
                                         )
                                     }
                                 )
@@ -444,11 +466,13 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.SentenceAnalyzer -> {
                                 SentenceAnalyzerScreen(
-                                    onBackClick = { currentScreen = AppScreen.SettingsOverview },
+                                    onBackClick = { navigateBack() },
                                     onWordClick = { headword ->
-                                        currentScreen = AppScreen.WordDetail(
-                                            lexemeId = 101L,
-                                            headword = headword
+                                        navigateTo(
+                                            AppScreen.WordDetail(
+                                                lexemeId = 101L,
+                                                headword = headword
+                                            )
                                         )
                                     }
                                 )
@@ -456,7 +480,7 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.SecuritySettings -> {
                                 SecuritySettingsScreen(
-                                    onBackClick = { currentScreen = AppScreen.SettingsOverview },
+                                    onBackClick = { navigateBack() },
                                     onApiKeySaved = { provider, key ->
                                         Toast.makeText(
                                             this@MainActivity,
@@ -490,7 +514,7 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.DataPackManager -> {
                                 DataPackManagerScreen(
-                                    onBackClick = { currentScreen = AppScreen.SettingsOverview },
+                                    onBackClick = { navigateBack() },
                                     onCheckUpdate = {
                                         Toast.makeText(
                                             this@MainActivity,
@@ -503,7 +527,7 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.AppearanceSettings -> {
                                 AppearanceSettingsScreen(
-                                    onBackClick = { currentScreen = AppScreen.SettingsOverview },
+                                    onBackClick = { navigateBack() },
                                     onThemeChanged = { theme ->
                                         Toast.makeText(
                                             this@MainActivity,
@@ -516,9 +540,9 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.AiChat -> {
                                 AiChatScreen(
-                                    onBackToHome = { currentScreen = AppScreen.Home },
+                                    onBackToHome = { navigateBack() },
                                     onOpenDetailAnalysis = { word ->
-                                        currentScreen = AppScreen.AiDetailAnalysis(word)
+                                        navigateTo(AppScreen.AiDetailAnalysis(word))
                                     },
                                     onSaveWord = { word ->
                                         Toast.makeText(
@@ -536,11 +560,11 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onNavigateTab = { tabIndex ->
                                         when (tabIndex) {
-                                            0 -> currentScreen = AppScreen.Home
-                                            1 -> currentScreen = AppScreen.SearchResults()
+                                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
+                                            1 -> navigateTo(AppScreen.SearchResults(), isTabSwitch = true)
                                             2 -> { /* Đang ở tab AI Chat */ }
-                                            3 -> currentScreen = AppScreen.MyVocabulary
-                                            4 -> currentScreen = AppScreen.SettingsOverview
+                                            3 -> navigateTo(AppScreen.MyVocabulary, isTabSwitch = true)
+                                            4 -> navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
                                         }
                                     }
                                 )
@@ -549,7 +573,7 @@ class MainActivity : ComponentActivity() {
                             is AppScreen.AiDetailAnalysis -> {
                                 AiDetailAnalysisScreen(
                                     headword = screen.headword,
-                                    onBackClick = { currentScreen = AppScreen.AiChat },
+                                    onBackClick = { navigateBack() },
                                     onSaveWord = { word ->
                                         Toast.makeText(
                                             this@MainActivity,
@@ -565,15 +589,15 @@ class MainActivity : ComponentActivity() {
                                         ).show()
                                     },
                                     onFindSimilar = { word ->
-                                        currentScreen = AppScreen.AiDetailAnalysis(word)
+                                        navigateTo(AppScreen.AiDetailAnalysis(word))
                                     },
                                     onNavigateTab = { tabIndex ->
                                         when (tabIndex) {
-                                            0 -> currentScreen = AppScreen.Home
-                                            1 -> currentScreen = AppScreen.SearchResults()
-                                            2 -> currentScreen = AppScreen.AiChat
-                                            3 -> currentScreen = AppScreen.MyVocabulary
-                                            4 -> currentScreen = AppScreen.SettingsOverview
+                                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
+                                            1 -> navigateTo(AppScreen.SearchResults(), isTabSwitch = true)
+                                            2 -> navigateTo(AppScreen.AiChat, isTabSwitch = true)
+                                            3 -> navigateTo(AppScreen.MyVocabulary, isTabSwitch = true)
+                                            4 -> navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
                                         }
                                     }
                                 )
@@ -581,22 +605,22 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.SettingsOverview -> {
                                 SettingsOverviewScreen(
-                                    onBackClick = { currentScreen = AppScreen.Home },
-                                    onNavigateToSecurity = { currentScreen = AppScreen.SecuritySettings },
-                                    onNavigateToDataPack = { currentScreen = AppScreen.DataPackManager },
-                                    onNavigateToAppearance = { currentScreen = AppScreen.AppearanceSettings },
-                                    onNavigateToSentenceAnalyzer = { currentScreen = AppScreen.SentenceAnalyzer },
-                                    onNavigateToStudyStats = { currentScreen = AppScreen.StudyStats },
-                                    onNavigateToSrsDecks = { currentScreen = AppScreen.SrsDeckList },
-                                    onNavigateToHistory = { currentScreen = AppScreen.SearchHistory },
-                                    onNavigateToAbout = { currentScreen = AppScreen.AboutDataLicense },
+                                    onBackClick = { navigateBack() },
+                                    onNavigateToSecurity = { navigateTo(AppScreen.SecuritySettings) },
+                                    onNavigateToDataPack = { navigateTo(AppScreen.DataPackManager) },
+                                    onNavigateToAppearance = { navigateTo(AppScreen.AppearanceSettings) },
+                                    onNavigateToSentenceAnalyzer = { navigateTo(AppScreen.SentenceAnalyzer) },
+                                    onNavigateToStudyStats = { navigateTo(AppScreen.StudyStats) },
+                                    onNavigateToSrsDecks = { navigateTo(AppScreen.SrsDeckList) },
+                                    onNavigateToHistory = { navigateTo(AppScreen.SearchHistory) },
+                                    onNavigateToAbout = { navigateTo(AppScreen.AboutDataLicense) },
                                     onOpenQuickLookupGuide = { showQuickLookupGuide = true },
                                     onNavigateTab = { tabIndex ->
                                         when (tabIndex) {
-                                            0 -> currentScreen = AppScreen.Home
-                                            1 -> currentScreen = AppScreen.SearchResults()
-                                            2 -> currentScreen = AppScreen.AiChat
-                                            3 -> currentScreen = AppScreen.MyVocabulary
+                                            0 -> navigateTo(AppScreen.Home, isTabSwitch = true)
+                                            1 -> navigateTo(AppScreen.SearchResults(), isTabSwitch = true)
+                                            2 -> navigateTo(AppScreen.AiChat, isTabSwitch = true)
+                                            3 -> navigateTo(AppScreen.MyVocabulary, isTabSwitch = true)
                                             4 -> { /* Đang ở Cài đặt */ }
                                         }
                                     }
@@ -605,7 +629,7 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.AboutDataLicense -> {
                                 AboutDataLicenseScreen(
-                                    onBackClick = { currentScreen = AppScreen.SettingsOverview },
+                                    onBackClick = { navigateBack() },
                                     onOpenGithub = {
                                         Toast.makeText(
                                             this@MainActivity,
@@ -625,12 +649,12 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.SrsDeckList -> {
                                 SrsDeckListScreen(
-                                    onBackClick = { currentScreen = AppScreen.MyVocabulary },
+                                    onBackClick = { navigateBack() },
                                     onDeckClick = {
-                                        currentScreen = AppScreen.SrsReview
+                                        navigateTo(AppScreen.SrsReview)
                                     },
                                     onStartReview = {
-                                        currentScreen = AppScreen.SrsReview
+                                        navigateTo(AppScreen.SrsReview)
                                     }
                                 )
                             }
@@ -638,11 +662,13 @@ class MainActivity : ComponentActivity() {
                             is AppScreen.HanjaExplorer -> {
                                 HanjaExplorerScreen(
                                     initialHanja = screen.initialHanja,
-                                    onBackClick = { currentScreen = AppScreen.Home },
+                                    onBackClick = { navigateBack() },
                                     onWordClick = { lexemeId, headword ->
-                                        currentScreen = AppScreen.WordDetail(
-                                            lexemeId = lexemeId,
-                                            headword = headword
+                                        navigateTo(
+                                            AppScreen.WordDetail(
+                                                lexemeId = lexemeId,
+                                                headword = headword
+                                            )
                                         )
                                     },
                                     onSpeakWord = { word ->
@@ -657,9 +683,9 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.SearchHistory -> {
                                 SearchHistoryScreen(
-                                    onBackClick = { currentScreen = AppScreen.SettingsOverview },
+                                    onBackClick = { navigateBack() },
                                     onItemClick = { query ->
-                                        currentScreen = AppScreen.SearchResults(query)
+                                        navigateTo(AppScreen.SearchResults(query))
                                     },
                                     onClearAllHistory = {
                                         Toast.makeText(
@@ -709,7 +735,7 @@ class MainActivity : ComponentActivity() {
                                     Button(
                                         onClick = {
                                             showSettingsDialog = false
-                                            currentScreen = AppScreen.SecuritySettings
+                                            navigateTo(AppScreen.SecuritySettings)
                                         },
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(10.dp),
@@ -721,7 +747,7 @@ class MainActivity : ComponentActivity() {
                                     Button(
                                         onClick = {
                                             showSettingsDialog = false
-                                            currentScreen = AppScreen.DataPackManager
+                                            navigateTo(AppScreen.DataPackManager)
                                         },
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(10.dp),
@@ -733,7 +759,7 @@ class MainActivity : ComponentActivity() {
                                     Button(
                                         onClick = {
                                             showSettingsDialog = false
-                                            currentScreen = AppScreen.AppearanceSettings
+                                            navigateTo(AppScreen.AppearanceSettings)
                                         },
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(10.dp),
@@ -745,7 +771,7 @@ class MainActivity : ComponentActivity() {
                                     Button(
                                         onClick = {
                                             showSettingsDialog = false
-                                            currentScreen = AppScreen.SentenceAnalyzer
+                                            navigateTo(AppScreen.SentenceAnalyzer)
                                         },
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(10.dp),
@@ -757,7 +783,7 @@ class MainActivity : ComponentActivity() {
                                     Button(
                                         onClick = {
                                             showSettingsDialog = false
-                                            currentScreen = AppScreen.StudyStats
+                                            navigateTo(AppScreen.StudyStats)
                                         },
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(10.dp),

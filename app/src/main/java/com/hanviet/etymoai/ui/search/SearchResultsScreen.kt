@@ -364,29 +364,8 @@ private fun SearchResultsHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 6.dp)
+            .padding(horizontal = 20.dp, vertical = 8.dp)
     ) {
-        // System status bar mockup (9:41, wifi, battery)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "9:41",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF334155)
-            )
-            Text(
-                text = "📶 📡 🔋",
-                fontSize = 12.sp,
-                color = Color(0xFF475569)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
         // Brand bar: HanViet EtymoAI + Offline badge + Menu
         Row(
             modifier = Modifier.fillMaxWidth(),

@@ -254,40 +254,28 @@ private fun AboutTopBar(onBackClick: () -> Unit) {
         color = Color(0xFFF4F7FB),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = "9:41", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF334155))
-                Text(text = "📶 📡 🔋", fontSize = 12.sp, color = Color(0xFF475569))
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBackClick, modifier = Modifier.size(36.dp)) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Quay lại",
-                        tint = Color(0xFF1E293B)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(6.dp))
-
-                Text(
-                    text = "Nguồn dữ liệu & Giấy phép",
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+            IconButton(onClick = onBackClick, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Quay lại",
+                    tint = Color(0xFF1E293B)
                 )
             }
+
+            Spacer(modifier = Modifier.width(6.dp))
+
+            Text(
+                text = "Nguồn dữ liệu & Giấy phép",
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0F172A)
+            )
         }
     }
 }
