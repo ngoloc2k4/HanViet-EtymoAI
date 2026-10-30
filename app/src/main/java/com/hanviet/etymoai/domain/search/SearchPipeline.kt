@@ -328,6 +328,7 @@ class SearchPipeline(
             LIMIT ?
         """.trimIndent()
 
+        var ftsSuccess = true
         try {
             db.rawQuery(ftsSql, arrayOf(ftsExpression, limit.toString())).use { cursor ->
                 while (cursor.moveToNext()) {
@@ -344,10 +345,11 @@ class SearchPipeline(
             }
         } catch (_: Exception) {
             // Khi FTS5 không khả dụng trong môi trường runtime (như một số phiên bản Robolectric/SQLite), tiếp tục fallback
+            ftsSuccess = false
         }
 
-        // 2. Dự phòng tra cứu bảng senses (meaning_vi và meaning_vi_normalized) nếu FTS5 chưa đủ kết quả
-        if (list.size < limit) {
+        // 2. Dự phòng tra cứu bảng senses chỉ khi FTS5 không khả dụng
+        if (!ftsSuccess) {
             val unaccented = removeVietnameseDiacritics(clean)
             val sensesSql = """
                 SELECT DISTINCT l.lexeme_id, l.stable_key, l.headword_nfc, l.origin_type, l.phonetic_vi, l.topik_level,
