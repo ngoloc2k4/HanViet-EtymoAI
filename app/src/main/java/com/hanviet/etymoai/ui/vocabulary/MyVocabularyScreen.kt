@@ -122,7 +122,7 @@ fun MyVocabularyScreen(
 
     val savedWords = remember(savedWordsWithTags) {
         savedWordsWithTags.map { item ->
-            val entity = item.savedWord
+            val entity = item.word
             val origin = when (entity.originType.uppercase()) {
                 "SINO_KOREAN", "HANJA" -> OriginType.SINO_KOREAN
                 "NATIVE", "NATIVE_KOREAN" -> OriginType.NATIVE_KOREAN

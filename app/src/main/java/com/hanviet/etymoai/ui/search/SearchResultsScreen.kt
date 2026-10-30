@@ -130,11 +130,11 @@ private fun SearchResult.toItem(): SearchResultItem {
         OriginType.MIXED -> LeadingBadgeType.TextBadge("混", Color(0xFFFEF3C7), Color(0xFFD97706))
     }
     val tierLabel = when (matchTier) {
-        SearchMatchTier.EXACT -> "Khớp chính xác"
-        SearchMatchTier.CHOSUNG -> "Khớp âm đầu (Chosung)"
-        SearchMatchTier.PRECOMPUTED -> "Khớp âm Hán-Việt"
+        SearchMatchTier.EXACT_HEADWORD -> "Khớp chính xác"
+        SearchMatchTier.CHOSUNG_ALIAS -> "Khớp âm đầu (Chosung)"
+        SearchMatchTier.PRECOMPUTED_FORM -> "Dạng biến thể tính sẵn"
         SearchMatchTier.MORPHOLOGY -> "Dạng gốc biến cách"
-        SearchMatchTier.FTS_HEADWORD, SearchMatchTier.FTS_MEANING -> "Khớp toàn văn (FTS5)"
+        SearchMatchTier.FTS_FULLTEXT -> "Khớp toàn văn (FTS5)"
     }
     return SearchResultItem(
         id = lexemeId,
