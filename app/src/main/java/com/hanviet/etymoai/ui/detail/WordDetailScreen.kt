@@ -463,7 +463,7 @@ private fun HeroSummaryCard(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    val repChar = word.segments.firstOrNull { it.hanjaChar.isNotBlank() }?.hanjaChar ?: "書"
+                    val repChar = word.segments.firstOrNull { it.hanjaChar?.isNotBlank() == true }?.hanjaChar ?: "書"
                     Text(
                         text = repChar,
                         fontSize = 26.sp,
@@ -710,7 +710,7 @@ private fun VisualMorphemeEquationCard(
                 segments.forEachIndexed { index, seg ->
                     MorphemeSegmentBox(
                         segment = seg,
-                        onClick = { onHanjaClick(seg.hanjaChar) },
+                        onClick = { onHanjaClick(seg.hanjaChar ?: "") },
                         modifier = Modifier.weight(1f)
                     )
 
@@ -790,7 +790,7 @@ private fun MorphemeSegmentBox(
         ) {
             // Chữ Hán
             Text(
-                text = segment.hanjaChar,
+                text = segment.hanjaChar ?: "",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Serif,
@@ -801,7 +801,7 @@ private fun MorphemeSegmentBox(
 
             // Bộ đôi Âm Hangul • Âm Hán Việt: [도 • Đồ]
             Text(
-                text = "${segment.syllableKo} • ${segment.readingVi}",
+                text = "${segment.syllableKo} • ${segment.readingVi ?: ""}",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF2563EB)
@@ -811,7 +811,7 @@ private fun MorphemeSegmentBox(
 
             // Giải nghĩa vắn tắt
             Text(
-                text = segment.meaningVi,
+                text = segment.meaningVi ?: "",
                 fontSize = 10.sp,
                 color = Color(0xFF64748B),
                 textAlign = TextAlign.Center,
@@ -856,8 +856,8 @@ private fun DictionaryInfoCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            val hanjaFull = word.segments.joinToString("") { it.hanjaChar }.ifBlank { "圖書館" }
-            val hanVietFull = word.segments.joinToString(" - ") { it.readingVi }.ifBlank { "Đồ - Thư - Quán" }
+            val hanjaFull = word.segments.mapNotNull { it.hanjaChar }.joinToString("").ifBlank { "圖書館" }
+            val hanVietFull = word.segments.mapNotNull { it.readingVi }.joinToString(" - ").ifBlank { "Đồ - Thư - Quán" }
 
             DictionaryInfoRow(label = "Từ gốc Hán tự", value = hanjaFull, isHanja = true)
             DictionaryInfoRow(label = "Âm Hán-Việt", value = hanVietFull, isHighlight = true)
