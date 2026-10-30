@@ -134,52 +134,69 @@ fun WordDetailScreen(
             }
         }
 
-        // Dữ liệu fallback chuẩn mực học thuật nếu repository chưa nạp hoặc đang chạy offline
+        // Dữ liệu hiển thị nếu chưa có trong core db
         if (etymology == null) {
-            etymology = WordEtymology(
-                lexemeId = if (lexemeId > 0) lexemeId else 101L,
-                headword = targetWord,
-                originType = OriginType.SINO_KOREAN,
-                verificationStatus = VerificationStatus.VERIFIED_PRIMARY,
-                phoneticVi = "Đồ Thư Quán",
-                segments = listOf(
-                    HanjaSegment(
-                        segmentIndex = 0,
-                        syllableKo = "도",
-                        hanjaChar = "圖",
-                        readingVi = "Đồ",
-                        meaningVi = "bản vẽ, hình ảnh, sách đồ án"
+            if (targetWord == "도서관") {
+                etymology = WordEtymology(
+                    lexemeId = if (lexemeId > 0) lexemeId else 101L,
+                    headword = "도서관",
+                    originType = OriginType.SINO_KOREAN,
+                    verificationStatus = VerificationStatus.VERIFIED_PRIMARY,
+                    phoneticVi = "Đồ Thư Quán",
+                    segments = listOf(
+                        HanjaSegment(
+                            segmentIndex = 0,
+                            syllableKo = "도",
+                            hanjaChar = "圖",
+                            readingVi = "Đồ",
+                            meaningVi = "bản vẽ, hình ảnh, sách đồ án"
+                        ),
+                        HanjaSegment(
+                            segmentIndex = 1,
+                            syllableKo = "서",
+                            hanjaChar = "書",
+                            readingVi = "Thư",
+                            meaningVi = "sách, văn bản, thư tịch"
+                        ),
+                        HanjaSegment(
+                            segmentIndex = 2,
+                            syllableKo = "관",
+                            hanjaChar = "館",
+                            readingVi = "Quán",
+                            meaningVi = "tòa nhà, quán, cơ quan, viện"
+                        )
                     ),
-                    HanjaSegment(
-                        segmentIndex = 1,
-                        syllableKo = "서",
-                        hanjaChar = "書",
-                        readingVi = "Thư",
-                        meaningVi = "sách, văn bản, thư tịch"
+                    adaptationNote = "Đồ + Thư + Quán → Thư viện: nơi lưu trữ sách và tài liệu công cộng.",
+                    partOfSpeech = "Danh từ",
+                    meaningVi = "thư viện, nhà sách công cộng phục vụ đọc và mượn tư liệu",
+                    definitionKo = "온갖 도서, 문서, 기록, 출판물 따위의 자료를 모아 두고 일반이 열람하게 하는 시설.",
+                    examples = listOf(
+                        WordExample("주말에는 국립중앙도서관에서 책을 읽거나 공부해요.", "Vào cuối tuần, tôi đọc sách hoặc học bài ở Thư viện Quốc gia."),
+                        WordExample("도서관에서 책을 대출하고 반납했습니다.", "Tôi đã mượn và trả sách tại thư viện.")
                     ),
-                    HanjaSegment(
-                        segmentIndex = 2,
-                        syllableKo = "관",
-                        hanjaChar = "館",
-                        readingVi = "Quán",
-                        meaningVi = "tòa nhà, quán, cơ quan, viện"
+                    relatedWords = listOf(
+                        RelatedWordSummary(101L, "도서", "Đồ thư", "sách vở, tư liệu"),
+                        RelatedWordSummary(102L, "독서", "Độc thư", "việc đọc sách"),
+                        RelatedWordSummary(103L, "서점", "Thư tiệm", "hiệu sách"),
+                        RelatedWordSummary(104L, "박물관", "Bác vật quán", "viện bảo tàng")
                     )
-                ),
-                adaptationNote = "Đồ + Thư + Quán → Thư viện: nơi lưu trữ sách và tài liệu công cộng.",
-                partOfSpeech = "Danh từ",
-                meaningVi = "thư viện, nhà sách công cộng phục vụ đọc và mượn tư liệu",
-                definitionKo = "온갖 도서, 문서, 기록, 출판물 따위의 자료를 모아 두고 일반이 열람하게 하는 시설.",
-                examples = listOf(
-                    WordExample("주말에는 국립중앙도서관에서 책을 읽거나 공부해요.", "Vào cuối tuần, tôi đọc sách hoặc học bài ở Thư viện Quốc gia."),
-                    WordExample("도서관에서 책을 대출하고 반납했습니다.", "Tôi đã mượn và trả sách tại thư viện.")
-                ),
-                relatedWords = listOf(
-                    RelatedWordSummary(101L, "도서", "Đồ thư", "sách vở, tư liệu"),
-                    RelatedWordSummary(102L, "독서", "Độc thư", "việc đọc sách"),
-                    RelatedWordSummary(103L, "서점", "Thư tiệm", "hiệu sách"),
-                    RelatedWordSummary(104L, "박물관", "Bác vật quán", "viện bảo tàng")
                 )
-            )
+            } else {
+                etymology = WordEtymology(
+                    lexemeId = if (lexemeId > 0) lexemeId else System.currentTimeMillis(),
+                    headword = targetWord,
+                    originType = OriginType.NATIVE_KOREAN,
+                    verificationStatus = VerificationStatus.UNVERIFIED,
+                    phoneticVi = null,
+                    segments = emptyList(),
+                    adaptationNote = "Từ vựng: $targetWord. Dữ liệu đang được chuẩn hóa trong CSDL offline.",
+                    partOfSpeech = "Từ vựng",
+                    meaningVi = "Từ vựng tiếng Hàn: $targetWord",
+                    definitionKo = targetWord,
+                    examples = emptyList(),
+                    relatedWords = emptyList()
+                )
+            }
         }
         isLoading = false
     }

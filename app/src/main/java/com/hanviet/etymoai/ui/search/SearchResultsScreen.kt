@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -55,9 +56,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,6 +76,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hanviet.etymoai.domain.etymology.OriginType
+import com.hanviet.etymoai.domain.search.SearchMatchTier
+import com.hanviet.etymoai.domain.search.SearchPipeline
+import com.hanviet.etymoai.domain.search.SearchResult
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Kiểu Badge hiển thị bên trái của mỗi thẻ kết quả tra cứu.
@@ -107,140 +116,100 @@ enum class SearchSortOption(val titleVi: String) {
     ALPHABETICAL("Theo bảng chữ cái")
 }
 
+private fun SearchResult.toItem(): SearchResultItem {
+    val origin = when (originType.uppercase()) {
+        "SINO_KOREAN", "HANJA" -> OriginType.SINO_KOREAN
+        "NATIVE", "NATIVE_KOREAN" -> OriginType.NATIVE_KOREAN
+        "LOANWORD", "FOREIGN" -> OriginType.LOANWORD
+        else -> OriginType.MIXED
+    }
+    val badge = when (origin) {
+        OriginType.SINO_KOREAN -> LeadingBadgeType.TextBadge("漢", Color(0xFFEFF6FF), Color(0xFF2563EB))
+        OriginType.NATIVE_KOREAN -> LeadingBadgeType.TextBadge("韓", Color(0xFFECFDF5), Color(0xFF059669))
+        OriginType.LOANWORD -> LeadingBadgeType.TextBadge("🌐", Color(0xFFFFF1F2), Color(0xFFE11D48))
+        OriginType.MIXED -> LeadingBadgeType.TextBadge("混", Color(0xFFFEF3C7), Color(0xFFD97706))
+    }
+    val tierLabel = when (matchTier) {
+        SearchMatchTier.EXACT -> "Khớp chính xác"
+        SearchMatchTier.CHOSUNG -> "Khớp âm đầu (Chosung)"
+        SearchMatchTier.PRECOMPUTED -> "Khớp âm Hán-Việt"
+        SearchMatchTier.MORPHOLOGY -> "Dạng gốc biến cách"
+        SearchMatchTier.FTS_HEADWORD, SearchMatchTier.FTS_MEANING -> "Khớp toàn văn (FTS5)"
+    }
+    return SearchResultItem(
+        id = lexemeId,
+        headword = headwordNfc,
+        hanjaOriginal = null,
+        originType = origin,
+        posTag = if (!phoneticVi.isNullOrBlank()) "Hán-Việt: $phoneticVi" else "Từ vựng",
+        pronunciationHangul = headwordNfc,
+        pronunciationRoman = phoneticVi ?: "",
+        primaryMeaningVi = primaryMeaningVi,
+        badgeType = badge,
+        matchTierTitle = tierLabel
+    )
+}
+
 /**
  * Màn hình Kết Quả Tra Cứu (Search Results Screen) chuẩn Idea 2.2.
  * Hỗ trợ lọc theo 5 phân loại nguồn gốc (OriginType), phân cấp tầng kết quả rõ ràng,
- * loại bỏ hoàn toàn các dòng ảo giác hoặc trùng lặp dữ liệu.
+ * kết nối trực tiếp SearchPipeline thực tế từ CSDL 50k NIKL.
  */
 @Composable
 fun SearchResultsScreen(
     initialQuery: String = "도서관",
-    onWordClick: (String) -> Unit = {},
+    onWordClick: (Long, String) -> Unit = { _, _ -> },
     onBackClick: () -> Unit = {},
     onSpeakWord: (String) -> Unit = {},
-    onNavigateTab: (Int) -> Unit = {}
+    onNavigateTab: (Int) -> Unit = {},
+    searchPipeline: SearchPipeline? = null,
+    onRecordHistory: ((String) -> Unit)? = null
 ) {
     var searchQuery by remember { mutableStateOf(initialQuery) }
     var selectedOriginFilter by remember { mutableStateOf<OriginType?>(null) } // null = "Tất cả"
     var selectedSort by remember { mutableStateOf(SearchSortOption.RELEVANCE) }
     var showSortMenu by remember { mutableStateOf(false) }
+    var rawResults by remember { mutableStateOf<List<SearchResultItem>>(emptyList()) }
+    var isSearching by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
 
-    // Danh sách kết quả tra cứu chuẩn hóa ngôn ngữ (Tuân thủ Idea 2.2 Mục 10.1 & 10.5)
-    val allResults = remember {
-        listOf(
-            // Tầng 1: Khớp chính xác (Exact Match) - Đã gộp Danh từ + Hán-Hàn trên 1 thẻ duy nhất
-            SearchResultItem(
-                id = 101L,
-                headword = "도서관",
-                hanjaOriginal = "圖書館",
-                originType = OriginType.SINO_KOREAN,
-                posTag = "Danh từ",
-                pronunciationHangul = "도서관",
-                pronunciationRoman = "do-seo-gwan",
-                primaryMeaningVi = "thư viện, nơi lưu trữ sách và tài liệu công cộng",
-                badgeType = LeadingBadgeType.TextBadge(
-                    text = "📖",
-                    bg = Color(0xFFEFF6FF),
-                    fg = Color(0xFF2563EB)
-                ),
-                matchTierTitle = "Khớp chính xác"
-            ),
-            // Tầng 2: Thành tố cấu tạo từ (Morpheme Match)
-            SearchResultItem(
-                id = 102L,
-                headword = "도서",
-                hanjaOriginal = "圖書",
-                originType = OriginType.SINO_KOREAN,
-                posTag = "Danh từ",
-                pronunciationHangul = "도서",
-                pronunciationRoman = "do-seo",
-                primaryMeaningVi = "sách, tư liệu, thư tịch",
-                badgeType = LeadingBadgeType.TextBadge(
-                    text = "書",
-                    bg = Color(0xFFF3E8FF),
-                    fg = Color(0xFF7C3AED)
-                ),
-                matchTierTitle = "Thành tố cấu tạo từ"
-            ),
-            SearchResultItem(
-                id = 103L,
-                headword = "-관",
-                hanjaOriginal = "館",
-                originType = OriginType.SINO_KOREAN,
-                posTag = "Hậu tố",
-                pronunciationHangul = "관",
-                pronunciationRoman = "gwan",
-                primaryMeaningVi = "tòa nhà, quán, viện (hậu tố chỉ cơ quan, nơi chốn)",
-                badgeType = LeadingBadgeType.TextBadge(
-                    text = "館",
-                    bg = Color(0xFFFEF3C7),
-                    fg = Color(0xFFD97706)
-                ),
-                matchTierTitle = "Thành tố cấu tạo từ"
-            ),
-            // Tầng 3: Từ ghép mở rộng (Prefix/Compound Match)
-            SearchResultItem(
-                id = 104L,
-                headword = "도서관학",
-                hanjaOriginal = "圖書館學",
-                originType = OriginType.SINO_KOREAN,
-                posTag = "Danh từ",
-                pronunciationHangul = "도서관학",
-                pronunciationRoman = "do-seo-gwan-hak",
-                primaryMeaningVi = "ngành thư viện học, khoa học thông tin quản lý tư liệu",
-                badgeType = LeadingBadgeType.IconBadge(
-                    icon = Icons.Default.Link,
-                    bg = Color(0xFFF1F5F9),
-                    fg = Color(0xFF475569)
-                ),
-                matchTierTitle = "Từ ghép mở rộng"
-            ),
-            SearchResultItem(
-                id = 105L,
-                headword = "국립중앙도서관",
-                hanjaOriginal = "國立中央圖書館",
-                originType = OriginType.SINO_KOREAN,
-                posTag = "Danh từ riêng",
-                pronunciationHangul = "국립중앙도서관",
-                pronunciationRoman = "guk-rip-jung-ang-do-seo-gwan",
-                primaryMeaningVi = "Thư viện Quốc gia Hàn Quốc (Seoul)",
-                badgeType = LeadingBadgeType.IconBadge(
-                    icon = Icons.Default.Link,
-                    bg = Color(0xFFF1F5F9),
-                    fg = Color(0xFF475569)
-                ),
-                matchTierTitle = "Từ ghép mở rộng"
-            ),
-            SearchResultItem(
-                id = 106L,
-                headword = "전자도서관",
-                hanjaOriginal = "電子圖書館",
-                originType = OriginType.SINO_KOREAN,
-                posTag = "Danh từ",
-                pronunciationHangul = "전자도서관",
-                pronunciationRoman = "jeon-ja-do-seo-gwan",
-                primaryMeaningVi = "thư viện điện tử, cơ sở dữ liệu số hóa tài liệu",
-                badgeType = LeadingBadgeType.IconBadge(
-                    icon = Icons.Default.Link,
-                    bg = Color(0xFFF1F5F9),
-                    fg = Color(0xFF475569)
-                ),
-                matchTierTitle = "Từ ghép mở rộng"
-            )
-        )
+    fun executeSearch(query: String) {
+        val q = query.trim()
+        if (q.isBlank()) {
+            rawResults = emptyList()
+            return
+        }
+        isSearching = true
+        onRecordHistory?.invoke(q)
+        scope.launch(Dispatchers.IO) {
+            try {
+                val results = searchPipeline?.search(q, limit = 50) ?: emptyList()
+                val mapped = results.map { it.toItem() }
+                withContext(Dispatchers.Main) {
+                    rawResults = mapped
+                    isSearching = false
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    isSearching = false
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(initialQuery) {
+        if (initialQuery.isNotBlank()) {
+            executeSearch(initialQuery)
+        }
     }
 
     // Lọc danh sách theo OriginType và từ khóa tìm kiếm
-    val filteredResults = remember(searchQuery, selectedOriginFilter, selectedSort) {
-        var list = allResults.filter { item ->
-            val matchQuery = searchQuery.isBlank() ||
-                item.headword.contains(searchQuery.trim(), ignoreCase = true) ||
-                (item.hanjaOriginal?.contains(searchQuery.trim(), ignoreCase = true) == true) ||
-                item.primaryMeaningVi.contains(searchQuery.trim(), ignoreCase = true)
-
-            val matchFilter = selectedOriginFilter == null || item.originType == selectedOriginFilter
-            matchQuery && matchFilter
+    val filteredResults = remember(rawResults, selectedOriginFilter, selectedSort) {
+        val list = if (selectedOriginFilter == null) {
+            rawResults
+        } else {
+            rawResults.filter { it.originType == selectedOriginFilter }
         }
 
         when (selectedSort) {
@@ -270,7 +239,10 @@ fun SearchResultsScreen(
             SearchInputBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
-                onClear = { searchQuery = "" },
+                onClear = {
+                    searchQuery = ""
+                    rawResults = emptyList()
+                },
                 onFilterClick = {
                     // Chuyển đổi qua lại các bộ lọc nhanh
                     selectedOriginFilter = when (selectedOriginFilter) {
@@ -281,7 +253,10 @@ fun SearchResultsScreen(
                         OriginType.MIXED -> null
                     }
                 },
-                onSubmit = { focusManager.clearFocus() }
+                onSubmit = {
+                    focusManager.clearFocus()
+                    executeSearch(searchQuery)
+                }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -309,7 +284,16 @@ fun SearchResultsScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             // 5. Result Cards List
-            if (filteredResults.isEmpty()) {
+            if (isSearching) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Color(0xFF2563EB))
+                }
+            } else if (filteredResults.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -323,7 +307,7 @@ fun SearchResultsScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Không tìm thấy kết quả phù hợp với bộ lọc",
+                            text = if (searchQuery.isBlank()) "Nhập từ khóa và bấm tìm kiếm" else "Không tìm thấy kết quả phù hợp cho \"$searchQuery\"",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color(0xFF64748B)
@@ -340,7 +324,7 @@ fun SearchResultsScreen(
                     items(filteredResults, key = { it.id }) { item ->
                         SearchResultCard(
                             item = item,
-                            onClick = { onWordClick(item.headword) },
+                            onClick = { onWordClick(item.id, item.headword) },
                             onSpeak = { onSpeakWord(item.headword) }
                         )
                     }

@@ -42,15 +42,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-enum class ThemeModeOption(val titleVi: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    LIGHT("Sáng", Icons.Default.LightMode),
-    DARK("Tối", Icons.Default.DarkMode),
-    SYSTEM("Theo hệ thống", Icons.Default.SettingsBrightness)
-}
+import com.hanviet.etymoai.ui.theme.ThemeModeOption
+import com.hanviet.etymoai.ui.theme.ThemePreferences
 
 /**
  * 3. Màn hình Giao diện & Hiển thị (Appearance, Accessibility & TTS Settings Screen)
@@ -61,7 +58,8 @@ fun AppearanceSettingsScreen(
     onBackClick: () -> Unit = {},
     onThemeChanged: (ThemeModeOption) -> Unit = {}
 ) {
-    var selectedTheme by remember { mutableStateOf(ThemeModeOption.LIGHT) }
+    val context = LocalContext.current
+    var selectedTheme by remember { mutableStateOf(ThemePreferences.getThemeMode(context)) }
     var selectedColorIndex by remember { mutableIntStateOf(0) }
     var selectedFontSizeIndex by remember { mutableIntStateOf(1) } // 0: Nhỏ, 1: Vừa, 2: Lớn, 3: Rất lớn
     var selectedHanjaFormat by remember { mutableStateOf("Hiển thị đầy đủ (Hán + Hán-Việt)") }

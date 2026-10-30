@@ -16,6 +16,35 @@ class UserWorkspaceRepository(
     private val savedWordDao = db.savedWordDao()
     private val wordTagDao = db.wordTagDao()
     private val personalNoteDao = db.personalNoteDao()
+    private val searchHistoryDao = db.searchHistoryDao()
+
+    fun getSearchHistoryFlow(limit: Int = 10): Flow<List<SearchHistoryEntity>> {
+        return searchHistoryDao.getRecentFlow(limit)
+    }
+
+    suspend fun getSearchHistorySync(limit: Int = 10): List<SearchHistoryEntity> {
+        return searchHistoryDao.getRecentSync(limit)
+    }
+
+    suspend fun recordSearch(query: String, resultCount: Int = 1) {
+        val clean = query.trim()
+        if (clean.isBlank()) return
+        searchHistoryDao.insert(
+            SearchHistoryEntity(
+                queryText = clean,
+                searchedAt = System.currentTimeMillis(),
+                resultCount = resultCount
+            )
+        )
+    }
+
+    suspend fun clearSearchHistory(): Int {
+        return searchHistoryDao.clearHistory()
+    }
+
+    suspend fun getSavedWordsCount(): Int {
+        return savedWordDao.getCount()
+    }
 
     enum class ConflictStrategy {
         MERGE,

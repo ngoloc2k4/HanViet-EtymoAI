@@ -1,5 +1,6 @@
 package com.hanviet.etymoai.ui.home
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -33,20 +35,25 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Work
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,11 +64,13 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,7 +85,10 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -84,7 +96,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hanviet.etymoai.data.db.workspace.entity.SearchHistoryEntity
+import com.hanviet.etymoai.data.translation.TranslationEngine
+import com.hanviet.etymoai.data.translation.TranslationResult
 import com.hanviet.etymoai.domain.search.SearchResult
+import kotlinx.coroutines.launch
 
 /**
  * Mục tìm kiếm gần đây mẫu trên màn hình chính
@@ -111,6 +127,10 @@ fun HomeScreen(
     searchResults: List<SearchResult> = emptyList(),
     onSearchResultClick: (SearchResult) -> Unit = {},
     onWordClick: (String) -> Unit = {},
+    recentSearches: List<SearchHistoryEntity> = emptyList(),
+    onClearRecentSearches: () -> Unit = {},
+    onTranslate: (suspend (String, TranslationEngine, String, String) -> Result<TranslationResult>)? = null,
+    onNavigateToSentenceAnalyzer: (String) -> Unit = {},
     onNavigateToDictionary: () -> Unit = {},
     onNavigateToHanja: () -> Unit = {},
     onNavigateToMorphology: () -> Unit = {},
@@ -121,57 +141,6 @@ fun HomeScreen(
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val focusManager = LocalFocusManager.current
-
-    // Danh sách 5 mục tra cứu gần đây chính xác như trong SVG mockup
-    val recentSearches = remember {
-        listOf(
-            RecentSearchItem(
-                id = 1L,
-                headword = "도서관",
-                meaning = "thư viện",
-                badgeLabel = "Hán-Hàn",
-                badgeBgColor = Color(0xFFEFF6FF),
-                badgeTextColor = Color(0xFF2563EB),
-                iconVector = Icons.Default.MenuBook
-            ),
-            RecentSearchItem(
-                id = 2L,
-                headword = "들었어요",
-                meaning = "(đã) nghe, nghe được",
-                badgeLabel = "Động từ",
-                badgeBgColor = Color(0xFFECFDF5),
-                badgeTextColor = Color(0xFF059669),
-                iconVector = Icons.Default.AccountTree
-            ),
-            RecentSearchItem(
-                id = 3L,
-                headword = "행복",
-                meaning = "hạnh phúc",
-                badgeLabel = "Hán-Hàn",
-                badgeBgColor = Color(0xFFEEF2FF),
-                badgeTextColor = Color(0xFF4F46E5),
-                hanjaChar = "漢"
-            ),
-            RecentSearchItem(
-                id = 4L,
-                headword = "아르바이트",
-                meaning = "làm thêm, việc làm thêm",
-                badgeLabel = "Ngoại lai",
-                badgeBgColor = Color(0xFFFFF1F2),
-                badgeTextColor = Color(0xFFE11D48),
-                iconVector = Icons.Default.Work
-            ),
-            RecentSearchItem(
-                id = 5L,
-                headword = "사랑",
-                meaning = "tình yêu",
-                badgeLabel = "Thuần Hàn",
-                badgeBgColor = Color(0xFFEFF6FF),
-                badgeTextColor = Color(0xFF2563EB),
-                iconVector = Icons.Default.AutoAwesome
-            )
-        )
-    }
 
     Scaffold(
         bottomBar = {
@@ -522,7 +491,16 @@ fun HomeScreen(
                 }
             }
 
-            // ================= 5. KHỐI TRA CỨU GẦN ĐÂY (RECENT SEARCHES) =================
+            // ================= 5. KHU VỰC DỊCH THUẬT NHANH (MÁY DỊCH & AI) =================
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                QuickTranslationCard(
+                    onTranslate = onTranslate,
+                    onNavigateToSentenceAnalyzer = onNavigateToSentenceAnalyzer
+                )
+            }
+
+            // ================= 6. KHỐI TRA CỨU GẦN ĐÂY (RECENT SEARCHES THỰC TẾ) =================
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 Card(
@@ -553,36 +531,64 @@ fun HomeScreen(
                                 color = Color(0xFF0F172A)
                             )
                             Spacer(modifier = Modifier.weight(1f))
-                            Text(
-                                text = "Xem tất cả  ›",
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF2563EB),
-                                modifier = Modifier.clickable { onNavigateToDictionary() }
-                            )
+                            if (recentSearches.isNotEmpty()) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.clickable { onClearRecentSearches() }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DeleteOutline,
+                                        contentDescription = "Xóa lịch sử",
+                                        tint = Color(0xFF94A3B8),
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Xóa tất cả",
+                                        fontSize = 11.5.sp,
+                                        color = Color(0xFF94A3B8)
+                                    )
+                                }
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(10.dp))
                         HorizontalDivider(color = Color(0xFFF1F5F9))
 
-                        // Danh sách 5 mục
-                        recentSearches.forEachIndexed { index, item ->
-                            RecentSearchRow(
-                                item = item,
-                                onClick = { onWordClick(item.headword) }
-                            )
-                            if (index < recentSearches.size - 1) {
-                                HorizontalDivider(
-                                    color = Color(0xFFF1F5F9),
-                                    modifier = Modifier.padding(start = 44.dp)
+                        if (recentSearches.isEmpty()) {
+                            // Khi chưa có lịch sử, để trống hoặc thông báo tinh tế
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 18.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Chưa có lượt tra cứu nào gần đây",
+                                    fontSize = 12.5.sp,
+                                    color = Color(0xFF94A3B8)
                                 )
+                            }
+                        } else {
+                            // Danh sách các từ tra cứu thực tế từ search_history
+                            recentSearches.take(5).forEachIndexed { index, item ->
+                                RealSearchHistoryRow(
+                                    item = item,
+                                    onClick = { onWordClick(item.queryText) }
+                                )
+                                if (index < minOf(recentSearches.size, 5) - 1) {
+                                    HorizontalDivider(
+                                        color = Color(0xFFF1F5F9),
+                                        modifier = Modifier.padding(start = 44.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // ================= 6. THẺ KHÁM PHÁ (EXPLORE PROMO BANNER) =================
+            // ================= 7. THẺ KHÁM PHÁ (EXPLORE PROMO BANNER) =================
             item {
                 Spacer(modifier = Modifier.height(14.dp))
                 Surface(
@@ -656,11 +662,11 @@ fun HomeScreen(
 }
 
 /**
- * Hàng mục tra cứu gần đây (Recent Search Row)
+ * Hàng mục tra cứu gần đây thực tế (Real Search History Row)
  */
 @Composable
-private fun RecentSearchRow(
-    item: RecentSearchItem,
+private fun RealSearchHistoryRow(
+    item: SearchHistoryEntity,
     onClick: () -> Unit
 ) {
     Row(
@@ -676,24 +682,14 @@ private fun RecentSearchRow(
             modifier = Modifier
                 .size(30.dp)
                 .clip(CircleShape)
-                .background(item.badgeBgColor)
+                .background(Color(0xFFEFF6FF))
         ) {
-            if (item.hanjaChar != null) {
-                Text(
-                    text = item.hanjaChar,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Serif,
-                    color = item.badgeTextColor
-                )
-            } else if (item.iconVector != null) {
-                Icon(
-                    imageVector = item.iconVector,
-                    contentDescription = null,
-                    tint = item.badgeTextColor,
-                    modifier = Modifier.size(15.dp)
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.History,
+                contentDescription = null,
+                tint = Color(0xFF2563EB),
+                modifier = Modifier.size(16.dp)
+            )
         }
 
         Spacer(modifier = Modifier.width(10.dp))
@@ -701,13 +697,14 @@ private fun RecentSearchRow(
         // Từ vựng và Nghĩa
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = item.headword,
+                text = item.queryText,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF0F172A)
             )
+            val resultNote = if (item.resultCount > 0) "${item.resultCount} kết quả" else "Đã tra cứu"
             Text(
-                text = item.meaning,
+                text = resultNote,
                 fontSize = 11.sp,
                 color = Color(0xFF64748B)
             )
@@ -716,7 +713,7 @@ private fun RecentSearchRow(
         // Huy hiệu phân loại (Badge)
         Surface(
             shape = RoundedCornerShape(10.dp),
-            color = item.badgeBgColor,
+            color = Color(0xFFF1F5F9),
             modifier = Modifier.height(20.dp)
         ) {
             Box(
@@ -724,10 +721,10 @@ private fun RecentSearchRow(
                 modifier = Modifier.padding(horizontal = 8.dp)
             ) {
                 Text(
-                    text = item.badgeLabel,
+                    text = "Gần đây",
                     fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = item.badgeTextColor
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF475569)
                 )
             }
         }
@@ -741,6 +738,312 @@ private fun RecentSearchRow(
             fontWeight = FontWeight.Bold,
             color = Color(0xFF94A3B8)
         )
+    }
+}
+
+/**
+ * Thẻ Dịch thuật Nhanh (Quick Translation Card)
+ * Hỗ trợ chọn dịch bằng Máy dịch (Google Translate/DeepL) hoặc AI Grounded (BYOK)
+ */
+@Composable
+private fun QuickTranslationCard(
+    onTranslate: (suspend (String, TranslationEngine, String, String) -> Result<TranslationResult>)?,
+    onNavigateToSentenceAnalyzer: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var sourceText by remember { mutableStateOf("") }
+    var translatedText by remember { mutableStateOf("") }
+    var isTranslating by remember { mutableStateOf(false) }
+    var selectedEngine by remember { mutableStateOf(TranslationEngine.GOOGLE_TRANSLATE) }
+    var isKoToVi by remember { mutableStateOf(true) } // true: KO -> VI, false: VI -> KO
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Header: Title & Language Toggle
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFEFF6FF)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Translate,
+                        contentDescription = null,
+                        tint = Color(0xFF2563EB),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Dịch thuật nhanh",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                    Text(
+                        text = if (isKoToVi) "Tiếng Hàn ➔ Tiếng Việt" else "Tiếng Việt ➔ Tiếng Hàn",
+                        fontSize = 11.sp,
+                        color = Color(0xFF64748B)
+                    )
+                }
+
+                // Switch language direction button
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF1F5F9),
+                    modifier = Modifier
+                        .clickable { isKoToVi = !isKoToVi }
+                        .padding(2.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SwapHoriz,
+                            contentDescription = "Đổi hướng dịch",
+                            tint = Color(0xFF2563EB),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (isKoToVi) "KO ⇄ VI" else "VI ⇄ KO",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2563EB)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Engine Selector Tabs: Máy dịch vs AI Grounded
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val engines = listOf(
+                    TranslationEngine.GOOGLE_TRANSLATE to "Máy dịch (Google/DeepL)",
+                    TranslationEngine.AI_GROUNDED to "AI Trợ lý (BYOK)"
+                )
+                engines.forEach { (engine, label) ->
+                    val isSelected = selectedEngine == engine
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isSelected) Color(0xFFDBEAFE) else Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, if (isSelected) Color(0xFF2563EB) else Color(0xFFE2E8F0)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(30.dp)
+                            .clickable { selectedEngine = engine }
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Text(
+                                text = label,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) Color(0xFF1D4ED8) else Color(0xFF64748B)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Text Input Box
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFF8FAFC),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    BasicTextField(
+                        value = sourceText,
+                        onValueChange = {
+                            sourceText = it
+                            errorMessage = null
+                        },
+                        textStyle = TextStyle(
+                            fontSize = 13.5.sp,
+                            color = Color(0xFF0F172A),
+                            lineHeight = 20.sp
+                        ),
+                        cursorBrush = SolidColor(Color(0xFF2563EB)),
+                        decorationBox = { innerTextField ->
+                            if (sourceText.isEmpty()) {
+                                Text(
+                                    text = if (isKoToVi) "Nhập câu tiếng Hàn cần dịch..." else "Nhập câu tiếng Việt cần dịch sang tiếng Hàn...",
+                                    fontSize = 12.5.sp,
+                                    color = Color(0xFF94A3B8)
+                                )
+                            }
+                            innerTextField()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 55.dp, max = 120.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (sourceText.isNotEmpty()) {
+                            IconButton(
+                                onClick = { sourceText = ""; translatedText = "" },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Xoá",
+                                    tint = Color(0xFF94A3B8),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = {
+                                if (sourceText.isBlank()) return@Button
+                                isTranslating = true
+                                errorMessage = null
+                                coroutineScope.launch {
+                                    val src = if (isKoToVi) "ko" else "vi"
+                                    val tgt = if (isKoToVi) "vi" else "ko"
+                                    val result = onTranslate?.invoke(sourceText.trim(), selectedEngine, src, tgt)
+                                    if (result != null && result.isSuccess) {
+                                        translatedText = result.getOrNull()?.translatedText ?: ""
+                                    } else {
+                                        errorMessage = result?.exceptionOrNull()?.message ?: "Không thể kết nối máy dịch."
+                                    }
+                                    isTranslating = false
+                                }
+                            },
+                            enabled = sourceText.isNotBlank() && !isTranslating,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            if (isTranslating) {
+                                CircularProgressIndicator(
+                                    color = Color.White,
+                                    strokeWidth = 2.dp,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            } else {
+                                Text("Dịch", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Error or Result Display
+            if (errorMessage != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = errorMessage ?: "",
+                    fontSize = 11.5.sp,
+                    color = Color(0xFFDC2626),
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            }
+
+            if (translatedText.isNotBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFEFF6FF),
+                    border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Bản dịch:",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF1D4ED8)
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            IconButton(
+                                onClick = {
+                                    clipboardManager.setText(AnnotatedString(translatedText))
+                                    Toast.makeText(context, "Đã sao chép bản dịch", Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "Sao chép",
+                                    tint = Color(0xFF2563EB),
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = translatedText,
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF0F172A),
+                            lineHeight = 20.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                            TextButton(
+                                onClick = {
+                                    val textToAnalyze = if (isKoToVi) sourceText else translatedText
+                                    onNavigateToSentenceAnalyzer(textToAnalyze)
+                                },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AccountTree,
+                                    contentDescription = null,
+                                    tint = Color(0xFF2563EB),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Phân tích ngữ pháp",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF2563EB)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -910,26 +1213,6 @@ private fun FloatingSearchBar(
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.width(6.dp))
-
-            // Icon Bàn phím
-            Icon(
-                imageVector = Icons.Default.Keyboard,
-                contentDescription = "Bàn phím",
-                tint = Color(0xFF64748B),
-                modifier = Modifier.size(18.dp)
-            )
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            // Icon Micro thu âm (màu xanh dương đậm)
-            Icon(
-                imageVector = Icons.Default.Mic,
-                contentDescription = "Giọng nói",
-                tint = Color(0xFF2563EB),
-                modifier = Modifier.size(20.dp)
-            )
         }
     }
 }

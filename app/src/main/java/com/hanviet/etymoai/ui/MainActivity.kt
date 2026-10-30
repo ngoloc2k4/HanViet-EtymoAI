@@ -37,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -52,7 +53,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hanviet.etymoai.data.db.workspace.entity.SavedWordEntity
+import com.hanviet.etymoai.data.translation.UnifiedTranslationService
 import com.hanviet.etymoai.di.DatabaseModule
+import com.hanviet.etymoai.ui.theme.HanVietTheme
+import com.hanviet.etymoai.ui.theme.ThemeModeOption
+import com.hanviet.etymoai.ui.theme.ThemePreferences
 import com.hanviet.etymoai.domain.etymology.HanjaSegment
 import com.hanviet.etymoai.domain.search.SearchResult
 import com.hanviet.etymoai.domain.srs.ReviewRating
@@ -157,15 +162,22 @@ class MainActivity : ComponentActivity() {
     private val etymologyRepository by lazy { DatabaseModule.provideEtymologyRepository(coreDbHelper) }
     private val searchPipeline by lazy { DatabaseModule.provideSearchPipeline(coreDbHelper) }
     private val srsRepository by lazy { DatabaseModule.provideSrsRepository(workspaceDb, etymologyRepository) }
+    private val userWorkspaceRepository by lazy { DatabaseModule.provideUserWorkspaceRepository(workspaceDb) }
+    private val apiKeyStorage by lazy { DatabaseModule.provideApiKeyStorage(this) }
+    private val translationService by lazy { UnifiedTranslationService(apiKeyStorage) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
-            MaterialTheme {
+            var currentThemeMode by remember {
+                mutableStateOf(ThemePreferences.getThemeMode(this@MainActivity))
+            }
+
+            HanVietTheme(themeMode = currentThemeMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color(0xFFF4F7FB)
+                    color = MaterialTheme.colorScheme.background
                 ) {
                     val backStackSaver = Saver<androidx.compose.runtime.snapshots.SnapshotStateList<AppScreen>, ArrayList<String>>(
                         save = { list ->
@@ -215,6 +227,13 @@ class MainActivity : ComponentActivity() {
 
                     val scope = rememberCoroutineScope()
 
+                    // Thu thập lịch sử tìm kiếm và kho từ vựng thực tế từ Workspace Database
+                    val recentSearches by userWorkspaceRepository.getSearchHistoryFlow(limit = 10)
+                        .collectAsState(initial = emptyList())
+                    val savedWordsWithTags by userWorkspaceRepository.getAllSavedWordsFlow()
+                        .collectAsState(initial = emptyList())
+                    val savedWordsCount = savedWordsWithTags.size
+
                     // Debounce & live search khi người dùng gõ từ khóa
                     LaunchedEffect(searchQuery) {
                         if (searchQuery.isBlank()) {
@@ -250,7 +269,22 @@ class MainActivity : ComponentActivity() {
                                     searchQuery = searchQuery,
                                     onSearchQueryChange = { searchQuery = it },
                                     searchResults = searchResults,
+                                    recentSearches = recentSearches,
+                                    onClearRecentSearches = {
+                                        scope.launch(Dispatchers.IO) {
+                                            userWorkspaceRepository.clearSearchHistory()
+                                        }
+                                    },
+                                    onTranslate = { text, engine, src, tgt ->
+                                        translationService.translate(text, engine, src, tgt)
+                                    },
+                                    onNavigateToSentenceAnalyzer = {
+                                        navigateTo(AppScreen.SentenceAnalyzer)
+                                    },
                                     onSearchResultClick = { result ->
+                                        scope.launch(Dispatchers.IO) {
+                                            userWorkspaceRepository.recordSearch(result.headwordNfc)
+                                        }
                                         navigateTo(
                                             AppScreen.WordDetail(
                                                 lexemeId = result.lexemeId,
@@ -260,6 +294,7 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onWordClick = { word ->
                                         scope.launch(Dispatchers.IO) {
+                                            userWorkspaceRepository.recordSearch(word)
                                             try {
                                                 val etymo = etymologyRepository.getEtymologyForWordByHeadword(word)
                                                 withContext(Dispatchers.Main) {
@@ -271,7 +306,6 @@ class MainActivity : ComponentActivity() {
                                                             )
                                                         )
                                                     } else {
-                                                        // Nếu chưa có trong core db, chuyển sang lexemeId giả định để xem giao diện
                                                         navigateTo(
                                                             AppScreen.WordDetail(
                                                                 lexemeId = 1L,
@@ -319,10 +353,19 @@ class MainActivity : ComponentActivity() {
                             is AppScreen.SearchResults -> {
                                 SearchResultsScreen(
                                     initialQuery = screen.query,
-                                    onWordClick = { headword ->
+                                    searchPipeline = searchPipeline,
+                                    onRecordHistory = { query ->
+                                        scope.launch(Dispatchers.IO) {
+                                            userWorkspaceRepository.recordSearch(query)
+                                        }
+                                    },
+                                    onWordClick = { lexemeId, headword ->
+                                        scope.launch(Dispatchers.IO) {
+                                            userWorkspaceRepository.recordSearch(headword)
+                                        }
                                         navigateTo(
                                             AppScreen.WordDetail(
-                                                lexemeId = 101L,
+                                                lexemeId = lexemeId,
                                                 headword = headword
                                             )
                                         )
@@ -365,9 +408,24 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.AiDetailAnalysis(word))
                                     },
                                     onSaveWord = { word ->
+                                        scope.launch(Dispatchers.IO) {
+                                            try {
+                                                val etymo = etymologyRepository.getEtymologyForWordByHeadword(word)
+                                                userWorkspaceRepository.saveWord(
+                                                    stableKey = "word_${word.hashCode()}",
+                                                    headword = word,
+                                                    meaning = etymo?.meaningVi ?: "Từ vựng tiếng Hàn",
+                                                    phonetic = etymo?.phoneticVi,
+                                                    originType = etymo?.originType?.name ?: "SINO_KOREAN",
+                                                    isFavorite = true
+                                                )
+                                            } catch (e: Exception) {
+                                                e.printStackTrace()
+                                            }
+                                        }
                                         Toast.makeText(
                                             this@MainActivity,
-                                            "Đã lưu từ: $word",
+                                            "Đã lưu từ vào kho từ vựng: $word",
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     },
@@ -486,13 +544,23 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.MyVocabulary -> {
                                 MyVocabularyScreen(
+                                    userWorkspaceRepository = userWorkspaceRepository,
                                     onWordClick = { headword ->
-                                        navigateTo(
-                                            AppScreen.WordDetail(
-                                                lexemeId = 101L,
-                                                headword = headword
-                                            )
-                                        )
+                                        scope.launch(Dispatchers.IO) {
+                                            val etymo = try {
+                                                etymologyRepository.getEtymologyForWordByHeadword(headword)
+                                            } catch (e: Exception) {
+                                                null
+                                            }
+                                            withContext(Dispatchers.Main) {
+                                                navigateTo(
+                                                    AppScreen.WordDetail(
+                                                        lexemeId = etymo?.lexemeId ?: 1L,
+                                                        headword = headword
+                                                    )
+                                                )
+                                            }
+                                        }
                                     },
                                     onBackClick = { navigateBack() },
                                     onSpeakWord = { word ->
@@ -596,9 +664,11 @@ class MainActivity : ComponentActivity() {
                                 AppearanceSettingsScreen(
                                     onBackClick = { navigateBack() },
                                     onThemeChanged = { theme ->
+                                        currentThemeMode = theme
+                                        ThemePreferences.setThemeMode(this@MainActivity, theme)
                                         Toast.makeText(
                                             this@MainActivity,
-                                            "Đã chuyển chủ đề sang ${theme.name}",
+                                            "Đã chuyển chủ đề sang ${theme.titleVi}",
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     }
@@ -607,11 +677,32 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.AiChat -> {
                                 AiChatScreen(
+                                    etymologyRepository = etymologyRepository,
+                                    searchPipeline = searchPipeline,
+                                    apiKeyStorage = apiKeyStorage,
                                     onBackToHome = { navigateBack() },
                                     onOpenDetailAnalysis = { word ->
                                         navigateTo(AppScreen.AiDetailAnalysis(word))
                                     },
+                                    onOpenSecuritySettings = {
+                                        navigateTo(AppScreen.SecuritySettings)
+                                    },
                                     onSaveWord = { word ->
+                                        scope.launch(Dispatchers.IO) {
+                                            try {
+                                                val etymo = etymologyRepository.getEtymologyForWordByHeadword(word)
+                                                userWorkspaceRepository.saveWord(
+                                                    stableKey = "word_${word.hashCode()}",
+                                                    headword = word,
+                                                    meaning = etymo?.meaningVi ?: "Từ vựng tiếng Hàn",
+                                                    phonetic = etymo?.phoneticVi,
+                                                    originType = etymo?.originType?.name ?: "SINO_KOREAN",
+                                                    isFavorite = true
+                                                )
+                                            } catch (e: Exception) {
+                                                e.printStackTrace()
+                                            }
+                                        }
                                         Toast.makeText(
                                             this@MainActivity,
                                             "Đã lưu từ: $word",
@@ -651,6 +742,21 @@ class MainActivity : ComponentActivity() {
                                     headword = screen.headword,
                                     onBackClick = { navigateBack() },
                                     onSaveWord = { word ->
+                                        scope.launch(Dispatchers.IO) {
+                                            try {
+                                                val etymo = etymologyRepository.getEtymologyForWordByHeadword(word)
+                                                userWorkspaceRepository.saveWord(
+                                                    stableKey = "word_${word.hashCode()}",
+                                                    headword = word,
+                                                    meaning = etymo?.meaningVi ?: "Từ vựng tiếng Hàn",
+                                                    phonetic = etymo?.phoneticVi,
+                                                    originType = etymo?.originType?.name ?: "SINO_KOREAN",
+                                                    isFavorite = true
+                                                )
+                                            } catch (e: Exception) {
+                                                e.printStackTrace()
+                                            }
+                                        }
                                         Toast.makeText(
                                             this@MainActivity,
                                             "Đã lưu từ: $word",
@@ -681,6 +787,8 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.SettingsOverview -> {
                                 SettingsOverviewScreen(
+                                    savedWordsCount = savedWordsCount,
+                                    dueCardsCount = 0,
                                     onBackClick = { navigateBack() },
                                     onNavigateToSecurity = { navigateTo(AppScreen.SecuritySettings) },
                                     onNavigateToDataPack = { navigateTo(AppScreen.DataPackManager) },

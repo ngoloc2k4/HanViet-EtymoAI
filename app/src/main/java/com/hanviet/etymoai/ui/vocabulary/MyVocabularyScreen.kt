@@ -56,9 +56,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,7 +75,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hanviet.etymoai.data.repository.UserWorkspaceRepository
 import com.hanviet.etymoai.domain.etymology.OriginType
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 
 data class SavedWordItem(
     val id: Long,
@@ -96,6 +101,7 @@ data class SavedWordItem(
  */
 @Composable
 fun MyVocabularyScreen(
+    userWorkspaceRepository: UserWorkspaceRepository? = null,
     onWordClick: (String) -> Unit = {},
     onBackClick: () -> Unit = {},
     onSpeakWord: (String) -> Unit = {},
@@ -108,79 +114,32 @@ fun MyVocabularyScreen(
     var newWordHeadword by remember { mutableStateOf("") }
     var newWordMeaning by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
 
-    // Dữ liệu từ vựng đã lưu chuẩn hóa ngữ nghĩa và nhãn nguồn gốc
-    var savedWords by remember {
-        mutableStateOf(
-            listOf(
-                // 1. 한국어: 100% SINO_KOREAN (韓國語 - Hàn Quốc ngữ), icon [漢]
-                SavedWordItem(
-                    id = 1L,
-                    headword = "한국어",
-                    originType = OriginType.SINO_KOREAN,
-                    posTag = "Danh từ",
-                    pronunciationHangul = "한국어",
-                    pronunciationRoman = "han-guk-eo",
-                    meaningVi = "tiếng Hàn, ngôn ngữ Hàn Quốc",
-                    isFavorite = true
-                ),
-                // 2. 도서관: SINO_KOREAN (圖書館), icon [漢]
-                SavedWordItem(
-                    id = 2L,
-                    headword = "도서관",
-                    originType = OriginType.SINO_KOREAN,
-                    posTag = "Danh từ",
-                    pronunciationHangul = "도서관",
-                    pronunciationRoman = "do-seo-gwan",
-                    meaningVi = "thư viện, nơi lưu trữ sách và tài liệu",
-                    isFavorite = true
-                ),
-                // 3. 알바: LOANWORD (Arbeit - tiếng Đức), icon [🌐]
-                SavedWordItem(
-                    id = 3L,
-                    headword = "알바",
-                    originType = OriginType.LOANWORD,
-                    posTag = "Danh từ",
-                    pronunciationHangul = "알바",
-                    pronunciationRoman = "al-ba",
-                    meaningVi = "việc làm thêm (viết tắt của 아르바이트)",
-                    isFavorite = false
-                ),
-                // 4. 나무: NATIVE_KOREAN (Thuần Hàn), icon [🌱]
-                SavedWordItem(
-                    id = 4L,
-                    headword = "나무",
-                    originType = OriginType.NATIVE_KOREAN,
-                    posTag = "Danh từ",
-                    pronunciationHangul = "나무",
-                    pronunciationRoman = "na-mu",
-                    meaningVi = "cây cối, gỗ",
-                    isFavorite = false
-                ),
-                // 5. 경제: SINO_KOREAN (經濟 - Kinh tế), icon [漢]
-                SavedWordItem(
-                    id = 5L,
-                    headword = "경제",
-                    originType = OriginType.SINO_KOREAN,
-                    posTag = "Danh từ",
-                    pronunciationHangul = "경제",
-                    pronunciationRoman = "gyeong-je",
-                    meaningVi = "nền kinh tế, tài chính sản xuất",
-                    isFavorite = true
-                ),
-                // 6. 빵집: MIXED (Hỗn hợp: 빵 ngoại lai Bão + 집 thuần Hàn), icon [가]
-                SavedWordItem(
-                    id = 6L,
-                    headword = "빵집",
-                    originType = OriginType.MIXED,
-                    posTag = "Danh từ",
-                    pronunciationHangul = "빵집",
-                    pronunciationRoman = "ppang-jip",
-                    meaningVi = "tiệm bánh mì, cửa hàng bánh ngọt",
-                    isFavorite = false
-                )
+    // Lấy dữ liệu từ vựng thực tế từ Workspace Database
+    val savedWordsWithTags by (userWorkspaceRepository?.getAllSavedWordsFlow() ?: flowOf(emptyList()))
+        .collectAsState(initial = emptyList())
+
+    val savedWords = remember(savedWordsWithTags) {
+        savedWordsWithTags.map { item ->
+            val entity = item.savedWord
+            val origin = when (entity.originType.uppercase()) {
+                "SINO_KOREAN", "HANJA" -> OriginType.SINO_KOREAN
+                "NATIVE", "NATIVE_KOREAN" -> OriginType.NATIVE_KOREAN
+                "LOANWORD", "FOREIGN" -> OriginType.LOANWORD
+                else -> OriginType.MIXED
+            }
+            SavedWordItem(
+                id = entity.id,
+                headword = entity.headwordSnapshot,
+                originType = origin,
+                posTag = entity.phoneticSnapshot?.let { "Hán-Việt: $it" } ?: "Từ đã lưu",
+                pronunciationHangul = entity.headwordSnapshot,
+                pronunciationRoman = entity.phoneticSnapshot ?: "",
+                meaningVi = entity.meaningSnapshot,
+                isFavorite = entity.isFavorite
             )
-        )
+        }
     }
 
     val filteredWords = remember(searchQuery, selectedOriginFilter, savedWords) {
@@ -221,7 +180,7 @@ fun MyVocabularyScreen(
         ) {
             // 1. Header & Dòng tiêu đề phụ
             MyVocabularyHeader(
-                totalSavedCount = 128,
+                totalSavedCount = savedWords.size,
                 onStartSrsReview = onStartSrsReview
             )
 
@@ -255,27 +214,48 @@ fun MyVocabularyScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             // 4. Danh sách từ vựng đã lưu
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(filteredWords, key = { it.id }) { word ->
-                    SavedWordCard(
-                        word = word,
-                        onClick = { onWordClick(word.headword) },
-                        onSpeak = { onSpeakWord(word.headword) },
-                        onToggleFavorite = {
-                            savedWords = savedWords.map {
-                                if (it.id == word.id) it.copy(isFavorite = !it.isFavorite) else it
-                            }
-                        }
-                    )
+            if (filteredWords.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "📚", fontSize = 48.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = if (searchQuery.isNotBlank()) "Không tìm thấy từ đã lưu cho \"$searchQuery\"" else "Chưa có từ vựng nào được lưu.\nHãy nhấn nút (+) để thêm từ hoặc lưu từ màn hình Tra cứu.",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF64748B),
+                            lineHeight = 22.sp
+                        )
+                    }
                 }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(filteredWords, key = { it.id }) { word ->
+                        SavedWordCard(
+                            word = word,
+                            onClick = { onWordClick(word.headword) },
+                            onSpeak = { onSpeakWord(word.headword) },
+                            onToggleFavorite = {
+                                coroutineScope.launch {
+                                    userWorkspaceRepository?.toggleFavorite(word.id)
+                                }
+                            }
+                        )
+                    }
 
-                item {
-                    Spacer(modifier = Modifier.height(80.dp)) // Chừa chỗ cho FAB
+                    item {
+                        Spacer(modifier = Modifier.height(80.dp)) // Chừa chỗ cho FAB
+                    }
                 }
             }
         }
@@ -316,18 +296,17 @@ fun MyVocabularyScreen(
                 Button(
                     onClick = {
                         if (newWordHeadword.isNotBlank()) {
-                            savedWords = listOf(
-                                SavedWordItem(
-                                    id = System.currentTimeMillis(),
-                                    headword = newWordHeadword.trim(),
-                                    originType = OriginType.SINO_KOREAN,
-                                    posTag = "Danh từ",
-                                    pronunciationHangul = newWordHeadword.trim(),
-                                    pronunciationRoman = "",
-                                    meaningVi = newWordMeaning.ifBlank { "Từ vựng cá nhân" },
+                            val head = newWordHeadword.trim()
+                            val mean = newWordMeaning.trim().ifBlank { "Từ vựng cá nhân" }
+                            coroutineScope.launch {
+                                userWorkspaceRepository?.saveWord(
+                                    stableKey = "custom_${head}_${System.currentTimeMillis()}",
+                                    headword = head,
+                                    meaning = mean,
+                                    originType = "SINO_KOREAN",
                                     isFavorite = true
                                 )
-                            ) + savedWords
+                            }
                             newWordHeadword = ""
                             newWordMeaning = ""
                         }

@@ -61,6 +61,8 @@ import androidx.compose.ui.unit.sp
  */
 @Composable
 fun SettingsOverviewScreen(
+    savedWordsCount: Int = 0,
+    dueCardsCount: Int = 0,
     onBackClick: () -> Unit = {},
     onNavigateToSecurity: () -> Unit = {},
     onNavigateToDataPack: () -> Unit = {},
@@ -92,7 +94,10 @@ fun SettingsOverviewScreen(
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 // 1. Thẻ Hồ sơ Học tập Offline
-                SettingsProfileCard()
+                SettingsProfileCard(
+                    savedWordsCount = savedWordsCount,
+                    dueCardsCount = dueCardsCount
+                )
             }
 
             // 2. Nhóm: HỆ THỐNG & DỮ LIỆU
@@ -309,7 +314,10 @@ private fun SettingsOverviewTopBar(
  * Thẻ Hồ sơ Không gian Học tập
  */
 @Composable
-private fun SettingsProfileCard() {
+private fun SettingsProfileCard(
+    savedWordsCount: Int = 0,
+    dueCardsCount: Int = 0
+) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E3A8A)),
@@ -343,7 +351,7 @@ private fun SettingsProfileCard() {
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "128 từ vựng đã lưu • 15 thẻ cần ôn hôm nay",
+                    text = "$savedWordsCount từ vựng đã lưu • $dueCardsCount thẻ cần ôn hôm nay",
                     fontSize = 12.sp,
                     color = Color(0xFFBFDBFE)
                 )

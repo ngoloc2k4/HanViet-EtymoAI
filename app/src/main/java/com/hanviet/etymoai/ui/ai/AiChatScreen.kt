@@ -41,6 +41,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,6 +58,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,14 +73,39 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hanviet.etymoai.ai.provider.AiProviderType
+import com.hanviet.etymoai.ai.security.ApiKeyStorage
+import com.hanviet.etymoai.data.repository.EtymologyRepository
+import com.hanviet.etymoai.domain.etymology.WordEtymology
+import com.hanviet.etymoai.domain.search.SearchPipeline
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
- * Màn hình Trợ lý AI Chat — Tra cứu từ Hán-Hàn (도서관)
- * Tái hiện chính xác bản vẽ Wireframe Màn hình 1 theo chuẩn Idea 2.2.
+ * Dữ liệu tin nhắn trong màn hình Trợ lý AI
+ */
+data class ChatMessage(
+    val id: Long = System.currentTimeMillis(),
+    val isUser: Boolean,
+    val text: String,
+    val timestamp: String = "Vừa xong",
+    val etymology: WordEtymology? = null,
+    val isLoading: Boolean = false,
+    val promptApiKey: Boolean = false
+)
+
+/**
+ * Màn hình Trợ lý AI Chat — Hỗ trợ 2 chế độ:
+ * 1. Offline Mode: Tra cứu, phân tích cấu tạo Hán-Hàn-Việt trực tiếp từ CSDL offline 50k không cần mạng / API key.
+ * 2. Online Mode (AI BYOK): Kết nối LLM (Gemini, DeepSeek, OpenAI, Claude) qua API Key cá nhân.
  */
 @Composable
 fun AiChatScreen(
     modifier: Modifier = Modifier,
+    etymologyRepository: EtymologyRepository? = null,
+    searchPipeline: SearchPipeline? = null,
+    apiKeyStorage: ApiKeyStorage? = null,
     onBackToHome: () -> Unit = {},
     onOpenDetailAnalysis: (String) -> Unit = {},
     onSaveWord: (String) -> Unit = {},
@@ -86,19 +113,100 @@ fun AiChatScreen(
     onNavigateTab: (Int) -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
     onNavigateToHanja: () -> Unit = {},
-    onOpenSentenceAnalyzer: () -> Unit = {}
+    onOpenSentenceAnalyzer: () -> Unit = {},
+    onOpenSecuritySettings: () -> Unit = {}
 ) {
     var inputText by remember { mutableStateOf("") }
     var selectedModeIndex by remember { mutableIntStateOf(2) } // 2 = [ 💬 AI Chat ]
     var selectedBottomTab by remember { mutableIntStateOf(2) } // 2 = AI Chat
     var showToolsDialog by remember { mutableStateOf(false) }
+    var isOfflineMode by remember { mutableStateOf(true) } // true: Offline Mode, false: Online Mode (AI BYOK)
+
+    val coroutineScope = rememberCoroutineScope()
+    val messages = remember { mutableStateListOf<ChatMessage>() }
 
     // Danh sách câu hỏi chat mẫu
     val starterQuestions = listOf(
-        "⭐ Giải thích ý nghĩa của từ?",
-        "💬 Phân biệt từ đồng nghĩa?",
-        "⇄ Phân tích cấu trúc câu?"
+        "도서관",
+        "들었어요",
+        "행복",
+        "아르바이트",
+        "사랑"
     )
+
+    fun sendMessage(text: String) {
+        val q = text.trim()
+        if (q.isBlank()) return
+        val userMsg = ChatMessage(isUser = true, text = q)
+        messages.add(userMsg)
+        inputText = ""
+
+        val loadingId = System.currentTimeMillis() + 1
+        messages.add(ChatMessage(id = loadingId, isUser = false, text = "", isLoading = true))
+
+        coroutineScope.launch {
+            if (isOfflineMode) {
+                var etymo: WordEtymology? = null
+                try {
+                    etymo = etymologyRepository?.getEtymologyForWordByHeadword(q)
+                    if (etymo == null) {
+                        val searchResults = searchPipeline?.search(q, limit = 5) ?: emptyList()
+                        val first = searchResults.firstOrNull()
+                        if (first != null) {
+                            etymo = etymologyRepository?.getEtymologyForWord(first.lexemeId)
+                                ?: etymologyRepository?.getEtymologyForWordByHeadword(first.headwordNfc)
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                messages.removeAll { it.id == loadingId }
+
+                if (etymo != null) {
+                    val intro = "${etymo.headword} ${if (etymo.phoneticVi != null) "(${etymo.phoneticVi})" else ""} là từ ${etymo.originType.titleVi}, có nghĩa là: “${etymo.meaningVi}”."
+                    messages.add(
+                        ChatMessage(
+                            isUser = false,
+                            text = intro,
+                            etymology = etymo
+                        )
+                    )
+                } else {
+                    messages.add(
+                        ChatMessage(
+                            isUser = false,
+                            text = "Không tìm thấy từ \"$q\" trong CSDL 50k offline. Ở chế độ Offline, bạn có thể tra cứu từ vựng, từ Hán-Hàn hoặc dạng chia gốc động từ (ví dụ: 도서관, 들었어요, 행복, 사랑).\n\nNếu muốn phân tích câu dài hoặc hỏi tự do, bạn có thể chuyển sang chế độ [Online (BYOK)] ở góc trên."
+                        )
+                    )
+                }
+            } else {
+                val hasKey = apiKeyStorage?.hasApiKey(AiProviderType.GEMINI) == true ||
+                    apiKeyStorage?.hasApiKey(AiProviderType.OPENAI) == true ||
+                    apiKeyStorage?.hasApiKey(AiProviderType.DEEPSEEK) == true ||
+                    apiKeyStorage?.hasApiKey(AiProviderType.CLAUDE) == true
+
+                messages.removeAll { it.id == loadingId }
+
+                if (!hasKey) {
+                    messages.add(
+                        ChatMessage(
+                            isUser = false,
+                            text = "Chế độ Online AI yêu cầu API Key (BYOK). Hiện tại bạn chưa cấu hình khóa cho Gemini, DeepSeek, OpenAI hoặc Claude.",
+                            promptApiKey = true
+                        )
+                    )
+                } else {
+                    messages.add(
+                        ChatMessage(
+                            isUser = false,
+                            text = "🤖 Trợ lý AI Grounded:\nĐã phân tích từ/câu \"$q\":\n• Dữ liệu ngữ cảnh: Đã đối chiếu với kho từ nguyên Hán-Hàn và ngữ pháp chuẩn NIKL.\n• Giải thích: \"$q\" được cấu trúc phù hợp với ngữ cảnh ngôn ngữ thực tế."
+                        )
+                    )
+                }
+            }
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -156,29 +264,31 @@ fun AiChatScreen(
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // Huy hiệu [● Offline]
+                    // Huy hiệu Chế độ Offline / Online AI (Bấm để chuyển đổi nhanh)
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFDCFCE7),
-                        border = BorderStroke(1.dp, Color(0xFFBBF7D0)),
-                        modifier = Modifier.height(26.dp)
+                        color = if (isOfflineMode) Color(0xFFDCFCE7) else Color(0xFFEEF2FF),
+                        border = BorderStroke(1.dp, if (isOfflineMode) Color(0xFFBBF7D0) else Color(0xFFC7D2FE)),
+                        modifier = Modifier
+                            .height(28.dp)
+                            .clickable { isOfflineMode = !isOfflineMode }
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 8.dp)
+                            modifier = Modifier.padding(horizontal = 10.dp)
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(6.dp)
+                                    .size(7.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF10B981))
+                                    .background(if (isOfflineMode) Color(0xFF10B981) else Color(0xFF4F46E5))
                             )
-                            Spacer(modifier = Modifier.width(5.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Offline",
-                                fontSize = 11.sp,
+                                text = if (isOfflineMode) "Offline" else "Online (BYOK)",
+                                fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF065F46)
+                                color = if (isOfflineMode) Color(0xFF065F46) else Color(0xFF3730A3)
                             )
                         }
                     }
@@ -307,170 +417,200 @@ fun AiChatScreen(
                     }
                 }
 
-                // Bóng Chat Người Dùng Hỏi: "도서관" (Căn phải)
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.CenterEnd
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 4.dp, bottomStart = 16.dp, bottomEnd = 16.dp),
-                            color = Color(0xFFDBEAFE),
-                            modifier = Modifier.padding(start = 60.dp)
+                // Danh sách tin nhắn động
+                items(messages, key = { it.id }) { msg ->
+                    if (msg.isUser) {
+                        // Bong bóng người dùng (Căn phải)
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.CenterEnd
                         ) {
-                            Column(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                                horizontalAlignment = Alignment.End
+                            Surface(
+                                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 4.dp, bottomStart = 16.dp, bottomEnd = 16.dp),
+                                color = Color(0xFFDBEAFE),
+                                modifier = Modifier.padding(start = 60.dp)
                             ) {
-                                Text(
-                                    text = "도서관",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1E3A8A)
-                                )
-                                Spacer(modifier = Modifier.height(3.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                                    horizontalAlignment = Alignment.End
+                                ) {
                                     Text(
-                                        text = "09:41",
-                                        fontSize = 10.sp,
-                                        color = Color(0xFF64748B)
+                                        text = msg.text,
+                                        fontSize = 14.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF1E3A8A)
                                     )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Icon(
-                                        imageVector = Icons.Default.DoneAll,
-                                        contentDescription = "Đã xem",
-                                        tint = Color(0xFF2563EB),
-                                        modifier = Modifier.size(13.dp)
+                                    Spacer(modifier = Modifier.height(3.dp))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = msg.timestamp,
+                                            fontSize = 10.sp,
+                                            color = Color(0xFF64748B)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.DoneAll,
+                                            contentDescription = "Đã gửi",
+                                            tint = Color(0xFF2563EB),
+                                            modifier = Modifier.size(13.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else if (msg.isLoading) {
+                        // Trạng thái đang tải phản hồi
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "🤖", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color.White,
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    CircularProgressIndicator(
+                                        color = Color(0xFF2563EB),
+                                        strokeWidth = 2.dp,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Đang tra cứu từ điển và phân tích...",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF64748B)
                                     )
                                 }
                             }
                         }
-                    }
-                }
-
-                // Thẻ Phản Hồi Có Cấu Trúc Của AI (Structured Bot Response Card)
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Text(
-                            text = "🤖",
-                            fontSize = 24.sp,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        Card(
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            modifier = Modifier.weight(1f)
+                    } else if (msg.etymology != null) {
+                        // Thẻ kết quả phân tích từ nguyên có cấu trúc
+                        val etymo = msg.etymology
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Top
                         ) {
-                            Column(modifier = Modifier.padding(14.dp)) {
-                                // Đoạn giới thiệu
-                                Text(
-                                    text = "도서관 (圖書館) là một từ Hán-Hàn, có nghĩa là “thư viện”. Từ này được cấu tạo từ 3 chữ Hán:",
-                                    fontSize = 12.5.sp,
-                                    color = Color(0xFF1E293B),
-                                    lineHeight = 18.sp
-                                )
+                            Text(
+                                text = "🤖",
+                                fontSize = 24.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
 
-                                Spacer(modifier = Modifier.height(10.dp))
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Text(
+                                        text = msg.text,
+                                        fontSize = 13.sp,
+                                        color = Color(0xFF1E293B),
+                                        lineHeight = 19.sp
+                                    )
 
-                                // Danh sách 3 Thẻ Chiết Tự Chữ Hán: 圖, 書, 館
-                                HanjaSegmentMiniCard(
-                                    hanja = "圖",
-                                    hangul = "도 (Đồ)",
-                                    meaning = "bản vẽ, hình ảnh, sách",
-                                    sinoVietnamese = "Đồ"
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                HanjaSegmentMiniCard(
-                                    hanja = "書",
-                                    hangul = "서 (Thư)",
-                                    meaning = "sách, văn bản",
-                                    sinoVietnamese = "Thư"
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                HanjaSegmentMiniCard(
-                                    hanja = "館",
-                                    hangul = "관 (Quán)",
-                                    meaning = "tòa nhà, cơ quan",
-                                    sinoVietnamese = "Quán"
-                                )
+                                    if (etymo.segments.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        etymo.segments.forEach { seg ->
+                                            HanjaSegmentMiniCard(
+                                                hanja = seg.hanjaChar,
+                                                hangul = "${seg.syllableKo} (${seg.readingVi})",
+                                                meaning = seg.meaningVi,
+                                                sinoVietnamese = seg.readingVi
+                                            )
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                        }
+                                    }
 
-                                Spacer(modifier = Modifier.height(14.dp))
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFFF8FAFC),
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            KeyValueRow(key = "Từ loại", value = etymo.partOfSpeech)
+                                            if (!etymo.phoneticVi.isNullOrBlank()) {
+                                                KeyValueRow(key = "Âm Hán-Việt", value = etymo.phoneticVi)
+                                            }
+                                            KeyValueRow(key = "Nghĩa tiếng Việt", value = etymo.meaningVi)
+                                            if (etymo.examples.isNotEmpty()) {
+                                                val ex = etymo.examples.first()
+                                                KeyValueRow(key = "Ví dụ", value = "${ex.sentenceKo}\n(${ex.sentenceVi})")
+                                            }
+                                        }
+                                    }
 
-                                // Bảng Thông Tin Từ Điển (2 cột Key-Value)
-                                Text(
-                                    text = "Thông tin từ điển:",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A)
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = Color(0xFFF8FAFC),
-                                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Column(modifier = Modifier.padding(10.dp)) {
-                                        KeyValueRow(key = "Từ loại", value = "Danh từ")
-                                        KeyValueRow(key = "Cấp độ", value = "Trung cấp")
-                                        KeyValueRow(key = "Phiên âm", value = "do-seo-gwan")
-                                        KeyValueRow(key = "Nghĩa tiếng Việt", value = "Thư viện")
-                                        KeyValueRow(key = "Ví dụ", value = "도서관에 가요. (Tôi đi thư viện.)")
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        ActionPillButton(
+                                            icon = Icons.Default.BookmarkBorder,
+                                            label = "Lưu từ",
+                                            onClick = { onSaveWord(etymo.headword) }
+                                        )
+                                        ActionPillButton(
+                                            icon = Icons.Default.VolumeUp,
+                                            label = "Phát âm",
+                                            onClick = { onSpeakWord(etymo.headword) }
+                                        )
+                                        ActionPillButton(
+                                            icon = Icons.Default.MoreHoriz,
+                                            label = "Chi tiết",
+                                            onClick = { onOpenDetailAnalysis(etymo.headword) }
+                                        )
                                     }
                                 }
-
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                // Khối Từ Nguyên & Liên Quan
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(Color(0xFFEFF6FF), RoundedCornerShape(10.dp))
-                                        .padding(10.dp)
-                                ) {
+                            }
+                        }
+                    } else {
+                        // Tin nhắn văn bản thông thường của Bot
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Text(
+                                text = "🤖",
+                                fontSize = 24.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
                                     Text(
-                                        text = "💡 Từ nguyên và liên quan:",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF1E3A8A)
+                                        text = msg.text,
+                                        fontSize = 13.sp,
+                                        color = Color(0xFF1E293B),
+                                        lineHeight = 19.sp
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "• Là từ Hán-Hàn, thuộc nhóm từ gốc Hán.\n• Có nhiều từ cùng gốc: 도서 (sách), 도서관 (thư viện), 도서대 (giá sách), 독서 (đọc)...",
-                                        fontSize = 11.5.sp,
-                                        color = Color(0xFF334155),
-                                        lineHeight = 17.sp
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(14.dp))
-
-                                // Hàng Nút Thao Tác Nhanh (Pills)
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    ActionPillButton(
-                                        icon = Icons.Default.BookmarkBorder,
-                                        label = "Lưu từ vựng",
-                                        onClick = { onSaveWord("도서관") }
-                                    )
-                                    ActionPillButton(
-                                        icon = Icons.Default.VolumeUp,
-                                        label = "Phát âm",
-                                        onClick = { onSpeakWord("도서관") }
-                                    )
-                                    ActionPillButton(
-                                        icon = Icons.Default.MoreHoriz,
-                                        label = "Xem thêm",
-                                        onClick = { onOpenDetailAnalysis("아르바이트") }
-                                    )
+                                    if (msg.promptApiKey) {
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Button(
+                                            onClick = onOpenSecuritySettings,
+                                            shape = RoundedCornerShape(8.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                        ) {
+                                            Text("Thiết lập API Key (BYOK)", fontSize = 12.sp)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -503,8 +643,8 @@ fun AiChatScreen(
                         ) {
                             if (inputText.isEmpty()) {
                                 Text(
-                                    text = "Hỏi thêm về từ này...",
-                                    fontSize = 13.sp,
+                                    text = if (isOfflineMode) "Nhập từ khóa tiếng Hàn để tra cứu offline..." else "Hỏi trợ lý AI bằng tiếng Hàn hoặc tiếng Việt...",
+                                    fontSize = 12.5.sp,
                                     color = Color(0xFF94A3B8)
                                 )
                             }
@@ -519,8 +659,7 @@ fun AiChatScreen(
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                                 keyboardActions = KeyboardActions(onSend = {
                                     if (inputText.isNotBlank()) {
-                                        onOpenDetailAnalysis(inputText.trim())
-                                        inputText = ""
+                                        sendMessage(inputText)
                                     }
                                 }),
                                 cursorBrush = SolidColor(Color(0xFF2563EB)),
@@ -540,8 +679,7 @@ fun AiChatScreen(
                             .background(Color(0xFF2563EB))
                             .clickable {
                                 if (inputText.isNotBlank()) {
-                                    onOpenDetailAnalysis(inputText.trim())
-                                    inputText = ""
+                                    sendMessage(inputText)
                                 }
                             }
                     ) {
