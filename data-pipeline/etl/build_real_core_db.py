@@ -279,20 +279,165 @@ def build_database(
     total_hanja_segments = 0
 
     seen_headwords: Set[str] = set()
+    curated_keys: Set[str] = set()
+
+    # 2.5 Nạp các mục từ mẫu được thẩm định chuyên gia (Curated Master Entries: IDs 1..19)
+    try:
+        sys.path.append(os.path.dirname(__file__))
+        from spike_build_core_db import RAW_ENTRIES
+        print(f"\n[+] Đang nạp {len(RAW_ENTRIES)} mục từ thẩm định chuyên gia (Curated Seeds)...")
+        for entry in RAW_ENTRIES:
+            hw_nfc = nfc(entry["headword"])
+            stable_key = entry["stable_key"]
+            orig_type = entry["origin_type"]
+            orig_status = entry["origin_status"]
+            phonetic_vi = nfc(entry.get("phonetic_vi", ""))
+            topik_lvl = entry.get("topik_level", 0)
+            src_ds = entry["source_dataset"]
+            src_id = entry.get("source_id", "")
+
+            cur = conn.execute(
+                """
+                INSERT INTO lexemes (stable_key, headword_nfc, origin_type, origin_status,
+                                    phonetic_vi, topik_level, source_dataset, source_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (stable_key, hw_nfc, orig_type, orig_status, phonetic_vi, topik_lvl, src_ds, src_id)
+            )
+            lexeme_id = cur.lastrowid
+            total_lexemes += 1
+            curated_keys.add(hw_nfc)
+
+            # Sinh Chosung Alias
+            chosung_shorthand = extract_chosung(hw_nfc)
+            conn.execute(
+                "INSERT INTO aliases (lexeme_id, alias_text, alias_type) VALUES (?, ?, ?)",
+                (lexeme_id, chosung_shorthand, "CHOSUNG")
+            )
+            total_aliases += 1
+
+            # Nạp Senses
+            meanings_for_fts = []
+            unaccented_for_fts = []
+            for s in entry.get("senses", []):
+                meaning_vi = nfc(s["meaning_vi"])
+                meaning_unaccented = remove_vietnamese_accents(meaning_vi)
+                def_ko = nfc(s.get("definition_ko", ""))
+                pos = s.get("pos", "")
+                examples_json = json.dumps(s.get("examples", []), ensure_ascii=False)
+
+                conn.execute(
+                    """
+                    INSERT INTO senses (lexeme_id, part_of_speech, meaning_vi, meaning_vi_normalized,
+                                       definition_ko, examples_json, display_order)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (lexeme_id, pos, meaning_vi, meaning_unaccented, def_ko, examples_json, 1)
+                )
+                total_senses += 1
+                meanings_for_fts.append(meaning_vi)
+                unaccented_for_fts.append(meaning_unaccented)
+
+            # Nạp Hanja Master & Segments
+            for idx, seg in enumerate(entry.get("hanja_segments", [])):
+                char = seg["char"]
+                radical = seg.get("radical", "")
+                strokes = seg.get("strokes", 0)
+                char_meaning = seg.get("meaning", "")
+                h_reading = seg.get("hangul", "")
+                hv_reading = seg.get("hanviet", "")
+
+                conn.execute(
+                    """
+                    INSERT OR REPLACE INTO hanja_master (hanja_char, radical, stroke_count, meaning_vi, general_level)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (char, radical, strokes, char_meaning, "Basic")
+                )
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO hanja_readings (hanja_char, reading_ko, reading_vi, is_primary)
+                    VALUES (?, ?, ?, 1)
+                    """,
+                    (char, h_reading, hv_reading)
+                )
+                conn.execute(
+                    """
+                    INSERT INTO lexeme_hanja_segments (lexeme_id, segment_index, syllable_ko, hanja_char, reading_vi, meaning_vi)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (lexeme_id, idx, h_reading, char, hv_reading, char_meaning)
+                )
+                total_hanja_segments += 1
+
+            # Nạp Precomputed Forms
+            for pf in entry.get("precomputed_forms", []):
+                inflected = nfc(pf["form"])
+                rule = pf["rule"]
+                desc = pf.get("desc", "")
+                conn.execute(
+                    """
+                    INSERT OR REPLACE INTO precomputed_forms (inflected_form, lexeme_id, rule_applied, grammar_desc, confidence)
+                    VALUES (?, ?, ?, ?, 1.0)
+                    """,
+                    (inflected, lexeme_id, rule, desc)
+                )
+                total_precomputed += 1
+
+            # Nạp Word Origins
+            for orig in entry.get("origins", []):
+                conn.execute(
+                    """
+                    INSERT INTO word_origins (lexeme_id, origin_type, source_language, source_form,
+                                             adaptation_note, verification_status, evidence_note)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        lexeme_id, orig_type, orig.get("source_language"), orig.get("source_form"),
+                        orig.get("adaptation_note"), orig.get("verification_status", "VERIFIED_PRIMARY"),
+                        orig.get("evidence_note")
+                    )
+                )
+
+            # Nạp search_fts
+            combined_meaning = " ".join(meanings_for_fts)
+            combined_unaccented = " ".join(unaccented_for_fts)
+            conn.execute(
+                """
+                INSERT INTO search_fts (rowid, headword_nfc, alias_chosung, meaning_vi, unaccented_vi)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (lexeme_id, hw_nfc, chosung_shorthand, combined_meaning, combined_unaccented)
+            )
+        conn.commit()
+        print(f"[✓] Đã nạp thành công {total_lexemes} mục từ hạt giống thẩm định.")
+    except Exception as e:
+        print(f"[!] Cảnh báo nạp curated seeds: {e}")
+
+    raw_dir = os.path.join(os.path.dirname(__file__), "..", "raw", "nikl")
+    os.makedirs(raw_dir, exist_ok=True)
 
     # 3. Lặp tải và xử lý từng file XML từ NIKL
     for file_idx in range(1, max_xml_files + 1):
         num_str = f"{file_idx:03d}"
-        url = f"https://raw.githubusercontent.com/spellcheck-ko/korean-dict-nikl/master/krdict/{num_str}.xml"
-        print(f"\n[+] Đang tải và phân tích gói dữ liệu {num_str}.xml ...")
+        local_xml = os.path.join(raw_dir, f"{num_str}.xml")
         t0 = time.time()
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                raw_xml = resp.read().decode("utf-8", errors="ignore")
-        except Exception as e:
-            print(f"[-] Lỗi khi tải {num_str}.xml: {e}")
-            continue
+        if os.path.exists(local_xml) and os.path.getsize(local_xml) > 1000:
+            print(f"\n[+] Đọc từ cache đĩa: {local_xml}")
+            with open(local_xml, "r", encoding="utf-8", errors="ignore") as f:
+                raw_xml = f.read()
+        else:
+            url = f"https://raw.githubusercontent.com/spellcheck-ko/korean-dict-nikl/master/krdict/{num_str}.xml"
+            print(f"\n[+] Đang tải và phân tích gói dữ liệu {num_str}.xml ...")
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    raw_xml = resp.read().decode("utf-8", errors="ignore")
+                with open(local_xml, "w", encoding="utf-8") as f:
+                    f.write(raw_xml)
+            except Exception as e:
+                print(f"[-] Lỗi khi tải {num_str}.xml: {e}")
+                continue
 
         entries = parse_entries_from_xml_content(raw_xml, hanviet_map)
         print(f"    -> Đã trích xuất {len(entries)} từ vựng tiếng Việt trong {time.time() - t0:.2f}s")
@@ -300,6 +445,9 @@ def build_database(
         # Nạp vào database
         for entry in entries:
             hw = entry["headword"]
+            # Bỏ qua nếu từ đã nằm trong tập Curated Seeds
+            if hw in curated_keys:
+                continue
             # Tránh trùng lặp hoàn toàn
             key = f"{hw}_{entry['pos']}"
             if key in seen_headwords:

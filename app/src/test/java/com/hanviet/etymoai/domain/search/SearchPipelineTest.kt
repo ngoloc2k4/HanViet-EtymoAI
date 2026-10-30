@@ -177,8 +177,9 @@ class SearchPipelineTest {
 
     @Test
     fun testSearchLatency_sub50ms() {
-        // Warm-up query
+        // Warm-up query bao gồm cả Exact và FTS5
         pipeline.search("기분")
+        pipeline.search("tam trang")
 
         val duration = measureTimeMillis {
             val results = pipeline.search("tam trang")

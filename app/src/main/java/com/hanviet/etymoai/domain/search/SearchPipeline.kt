@@ -120,7 +120,14 @@ class SearchPipeline(
         return resultsMap.values
             .sortedWith(compareByDescending<SearchResult> { it.confidenceScore }
                 .thenBy { it.matchTier.priority }
-                .thenBy { it.headwordNfc.length })
+                .thenByDescending {
+                    val m = it.primaryMeaningVi.trim().lowercase()
+                    val q = query.trim().lowercase()
+                    m == q || m.startsWith("$q,") || m.startsWith("$q ") || m.startsWith("$q;")
+                }
+                .thenBy { it.headwordNfc.length }
+                .thenBy { if (it.topikLevel != null && it.topikLevel > 0) it.topikLevel else 99 }
+                .thenBy { it.lexemeId })
             .take(limit)
     }
 
@@ -180,26 +187,26 @@ class SearchPipeline(
             if (cursor.moveToFirst()) return true
         }
 
-        // 3. Kiểm tra nghĩa tiếng Việt trong bảng senses
-        val unaccented = removeVietnameseDiacritics(cleanTerm)
-        db.rawQuery(
-            "SELECT 1 FROM senses WHERE meaning_vi LIKE ? OR meaning_vi_normalized LIKE ? LIMIT 1",
-            arrayOf("%$cleanTerm%", "%$unaccented%")
-        ).use { cursor ->
-            if (cursor.moveToFirst()) return true
-        }
-
-        // 4. Kiểm tra FTS5 nếu có
+        // 3. Kiểm tra cụm từ chính xác qua FTS5 (đảm bảo khớp trọn vẹn từ/cụm từ, tránh khớp substring sai)
         val sanitized = cleanFtsQuery(cleanTerm)
         if (sanitized.isNotBlank()) {
-            val ftsQuery = "\"$sanitized\"*"
+            val ftsPhrase = "\"$sanitized\""
             try {
-                db.rawQuery("SELECT 1 FROM search_fts WHERE search_fts MATCH ? LIMIT 1", arrayOf(ftsQuery)).use { cursor ->
+                db.rawQuery("SELECT 1 FROM search_fts WHERE search_fts MATCH ? LIMIT 1", arrayOf(ftsPhrase)).use { cursor ->
                     if (cursor.moveToFirst()) return true
                 }
             } catch (_: Exception) {
                 // Fallback nếu FTS không khả dụng
             }
+        }
+
+        // 4. Kiểm tra nghĩa tiếng Việt trong bảng senses với đối chiếu nguyên từ
+        val unaccented = removeVietnameseDiacritics(cleanTerm)
+        db.rawQuery(
+            "SELECT 1 FROM senses WHERE meaning_vi = ? OR meaning_vi_normalized = ? OR meaning_vi LIKE ? OR meaning_vi_normalized LIKE ? OR meaning_vi LIKE ? OR meaning_vi_normalized LIKE ? LIMIT 1",
+            arrayOf(cleanTerm, unaccented, "$cleanTerm, %", "$unaccented, %", "%, $cleanTerm%", "%, $unaccented%")
+        ).use { cursor ->
+            if (cursor.moveToFirst()) return true
         }
 
         return false
@@ -247,7 +254,8 @@ class SearchPipeline(
             FROM aliases a
             JOIN lexemes l ON a.lexeme_id = l.lexeme_id
             WHERE a.alias_text = ?
-            LIMIT 20
+            ORDER BY CASE WHEN l.topik_level > 0 THEN l.topik_level ELSE 99 END ASC, l.lexeme_id ASC
+            LIMIT 50
         """.trimIndent()
 
         val list = mutableListOf<SearchResult>()

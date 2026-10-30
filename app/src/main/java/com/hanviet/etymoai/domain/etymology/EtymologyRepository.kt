@@ -154,6 +154,7 @@ class DefaultEtymologyRepository(
                 FROM lexeme_hanja_segments seg
                 JOIN lexemes l ON seg.lexeme_id = l.lexeme_id
                 WHERE seg.hanja_char IN ($placeholders) AND l.lexeme_id != ?
+                ORDER BY CASE WHEN l.topik_level > 0 THEN l.topik_level ELSE 99 END ASC, l.lexeme_id ASC
                 LIMIT 10
             """.trimIndent()
             val args = (hanjaChars + lexemeId.toString()).toTypedArray()
@@ -216,7 +217,7 @@ class DefaultEtymologyRepository(
             FROM lexeme_hanja_segments seg
             JOIN lexemes l ON seg.lexeme_id = l.lexeme_id
             WHERE seg.hanja_char = ?
-            ORDER BY l.topik_level ASC, l.lexeme_id ASC
+            ORDER BY CASE WHEN l.topik_level > 0 THEN l.topik_level ELSE 99 END ASC, l.lexeme_id ASC
         """.trimIndent()
 
         val relatedWords = mutableListOf<RelatedWordSummary>()
