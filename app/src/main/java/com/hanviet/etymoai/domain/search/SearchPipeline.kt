@@ -321,7 +321,7 @@ class SearchPipeline(
         val ftsExpression = "\"$clean\"*"
         val ftsSql = """
             SELECT l.lexeme_id, l.stable_key, l.headword_nfc, l.origin_type, l.phonetic_vi, l.topik_level,
-                   (SELECT meaning_vi FROM senses s WHERE s.lexeme_id = l.lexeme_id ORDER BY s.display_order ASC LIMIT 1) AS primary_meaning
+                   search_fts.meaning_vi AS primary_meaning
             FROM search_fts
             JOIN lexemes l ON search_fts.rowid = l.lexeme_id
             WHERE search_fts MATCH ?
