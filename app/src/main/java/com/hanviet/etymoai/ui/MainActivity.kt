@@ -208,11 +208,12 @@ class MainActivity : ComponentActivity() {
                                         SrsFlashcardData(
                                             card = SrsCard(cardId = 1L, savedWordId = 101L),
                                             word = SavedWordEntity(
-                                                savedId = 101L,
-                                                headword = "경제",
-                                                phoneticVi = "Kinh tế",
+                                                id = 101L,
+                                                stableKey = "ko_gyeongje_101",
+                                                headwordSnapshot = "경제",
+                                                phoneticSnapshot = "Kinh tế",
                                                 originType = "SINO_KOREAN",
-                                                primaryMeaning = "Nền kinh tế, hoạt động tài chính sản xuất"
+                                                meaningSnapshot = "Nền kinh tế, hoạt động tài chính sản xuất"
                                             ),
                                             hanjaSegments = listOf(
                                                 HanjaSegment(
@@ -236,11 +237,12 @@ class MainActivity : ComponentActivity() {
                                         SrsFlashcardData(
                                             card = SrsCard(cardId = 2L, savedWordId = 102L),
                                             word = SavedWordEntity(
-                                                savedId = 102L,
-                                                headword = "선생님",
-                                                phoneticVi = "Tiên sinh",
+                                                id = 102L,
+                                                stableKey = "ko_seonsaengnim_102",
+                                                headwordSnapshot = "선생님",
+                                                phoneticSnapshot = "Tiên sinh",
                                                 originType = "SINO_KOREAN",
-                                                primaryMeaning = "Thầy giáo, cô giáo, người đi trước"
+                                                meaningSnapshot = "Thầy giáo, cô giáo, người đi trước"
                                             ),
                                             hanjaSegments = listOf(
                                                 HanjaSegment(
