@@ -216,20 +216,18 @@ class MainActivity : ComponentActivity() {
                                             ),
                                             hanjaSegments = listOf(
                                                 HanjaSegment(
-                                                    hangulSyllable = "경",
+                                                    segmentIndex = 0,
+                                                    syllableKo = "경",
                                                     hanjaChar = "經",
-                                                    sinoVietnamese = "Kinh",
-                                                    meaningVi = "Kinh bang tế thế, kinh qua, đường dọc",
-                                                    radical = "糸",
-                                                    strokeCount = 14
+                                                    readingVi = "Kinh",
+                                                    meaningVi = "Kinh bang tế thế, kinh qua, đường dọc"
                                                 ),
                                                 HanjaSegment(
-                                                    hangulSyllable = "제",
+                                                    segmentIndex = 1,
+                                                    syllableKo = "제",
                                                     hanjaChar = "濟",
-                                                    sinoVietnamese = "Tế",
-                                                    meaningVi = "Cứu giúp, tế thế, qua sông",
-                                                    radical = "氵",
-                                                    strokeCount = 17
+                                                    readingVi = "Tế",
+                                                    meaningVi = "Cứu giúp, tế thế, qua sông"
                                                 )
                                             ),
                                             exampleSentenceKo = "한국의 경제가 빠르게 발전했습니다.",
@@ -246,20 +244,18 @@ class MainActivity : ComponentActivity() {
                                             ),
                                             hanjaSegments = listOf(
                                                 HanjaSegment(
-                                                    hangulSyllable = "선",
+                                                    segmentIndex = 0,
+                                                    syllableKo = "선",
                                                     hanjaChar = "先",
-                                                    sinoVietnamese = "Tiên",
-                                                    meaningVi = "Đi trước, sớm hơn",
-                                                    radical = "儿",
-                                                    strokeCount = 6
+                                                    readingVi = "Tiên",
+                                                    meaningVi = "Đi trước, sớm hơn"
                                                 ),
                                                 HanjaSegment(
-                                                    hangulSyllable = "생",
+                                                    segmentIndex = 1,
+                                                    syllableKo = "생",
                                                     hanjaChar = "生",
-                                                    sinoVietnamese = "Sinh",
-                                                    meaningVi = "Sinh nở, người sinh ra",
-                                                    radical = "生",
-                                                    strokeCount = 5
+                                                    readingVi = "Sinh",
+                                                    meaningVi = "Sinh nở, người sinh ra"
                                                 )
                                             ),
                                             exampleSentenceKo = "선생님, 질문이 있습니다.",
