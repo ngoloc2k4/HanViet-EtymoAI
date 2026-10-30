@@ -237,31 +237,34 @@ class OpenAiCompatibleClient(
 
         val url = URL(urlStr)
         val conn = url.openConnection() as HttpURLConnection
-        conn.requestMethod = method
-        conn.connectTimeout = timeoutMillis
-        conn.readTimeout = timeoutMillis
-        conn.doInput = true
+        try {
+            conn.requestMethod = method
+            conn.connectTimeout = timeoutMillis
+            conn.readTimeout = timeoutMillis
+            conn.doInput = true
 
-        headers.forEach { (k, v) ->
-            conn.setRequestProperty(k, v)
-        }
-
-        if (body != null) {
-            conn.doOutput = true
-            OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { writer ->
-                writer.write(body)
-                writer.flush()
+            headers.forEach { (k, v) ->
+                conn.setRequestProperty(k, v)
             }
-        }
 
-        val statusCode = conn.responseCode
-        val stream = if (statusCode in 200..299) conn.inputStream else conn.errorStream
-        val responseBody = if (stream != null) {
-            BufferedReader(InputStreamReader(stream, Charsets.UTF_8)).use { it.readText() }
-        } else {
-            ""
+            if (body != null) {
+                conn.doOutput = true
+                OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { writer ->
+                    writer.write(body)
+                    writer.flush()
+                }
+            }
+
+            val statusCode = conn.responseCode
+            val stream = if (statusCode in 200..299) conn.inputStream else conn.errorStream
+            val responseBody = if (stream != null) {
+                BufferedReader(InputStreamReader(stream, Charsets.UTF_8)).use { it.readText() }
+            } else {
+                ""
+            }
+            return Pair(statusCode, responseBody)
+        } finally {
+            conn.disconnect()
         }
-        conn.disconnect()
-        return Pair(statusCode, responseBody)
     }
 }

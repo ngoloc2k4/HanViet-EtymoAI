@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.hanviet.etymoai.data.db.workspace.dao.AiCacheDao
 import com.hanviet.etymoai.data.db.workspace.dao.PersonalNoteDao
 import com.hanviet.etymoai.data.db.workspace.dao.SavedWordDao
@@ -62,6 +63,12 @@ abstract class WorkspaceDatabase : RoomDatabase() {
                 WorkspaceDatabase::class.java,
                 DB_NAME
             )
+            .addCallback(object : RoomDatabase.Callback() {
+                override fun onOpen(db: SupportSQLiteDatabase) {
+                    super.onOpen(db)
+                    db.execSQL("PRAGMA foreign_keys = ON;")
+                }
+            })
             .fallbackToDestructiveMigration()
             .build()
         }
@@ -75,6 +82,12 @@ abstract class WorkspaceDatabase : RoomDatabase() {
                 context.applicationContext,
                 WorkspaceDatabase::class.java
             )
+            .addCallback(object : RoomDatabase.Callback() {
+                override fun onOpen(db: SupportSQLiteDatabase) {
+                    super.onOpen(db)
+                    db.execSQL("PRAGMA foreign_keys = ON;")
+                }
+            })
             .allowMainThreadQueries()
             .setQueryExecutor { it.run() }
             .setTransactionExecutor { it.run() }

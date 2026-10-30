@@ -9,6 +9,7 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 
 /**
  * Client kết nối Google Gemini Developer REST API (Gemini 1.5 Flash / Pro)
@@ -66,8 +67,12 @@ class GeminiClient(
             })
         }
 
-        val endpoint = "${baseUrl.trimEnd('/')}/models/$modelName:generateContent?key=$apiKey"
-        val headers = mapOf("Content-Type" to "application/json")
+        val encodedKey = URLEncoder.encode(apiKey, "UTF-8")
+        val endpoint = "${baseUrl.trimEnd('/')}/models/$modelName:generateContent?key=$encodedKey"
+        val headers = mapOf(
+            "Content-Type" to "application/json",
+            "x-goog-api-key" to apiKey
+        )
 
         try {
             val (statusCode, responseBody) = executeHttpRequest(endpoint, "POST", headers, requestJson.toString())
@@ -146,8 +151,12 @@ class GeminiClient(
             })
         }
 
-        val endpoint = "${baseUrl.trimEnd('/')}/models/$modelName:generateContent?key=$apiKey"
-        val headers = mapOf("Content-Type" to "application/json")
+        val encodedKey = URLEncoder.encode(apiKey, "UTF-8")
+        val endpoint = "${baseUrl.trimEnd('/')}/models/$modelName:generateContent?key=$encodedKey"
+        val headers = mapOf(
+            "Content-Type" to "application/json",
+            "x-goog-api-key" to apiKey
+        )
 
         try {
             val (statusCode, responseBody) = executeHttpRequest(endpoint, "POST", headers, requestJson.toString())
@@ -230,31 +239,34 @@ class GeminiClient(
 
         val url = URL(urlStr)
         val conn = url.openConnection() as HttpURLConnection
-        conn.requestMethod = method
-        conn.connectTimeout = timeoutMillis
-        conn.readTimeout = timeoutMillis
-        conn.doInput = true
+        try {
+            conn.requestMethod = method
+            conn.connectTimeout = timeoutMillis
+            conn.readTimeout = timeoutMillis
+            conn.doInput = true
 
-        headers.forEach { (k, v) ->
-            conn.setRequestProperty(k, v)
-        }
-
-        if (body != null) {
-            conn.doOutput = true
-            OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { writer ->
-                writer.write(body)
-                writer.flush()
+            headers.forEach { (k, v) ->
+                conn.setRequestProperty(k, v)
             }
-        }
 
-        val statusCode = conn.responseCode
-        val stream = if (statusCode in 200..299) conn.inputStream else conn.errorStream
-        val responseBody = if (stream != null) {
-            BufferedReader(InputStreamReader(stream, Charsets.UTF_8)).use { it.readText() }
-        } else {
-            ""
+            if (body != null) {
+                conn.doOutput = true
+                OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { writer ->
+                    writer.write(body)
+                    writer.flush()
+                }
+            }
+
+            val statusCode = conn.responseCode
+            val stream = if (statusCode in 200..299) conn.inputStream else conn.errorStream
+            val responseBody = if (stream != null) {
+                BufferedReader(InputStreamReader(stream, Charsets.UTF_8)).use { it.readText() }
+            } else {
+                ""
+            }
+            return Pair(statusCode, responseBody)
+        } finally {
+            conn.disconnect()
         }
-        conn.disconnect()
-        return Pair(statusCode, responseBody)
     }
 }

@@ -51,6 +51,11 @@ class SearchPipeline(
     // Mẫu kiểm tra ký tự Chosung Hangul thuần túy (ㄱ - ㅎ)
     private val chosungPattern = Pattern.compile("^[\\u3131-\\u314E\\u1100-\\u1112]+$")
 
+    companion object {
+        private val FTS_SANITIZER_REGEX = Regex("[^\\p{L}\\p{N}\\s]")
+        private val PUNCTUATION_SPLIT_REGEX = Regex("[\\s,;:.!?，。！？]+")
+    }
+
     /**
      * Tra cứu từ khóa theo quy trình 5 tầng có xếp hạng trọng số và khử trùng lặp.
      */
@@ -127,7 +132,7 @@ class SearchPipeline(
         val normalized = Normalizer.normalize(sentence.trim(), Normalizer.Form.NFC)
         if (normalized.isEmpty()) return emptyList()
 
-        val tokens = normalized.split(Regex("[\\s,;:.!?，。！？]+")).filter { it.isNotBlank() }
+        val tokens = normalized.split(PUNCTUATION_SPLIT_REGEX).filter { it.isNotBlank() }
         if (tokens.isEmpty()) return emptyList()
 
         val foundKeywords = mutableListOf<String>()
@@ -367,7 +372,7 @@ class SearchPipeline(
     }
 
     private fun cleanFtsQuery(input: String): String {
-        return input.replace(Regex("[^\\p{L}\\p{N}\\s]"), "").trim()
+        return input.replace(FTS_SANITIZER_REGEX, "").trim()
     }
 
     private fun cursorToSearchResult(

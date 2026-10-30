@@ -2,8 +2,11 @@ package com.hanviet.etymoai.ai.security
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 import android.util.Base64
 import com.hanviet.etymoai.ai.provider.AiProviderType
+import java.security.KeyStore
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -41,6 +44,8 @@ class SecureApiKeyStorage(
         private const val IV_PREFIX = "byok_iv_"
         private const val ENDPOINT_PREFIX = "byok_endpoint_"
         private const val MODEL_PREFIX = "byok_model_"
+        private const val ANDROID_KEYSTORE = "AndroidKeyStore"
+        private const val KEYSTORE_ALIAS = "hanviet_byok_master_key_v1"
         private const val MASTER_KEY_STORAGE = "app_master_entropy_v1"
         private const val AES_GCM_TAG_LENGTH = 128
         private const val GCM_IV_LENGTH = 12 // 96 bits chuẩn cho AES-GCM
@@ -64,7 +69,37 @@ class SecureApiKeyStorage(
         }
     }
 
+    /**
+     * Khởi tạo hoặc truy xuất Master Key từ phần cứng Android KeyStore.
+     * Tự động fallback an toàn sang phần mềm khi chạy trong môi trường Unit Test (Robolectric/JVM).
+     */
     private fun getOrCreateMasterKey(): SecretKey {
+        return try {
+            val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
+            if (!keyStore.containsAlias(KEYSTORE_ALIAS)) {
+                val keyGen = KeyGenerator.getInstance(
+                    KeyProperties.KEY_ALGORITHM_AES,
+                    ANDROID_KEYSTORE
+                )
+                val spec = KeyGenParameterSpec.Builder(
+                    KEYSTORE_ALIAS,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+                )
+                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                    .setKeySize(256)
+                    .build()
+                keyGen.init(spec)
+                keyGen.generateKey()
+            }
+            val entry = keyStore.getEntry(KEYSTORE_ALIAS, null) as? KeyStore.SecretKeyEntry
+            entry?.secretKey ?: (keyStore.getKey(KEYSTORE_ALIAS, null) as SecretKey)
+        } catch (_: Exception) {
+            getOrCreateSoftwareFallbackKey()
+        }
+    }
+
+    private fun getOrCreateSoftwareFallbackKey(): SecretKey {
         val existingBase64 = prefs.getString(MASTER_KEY_STORAGE, null)
         return if (existingBase64 != null) {
             val bytes = Base64.decode(existingBase64, Base64.NO_WRAP)
