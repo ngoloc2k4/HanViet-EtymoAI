@@ -42,6 +42,10 @@ class UserWorkspaceRepository(
         return searchHistoryDao.clearHistory()
     }
 
+    suspend fun deleteSearchHistoryItem(id: Long): Boolean {
+        return searchHistoryDao.deleteById(id) > 0
+    }
+
     suspend fun getSavedWordsCount(): Int {
         return savedWordDao.getCount()
     }
@@ -183,6 +187,23 @@ class UserWorkspaceRepository(
 
     suspend fun getWordCount(): Int {
         return savedWordDao.getCount()
+    }
+
+    suspend fun enrollInSrs(wordId: Long): Long {
+        val existing = db.srsCardDao().getCardBySavedWordId(wordId)
+        if (existing != null) return existing.cardId
+        val card = SrsCardEntity(
+            savedWordId = wordId,
+            repetitions = 0,
+            intervalDays = 0,
+            easeFactor = 2.5,
+            dueTimestamp = System.currentTimeMillis()
+        )
+        return db.srsCardDao().insertCard(card)
+    }
+
+    suspend fun isWordEnrolledInSrs(wordId: Long): Boolean {
+        return db.srsCardDao().getCardBySavedWordId(wordId) != null
     }
 
     /**

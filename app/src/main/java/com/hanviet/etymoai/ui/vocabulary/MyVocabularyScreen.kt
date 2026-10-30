@@ -1,10 +1,15 @@
 package com.hanviet.etymoai.ui.vocabulary
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,18 +29,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
@@ -43,18 +40,21 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -67,7 +67,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -77,28 +80,35 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hanviet.etymoai.data.repository.UserWorkspaceRepository
 import com.hanviet.etymoai.domain.etymology.OriginType
+import com.hanviet.etymoai.ui.components.DatabaseStatus
+import com.hanviet.etymoai.ui.components.OfflineStatusPill
+import com.hanviet.etymoai.ui.components.rememberBounceScale
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
 data class SavedWordItem(
     val id: Long,
+    val stableKey: String,
     val headword: String,
     val originType: OriginType,
     val posTag: String,
     val pronunciationHangul: String,
     val pronunciationRoman: String,
     val meaningVi: String,
+    val personalNote: String = "",
+    val isCustom: Boolean = false,
     var isFavorite: Boolean = false
 )
 
 /**
- * Màn hình Từ Vựng Của Tôi (My Vocabulary Workspace Screen)
- * Bố cục tương đồng với Search Results nhưng bổ sung:
- * - Dòng tiêu đề phụ "Tổng số từ đã lưu: 128"
- * - Biểu tượng ngôi sao ★/☆ trên từng thẻ từ
- * - Nút tròn nổi (+) ở góc dưới phải để tự thêm từ cá nhân
- * - Chuẩn hóa nguồn gốc: 한국어 (韓國語) là SINO_KOREAN [漢], 알바 là LOANWORD [🌐].
+ * Màn hình Từ Vựng Của Tôi (My Vocabulary Workspace Screen - UX/UI v2.2)
+ * Đặc tả Mục 10:
+ * - Header có OfflineStatusPill và subtitle "Tổng số từ đã lưu: X"
+ * - Biểu tượng ngôi sao ★/☆ trên từng thẻ từ với hiệu ứng bounce scale (0.5x -> 1.2x -> 1.0x) và Haptic Feedback
+ * - Huy hiệu [Bản lưu cá nhân] phân biệt với từ cốt lõi NIKL
+ * - ModalBottomSheet CustomWordBottomSheet với 4 trường nhập liệu + Switch tạo thẻ Flashcard SRS
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyVocabularyScreen(
     userWorkspaceRepository: UserWorkspaceRepository? = null,
@@ -110,11 +120,11 @@ fun MyVocabularyScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedOriginFilter by remember { mutableStateOf<OriginType?>(null) }
-    var showAddWordDialog by remember { mutableStateOf(false) }
-    var newWordHeadword by remember { mutableStateOf("") }
-    var newWordMeaning by remember { mutableStateOf("") }
+    var showAddWordSheet by remember { mutableStateOf(false) }
+    var showOfflineInfoDialog by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val coroutineScope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
 
     // Lấy dữ liệu từ vựng thực tế từ Workspace Database
     val savedWordsWithTags by (userWorkspaceRepository?.getAllSavedWordsFlow() ?: flowOf(emptyList()))
@@ -123,20 +133,25 @@ fun MyVocabularyScreen(
     val savedWords = remember(savedWordsWithTags) {
         savedWordsWithTags.map { item ->
             val entity = item.word
+            val isCustomWord = entity.stableKey.startsWith("custom_")
             val origin = when (entity.originType.uppercase()) {
                 "SINO_KOREAN", "HANJA" -> OriginType.SINO_KOREAN
                 "NATIVE", "NATIVE_KOREAN" -> OriginType.NATIVE_KOREAN
                 "LOANWORD", "FOREIGN" -> OriginType.LOANWORD
                 else -> OriginType.MIXED
             }
+            val firstNote = item.notes.firstOrNull()?.markdownContent ?: ""
             SavedWordItem(
                 id = entity.id,
+                stableKey = entity.stableKey,
                 headword = entity.headwordSnapshot,
                 originType = origin,
-                posTag = entity.phoneticSnapshot?.let { "Hán-Việt: $it" } ?: "Từ đã lưu",
+                posTag = if (isCustomWord) "Bản lưu cá nhân" else (entity.phoneticSnapshot?.let { "Hán-Việt: $it" } ?: "Từ đã lưu"),
                 pronunciationHangul = entity.headwordSnapshot,
                 pronunciationRoman = entity.phoneticSnapshot ?: "",
                 meaningVi = entity.meaningSnapshot,
+                personalNote = firstNote,
+                isCustom = isCustomWord,
                 isFavorite = entity.isFavorite
             )
         }
@@ -146,7 +161,8 @@ fun MyVocabularyScreen(
         savedWords.filter { item ->
             val matchQuery = searchQuery.isBlank() ||
                 item.headword.contains(searchQuery.trim(), ignoreCase = true) ||
-                item.meaningVi.contains(searchQuery.trim(), ignoreCase = true)
+                item.meaningVi.contains(searchQuery.trim(), ignoreCase = true) ||
+                item.personalNote.contains(searchQuery.trim(), ignoreCase = true)
             val matchFilter = selectedOriginFilter == null || item.originType == selectedOriginFilter
             matchQuery && matchFilter
         }
@@ -154,13 +170,23 @@ fun MyVocabularyScreen(
 
     Scaffold(
         floatingActionButton = {
-            // Nút tròn nổi (+) ở góc dưới phải để tự thêm từ cá nhân
+            val fabInteraction = remember { MutableInteractionSource() }
+            val fabScale = rememberBounceScale(fabInteraction)
             FloatingActionButton(
-                onClick = { showAddWordDialog = true },
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    showAddWordSheet = true
+                },
+                interactionSource = fabInteraction,
                 containerColor = Color(0xFF2563EB),
                 contentColor = Color.White,
                 shape = CircleShape,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier
+                    .padding(bottom = 12.dp)
+                    .graphicsLayer {
+                        scaleX = fabScale
+                        scaleY = fabScale
+                    }
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -178,7 +204,8 @@ fun MyVocabularyScreen(
             // 1. Header & Dòng tiêu đề phụ
             MyVocabularyHeader(
                 totalSavedCount = savedWords.size,
-                onStartSrsReview = onStartSrsReview
+                onStartSrsReview = onStartSrsReview,
+                onOfflinePillClick = { showOfflineInfoDialog = true }
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -251,71 +278,68 @@ fun MyVocabularyScreen(
                     }
 
                     item {
-                        Spacer(modifier = Modifier.height(80.dp)) // Chừa chỗ cho FAB
+                        Spacer(modifier = Modifier.height(88.dp)) // Chừa chỗ cho FAB
                     }
                 }
             }
         }
     }
 
-    // Dialog Thêm từ vựng cá nhân
-    if (showAddWordDialog) {
+    // Modal Bottom Sheet: Thêm từ vựng cá nhân
+    if (showAddWordSheet) {
+        CustomWordBottomSheet(
+            onDismiss = { showAddWordSheet = false },
+            onSaveWord = { headword, meaning, note, example, enrollSrs ->
+                coroutineScope.launch {
+                    val combinedNote = buildString {
+                        if (note.isNotBlank()) append(note.trim())
+                        if (example.isNotBlank()) {
+                            if (isNotEmpty()) append("\n\n")
+                            append("Ví dụ: ").append(example.trim())
+                        }
+                    }
+                    val wordId = userWorkspaceRepository?.saveWord(
+                        stableKey = "custom_${headword.trim()}_${System.currentTimeMillis()}",
+                        headword = headword.trim(),
+                        meaning = meaning.trim().ifBlank { "Bản lưu cá nhân" },
+                        originType = "SINO_KOREAN",
+                        isFavorite = true,
+                        note = combinedNote.ifBlank { null }
+                    )
+                    if (enrollSrs && wordId != null && wordId > 0) {
+                        userWorkspaceRepository?.enrollInSrs(wordId)
+                    }
+                }
+                showAddWordSheet = false
+            }
+        )
+    }
+
+    // Popup thông tin Offline Core Database
+    if (showOfflineInfoDialog) {
         AlertDialog(
-            onDismissRequest = { showAddWordDialog = false },
+            onDismissRequest = { showOfflineInfoDialog = false },
             title = {
                 Text(
-                    text = "Thêm từ vựng mới",
+                    text = "Gói dữ liệu Offline NIKL",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                    fontSize = 17.sp,
+                    color = Color(0xFF0F172A)
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(
-                        value = newWordHeadword,
-                        onValueChange = { newWordHeadword = it },
-                        label = { Text("Từ vựng tiếng Hàn (Headword)") },
-                        placeholder = { Text("Ví dụ: 행복") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = newWordMeaning,
-                        onValueChange = { newWordMeaning = it },
-                        label = { Text("Nghĩa tiếng Việt") },
-                        placeholder = { Text("Ví dụ: hạnh phúc") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "• Phiên bản: Core NIKL v1.2.0 (52.000+ từ)\n• Bản quyền: CC BY-SA 2.0 KR\n• Trạng thái: Đã sẵn sàng tra cứu và lưu trữ offline 100%.",
+                        fontSize = 13.sp,
+                        color = Color(0xFF334155),
+                        lineHeight = 20.sp
                     )
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        if (newWordHeadword.isNotBlank()) {
-                            val head = newWordHeadword.trim()
-                            val mean = newWordMeaning.trim().ifBlank { "Từ vựng cá nhân" }
-                            coroutineScope.launch {
-                                userWorkspaceRepository?.saveWord(
-                                    stableKey = "custom_${head}_${System.currentTimeMillis()}",
-                                    headword = head,
-                                    meaning = mean,
-                                    originType = "SINO_KOREAN",
-                                    isFavorite = true
-                                )
-                            }
-                            newWordHeadword = ""
-                            newWordMeaning = ""
-                        }
-                        showAddWordDialog = false
-                    }
-                ) {
-                    Text("Lưu vào kho từ")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddWordDialog = false }) {
-                    Text("Hủy")
+                TextButton(onClick = { showOfflineInfoDialog = false }) {
+                    Text("Đóng", fontWeight = FontWeight.Bold, color = Color(0xFF2563EB))
                 }
             }
         )
@@ -325,7 +349,8 @@ fun MyVocabularyScreen(
 @Composable
 private fun MyVocabularyHeader(
     totalSavedCount: Int,
-    onStartSrsReview: () -> Unit = {}
+    onStartSrsReview: () -> Unit = {},
+    onOfflinePillClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -338,13 +363,20 @@ private fun MyVocabularyHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(
-                    text = "Từ vựng của tôi",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
-                )
-                Spacer(modifier = Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Từ vựng của tôi",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OfflineStatusPill(
+                        status = DatabaseStatus.READY,
+                        onClick = onOfflinePillClick
+                    )
+                }
+                Spacer(modifier = Modifier.height(3.dp))
                 // Dòng tiêu đề phụ
                 Text(
                     text = "Tổng số từ đã lưu: $totalSavedCount",
@@ -354,32 +386,32 @@ private fun MyVocabularyHeader(
                 )
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFDBEAFE),
-                    modifier = Modifier.clickable { onStartSrsReview() }
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "🎴 Ôn tập SRS",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1D4ED8)
-                        )
+            val srsInteraction = remember { MutableInteractionSource() }
+            val srsScale = rememberBounceScale(srsInteraction)
+
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFDBEAFE),
+                modifier = Modifier
+                    .graphicsLayer {
+                        scaleX = srsScale
+                        scaleY = srsScale
                     }
-                }
-
-                Spacer(modifier = Modifier.width(4.dp))
-
-                IconButton(onClick = { /* Menu */ }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = null,
-                        tint = Color(0xFF64748B)
+                    .clickable(
+                        interactionSource = srsInteraction,
+                        indication = null,
+                        onClick = onStartSrsReview
+                    )
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "🎴 Ôn tập SRS",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1D4ED8)
                     )
                 }
             }
@@ -399,7 +431,7 @@ private fun MyVocabularySearchBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .shadow(3.dp, RoundedCornerShape(16.dp), spotColor = Color(0x1A1E3A8A)),
+            .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0x1A1E3A8A)),
         shape = RoundedCornerShape(16.dp),
         color = Color.White,
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
@@ -421,7 +453,7 @@ private fun MyVocabularySearchBar(
 
             BasicTextField(
                 value = query,
-                onValueChange = onQueryChange,
+                onQueryChange = onQueryChange,
                 modifier = Modifier.weight(1f),
                 textStyle = TextStyle(
                     fontSize = 15.sp,
@@ -455,7 +487,12 @@ private fun MyVocabularySearchBar(
             }
 
             Spacer(modifier = Modifier.width(8.dp))
-            Box(modifier = Modifier.width(1.dp).height(20.dp).background(Color(0xFFE2E8F0)))
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(20.dp)
+                    .background(Color(0xFFE2E8F0))
+            )
             Spacer(modifier = Modifier.width(8.dp))
 
             IconButton(onClick = onFilterClick, modifier = Modifier.size(28.dp)) {
@@ -506,11 +543,23 @@ private fun FilterChipItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val scale = rememberBounceScale(interactionSource)
+
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = if (isSelected) Color(0xFF2563EB) else Color.White,
         border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
-        modifier = Modifier.clickable(onClick = onClick)
+        modifier = Modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
     ) {
         Text(
             text = label,
@@ -523,11 +572,7 @@ private fun FilterChipItem(
 }
 
 /**
- * Thẻ từ vựng đã lưu với biểu tượng ngôi sao ★/☆ và icon map chuẩn:
- * SINO_KOREAN: [漢]
- * LOANWORD: [🌐]
- * NATIVE_KOREAN: [🌱]
- * MIXED: [가]
+ * Thẻ từ vựng đã lưu với biểu tượng ngôi sao ★/☆ và hiệu ứng bounce scale
  */
 @Composable
 private fun SavedWordCard(
@@ -536,11 +581,27 @@ private fun SavedWordCard(
     onSpeak: () -> Unit,
     onToggleFavorite: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val cardScale = rememberBounceScale(interactionSource)
+    val haptic = LocalHapticFeedback.current
+
+    // Star bounce animatable
+    val starScale = remember { Animatable(1f) }
+    val coroutineScope = rememberCoroutineScope()
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = cardScale
+                scaleY = cardScale
+            }
             .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
         shape = RoundedCornerShape(14.dp),
         color = Color.White,
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
@@ -552,12 +613,12 @@ private fun SavedWordCard(
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Cột 1: Icon container ánh xạ chính xác theo OriginType
+            // Cột 1: Icon container
             val (iconText, bgCol, fgCol) = when (word.originType) {
-                OriginType.SINO_KOREAN -> Triple("漢", Color(0xFFEDE9FE), Color(0xFF6D28D9))
-                OriginType.LOANWORD -> Triple("🌐", Color(0xFFFEE2E2), Color(0xFFDC2626))
-                OriginType.NATIVE_KOREAN -> Triple("🌱", Color(0xFFDCFCE7), Color(0xFF15803D))
-                OriginType.MIXED -> Triple("가", Color(0xFFFEF3C7), Color(0xFFD97706))
+                OriginType.SINO_KOREAN -> Triple("漢", Color(0xFFEFF6FF), Color(0xFF2563EB))
+                OriginType.LOANWORD -> Triple("🌐", Color(0xFFFFF1F2), Color(0xFFE11D48))
+                OriginType.NATIVE_KOREAN -> Triple("🌱", Color(0xFFE0F2FE), Color(0xFF0284C7))
+                OriginType.MIXED -> Triple("가", Color(0xFFECFDF5), Color(0xFF059669))
             }
 
             Box(
@@ -593,8 +654,8 @@ private fun SavedWordCard(
                         color = when (word.originType) {
                             OriginType.SINO_KOREAN -> Color(0xFFDBEAFE)
                             OriginType.LOANWORD -> Color(0xFFFEE2E2)
-                            OriginType.NATIVE_KOREAN -> Color(0xFFDCFCE7)
-                            OriginType.MIXED -> Color(0xFFFEF3C7)
+                            OriginType.NATIVE_KOREAN -> Color(0xFFE0F2FE)
+                            OriginType.MIXED -> Color(0xFFECFDF5)
                         }
                     ) {
                         Text(
@@ -603,12 +664,28 @@ private fun SavedWordCard(
                             fontWeight = FontWeight.SemiBold,
                             color = when (word.originType) {
                                 OriginType.SINO_KOREAN -> Color(0xFF1E40AF)
-                                OriginType.LOANWORD -> Color(0xFFB91C1C)
-                                OriginType.NATIVE_KOREAN -> Color(0xFF15803D)
-                                OriginType.MIXED -> Color(0xFFB45309)
+                                OriginType.LOANWORD -> Color(0xFFBE123C)
+                                OriginType.NATIVE_KOREAN -> Color(0xFF0369A1)
+                                OriginType.MIXED -> Color(0xFF047857)
                             },
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
+                    }
+
+                    if (word.isCustom) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFFF1F5F9)
+                        ) {
+                            Text(
+                                text = "Bản lưu cá nhân",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF475569),
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 }
 
@@ -638,70 +715,229 @@ private fun SavedWordCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+
+                if (word.personalNote.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "💡 ${word.personalNote}",
+                        fontSize = 12.sp,
+                        color = Color(0xFF0D9488),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Cột 3: Biểu tượng ngôi sao ★/☆ để đánh dấu yêu thích
+            // Cột 3: Biểu tượng ngôi sao ★/☆ với scale bounce animation
             IconButton(
-                onClick = onToggleFavorite,
-                modifier = Modifier.size(32.dp)
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    coroutineScope.launch {
+                        starScale.animateTo(
+                            targetValue = 1f,
+                            animationSpec = keyframes {
+                                durationMillis = 200
+                                0.5f at 0
+                                1.25f at 100 using FastOutSlowInEasing
+                                1.0f at 200 using FastOutSlowInEasing
+                            }
+                        )
+                    }
+                    onToggleFavorite()
+                },
+                modifier = Modifier
+                    .size(36.dp)
+                    .graphicsLayer {
+                        scaleX = starScale.value
+                        scaleY = starScale.value
+                    }
             ) {
                 Icon(
                     imageVector = if (word.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                     contentDescription = "Yêu thích",
                     tint = if (word.isFavorite) Color(0xFFF59E0B) else Color(0xFFCBD5E1),
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
     }
 }
 
+/**
+ * Bottom Sheet thêm từ vựng cá nhân với 4 trường nhập liệu và tuỳ chọn tạo SRS
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MyVocabularyBottomBar(
-    onTabClick: (Int) -> Unit
+private fun CustomWordBottomSheet(
+    onDismiss: () -> Unit,
+    onSaveWord: (headword: String, meaning: String, note: String, example: String, enrollSrs: Boolean) -> Unit
 ) {
-    NavigationBar(
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var headword by remember { mutableStateOf("") }
+    var meaning by remember { mutableStateOf("") }
+    var note by remember { mutableStateOf("") }
+    var example by remember { mutableStateOf("") }
+    var enrollSrs by remember { mutableStateOf(true) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
         containerColor = Color.White,
-        tonalElevation = 8.dp
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
     ) {
-        val navItems = listOf(
-            Triple("Trang chủ", Icons.Default.Home, 0),
-            Triple("Tra cứu", Icons.Default.Search, 1),
-            Triple("AI Chat", Icons.Default.Psychology, 2),
-            Triple("Từ vựng", Icons.Default.Bookmark, 3),
-            Triple("Cá nhân", Icons.Default.Person, 4)
-        )
-
-        navItems.forEach { (label, icon, index) ->
-            val isSelected = index == 3
-
-            NavigationBarItem(
-                selected = isSelected,
-                onClick = { onTabClick(index) },
-                icon = {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Thêm từ vựng cá nhân",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A)
+                )
+                IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
                     Icon(
-                        imageVector = icon,
-                        contentDescription = label,
-                        modifier = Modifier.size(22.dp)
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Đóng",
+                        tint = Color(0xFF64748B)
                     )
-                },
-                label = {
-                    Text(
-                        text = label,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFF2563EB),
-                    selectedTextColor = Color(0xFF2563EB),
-                    indicatorColor = Color(0xFFDBEAFE),
-                    unselectedIconColor = Color(0xFF64748B),
-                    unselectedTextColor = Color(0xFF64748B)
+                }
+            }
+
+            // Trường 1: Từ vựng tiếng Hàn
+            OutlinedTextField(
+                value = headword,
+                onValueChange = { headword = it },
+                label = { Text("Từ / Cụm từ tiếng Hàn (bắt buộc)") },
+                placeholder = { Text("Ví dụ: 행복하다") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF2563EB),
+                    unfocusedBorderColor = Color(0xFFCBD5E1)
                 )
             )
+
+            // Trường 2: Nghĩa tiếng Việt
+            OutlinedTextField(
+                value = meaning,
+                onValueChange = { meaning = it },
+                label = { Text("Nghĩa tiếng Việt") },
+                placeholder = { Text("Ví dụ: hạnh phúc, vui sướng") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF2563EB),
+                    unfocusedBorderColor = Color(0xFFCBD5E1)
+                )
+            )
+
+            // Trường 3: Ghi chú cá nhân / Mẹo nhớ
+            OutlinedTextField(
+                value = note,
+                onValueChange = { note = it },
+                label = { Text("Ghi chú cá nhân / Mẹo nhớ từ") },
+                placeholder = { Text("Ví dụ: Hán-Hàn Hạnh Phúc, thường đi với gia đình") },
+                singleLine = false,
+                maxLines = 3,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF2563EB),
+                    unfocusedBorderColor = Color(0xFFCBD5E1)
+                )
+            )
+
+            // Trường 4: Câu ví dụ tự soạn
+            OutlinedTextField(
+                value = example,
+                onValueChange = { example = it },
+                label = { Text("Câu ví dụ tự soạn") },
+                placeholder = { Text("Ví dụ: 우리는 지금 매우 행복해요.") },
+                singleLine = false,
+                maxLines = 2,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF2563EB),
+                    unfocusedBorderColor = Color(0xFFCBD5E1)
+                )
+            )
+
+            // Switch SRS
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFF8FAFC),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Tạo thẻ Flashcard SRS",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF0F172A)
+                        )
+                        Text(
+                            text = "Tự động đưa vào chu kỳ ôn tập ngắt quãng",
+                            fontSize = 12.sp,
+                            color = Color(0xFF64748B)
+                        )
+                    }
+                    Switch(
+                        checked = enrollSrs,
+                        onCheckedChange = { enrollSrs = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFF2563EB)
+                        )
+                    )
+                }
+            }
+
+            // Nút Lưu
+            Button(
+                onClick = {
+                    if (headword.isNotBlank()) {
+                        onSaveWord(headword, meaning, note, example, enrollSrs)
+                    }
+                },
+                enabled = headword.isNotBlank(),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                Text(
+                    text = "Lưu từ vựng",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

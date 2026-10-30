@@ -1,9 +1,13 @@
 package com.hanviet.etymoai.ui.srs
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,19 +20,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +32,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,15 +41,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hanviet.etymoai.data.repository.UserWorkspaceRepository
+import com.hanviet.etymoai.ui.components.rememberBounceScale
+import kotlinx.coroutines.flow.flowOf
 
 data class LeechWordItem(
     val rank: Int,
@@ -62,15 +64,43 @@ data class LeechWordItem(
 )
 
 /**
- * 5. Màn hình Thống Kê Học Tập & Từ Thường Quên (Study Progress & Leech Words Screen)
- * Hiện thực hóa Mục 15.2 (Thống kê SRS, phân tích từ hay quên / leech cards) của Idea 2.2.
+ * Màn hình Thống Kê Học Tập & Từ Thường Quên (Study Progress & Leech Words Screen - UX/UI v2.2)
+ * Đặc tả Mục 12:
+ * - 4 Metric Cards: Tổng lưu | Đã học | Đã thuộc | Chuỗi ngày
+ * - Biểu đồ Donut Progress Chart với hiệu ứng hoạt họa quét (0% -> 68% trong 500ms)
+ * - Biểu đồ cột 7 ngày trong tuần với cột nổi bật
+ * - Timeframe chips: 7 ngày, 30 ngày, 3 tháng, Tùy chỉnh
+ * - Bảng xếp hạng từ thường quên (Leech words) với huy hiệu (1)-(5) và lối tắt xem từ
  */
 @Composable
 fun StudyStatsScreen(
+    userWorkspaceRepository: UserWorkspaceRepository? = null,
     onBackClick: () -> Unit = {},
     onWordClick: (String) -> Unit = {}
 ) {
     var selectedTimeframe by remember { mutableStateOf("7 ngày") }
+    val haptic = LocalHapticFeedback.current
+
+    // Lấy số liệu thực tế từ workspace repository
+    val savedWordsWithTags by (userWorkspaceRepository?.getAllSavedWordsFlow() ?: flowOf(emptyList()))
+        .collectAsState(initial = emptyList())
+
+    val totalSaved = savedWordsWithTags.size.coerceAtLeast(1)
+    val masteredCount = (savedWordsWithTags.count { it.word.isFavorite }).coerceAtLeast(0)
+    val learningCount = (totalSaved - masteredCount).coerceAtLeast(0)
+    val masteryRatio = if (totalSaved > 0) masteredCount.toFloat() / totalSaved.toFloat() else 0.5f
+
+    // Animated Sweep cho Donut Chart
+    var chartVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        chartVisible = true
+    }
+
+    val animatedSweep by animateFloatAsState(
+        targetValue = if (chartVisible) masteryRatio.coerceIn(0.1f, 1f) else 0f,
+        animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
+        label = "donutSweep"
+    )
 
     val leechWords = remember {
         listOf(
@@ -100,7 +130,10 @@ fun StudyStatsScreen(
                 // 1. Timeframe Filter Chips
                 TimeframeChipsRow(
                     selected = selectedTimeframe,
-                    onSelected = { selectedTimeframe = it }
+                    onSelected = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        selectedTimeframe = it
+                    }
                 )
             }
 
@@ -113,21 +146,21 @@ fun StudyStatsScreen(
                     MetricCard(
                         icon = "📖",
                         title = "Tổng lưu",
-                        value = "128",
+                        value = "$totalSaved",
                         valueColor = Color(0xFF2563EB),
                         modifier = Modifier.weight(1f)
                     )
                     MetricCard(
                         icon = "🎓",
-                        title = "Đã học",
-                        value = "86",
+                        title = "Đang học",
+                        value = "$learningCount",
                         valueColor = Color(0xFF7C3AED),
                         modifier = Modifier.weight(1f)
                     )
                     MetricCard(
                         icon = "🛡️",
                         title = "Đã thuộc",
-                        value = "52",
+                        value = "$masteredCount",
                         valueColor = Color(0xFF16A34A),
                         modifier = Modifier.weight(1f)
                     )
@@ -152,7 +185,7 @@ fun StudyStatsScreen(
             }
 
             item {
-                // 3. Hai thẻ Tiến độ: Donut Gauge 68% + Biểu đồ cột theo ngày trong tuần
+                // 3. Hai thẻ Tiến độ: Donut Gauge + Biểu đồ cột theo ngày trong tuần
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -185,13 +218,14 @@ fun StudyStatsScreen(
                                     drawArc(
                                         color = Color(0xFF2563EB),
                                         startAngle = -90f,
-                                        sweepAngle = 360f * 0.68f,
+                                        sweepAngle = 360f * animatedSweep,
                                         useCenter = false,
                                         style = Stroke(width = 9.dp.toPx(), cap = StrokeCap.Round)
                                     )
                                 }
+                                val pct = (animatedSweep * 100).toInt()
                                 Text(
-                                    text = "68%",
+                                    text = "$pct%",
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF0F172A)
@@ -205,7 +239,7 @@ fun StudyStatsScreen(
                                     color = Color(0xFF64748B)
                                 )
                                 Text(
-                                    text = "52 / 128",
+                                    text = "$masteredCount / $totalSaved",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF2563EB)
@@ -240,7 +274,12 @@ fun StudyStatsScreen(
                                     color = Color(0xFF0F172A)
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF2563EB)))
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFF2563EB))
+                                    )
                                     Spacer(modifier = Modifier.width(3.dp))
                                     Text(text = "Đã học", fontSize = 10.sp, color = Color(0xFF64748B))
                                 }
@@ -292,11 +331,10 @@ fun StudyStatsScreen(
                         color = Color(0xFF0F172A)
                     )
                     Text(
-                        text = "Xem tất cả ›",
+                        text = "5 từ cần chú ý",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF2563EB),
-                        modifier = Modifier.clickable { /* View all */ }
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF64748B)
                     )
                 }
             }
@@ -311,10 +349,23 @@ fun StudyStatsScreen(
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         leechWords.forEachIndexed { index, word ->
+                            val rowInteraction = remember { MutableInteractionSource() }
+                            val rowScale = rememberBounceScale(rowInteraction)
+
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { onWordClick(word.headword) }
+                                    .graphicsLayer {
+                                        scaleX = rowScale
+                                        scaleY = rowScale
+                                    }
+                                    .clickable(
+                                        interactionSource = rowInteraction,
+                                        indication = null
+                                    ) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        onWordClick(word.headword)
+                                    }
                                     .padding(horizontal = 14.dp, vertical = 11.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
@@ -363,7 +414,7 @@ fun StudyStatsScreen(
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -423,13 +474,24 @@ private fun TimeframeChipsRow(
     ) {
         listOf("7 ngày", "30 ngày", "3 tháng", "Tùy chỉnh").forEach { label ->
             val isSelected = selected == label
+            val interactionSource = remember { MutableInteractionSource() }
+            val scale = rememberBounceScale(interactionSource)
+
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = if (isSelected) Color(0xFF2563EB) else Color.White,
                 border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { onSelected(label) }
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    }
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = { onSelected(label) }
+                    )
             ) {
                 Text(
                     text = label,

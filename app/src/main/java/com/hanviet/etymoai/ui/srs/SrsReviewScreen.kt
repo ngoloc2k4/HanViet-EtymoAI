@@ -1,12 +1,20 @@
 package com.hanviet.etymoai.ui.srs
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,30 +32,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Psychology
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -56,6 +53,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -64,20 +62,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.hanviet.etymoai.domain.etymology.OriginType
 import com.hanviet.etymoai.domain.srs.ReviewRating
 import com.hanviet.etymoai.domain.srs.SrsCard
 import com.hanviet.etymoai.domain.srs.SrsFlashcardData
+import com.hanviet.etymoai.ui.components.rememberBounceScale
 import kotlinx.coroutines.launch
 
 enum class SrsViewMode {
@@ -85,10 +84,14 @@ enum class SrsViewMode {
 }
 
 /**
- * 4. Màn hình Ôn Tập & Flashcard (SRS Review Session Screen)
- * Hiện thực hóa Mục 8.3 & 15.2 của Idea 2.2 với 3 chế độ xem (Hôm nay, Lịch trình, Thống kê),
- * cơ chế lật thẻ trực quan với hình nền phong cảnh mờ nhẹ, nút [💡 Xem gợi ý] từ nguyên Hán-Việt,
- * và hai nút đánh giá [✕ Không nhớ (10 phút)] / [✓ Đã nhớ (3 ngày)].
+ * Màn hình Ôn Tập & Flashcard SRS (SRS Review Session Screen - UX/UI v2.2)
+ * Đặc tả Mục 11:
+ * - Segmented Control (Hôm nay | Lịch trình | Thống kê) với hiệu ứng pill trượt 200ms
+ * - Thẻ chỉ tiêu: 📅 Hôm nay: X thẻ | Đã học: Y | Còn lại: Z (AnimatedContent flip số)
+ * - 3D Flashcard Flip (rotationY với cameraDistance, hai mặt độc lập trước/sau)
+ * - Nút [💡 Xem gợi ý] từ nguyên Hán-Việt & ngữ cảnh
+ * - Nút đánh giá: [✕ Không nhớ (10 phút)] và [✓ Đã nhớ (3 ngày)] với Haptic Feedback
+ * - Mẹo ôn tập SRS và màn hình hoàn tất phiên học
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,18 +104,17 @@ fun SrsReviewScreen(
     onNavigateTab: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    // Review queue: copy cards to mutable queue to allow re-queueing lapsed cards
+    val reviewQueue = remember(cards) { mutableStateListOf(*cards.toTypedArray()) }
     var currentIndex by remember { mutableIntStateOf(0) }
+    var reviewedCount by remember { mutableIntStateOf(0) }
     var isFlipped by remember { mutableStateOf(false) }
     var selectedViewMode by remember { mutableStateOf(SrsViewMode.TODAY) }
     var showHintSheet by remember { mutableStateOf(false) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
-
-    // Chuyển sang màn hình thống kê nếu bấm tab Thống kê
-    if (selectedViewMode == SrsViewMode.STATS) {
-        onNavigateToStats()
-    }
+    val haptic = LocalHapticFeedback.current
 
     Scaffold(
         topBar = {
@@ -121,11 +123,14 @@ fun SrsReviewScreen(
         containerColor = Color(0xFFF4F7FB),
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
-        if (cards.isEmpty() || currentIndex >= cards.size) {
+        if (reviewQueue.isEmpty() || currentIndex >= reviewQueue.size) {
             SrsCompletedView(
-                totalReviewed = cards.size,
+                totalReviewed = reviewedCount.coerceAtLeast(cards.size),
                 onRestart = {
+                    reviewQueue.clear()
+                    reviewQueue.addAll(cards)
                     currentIndex = 0
+                    reviewedCount = 0
                     isFlipped = false
                 },
                 onBackClick = onBackClick,
@@ -134,8 +139,10 @@ fun SrsReviewScreen(
                     .padding(innerPadding)
             )
         } else {
-            val currentItem = cards[currentIndex]
-            val progress = (currentIndex + 1).toFloat() / cards.size.toFloat()
+            val currentItem = reviewQueue[currentIndex]
+            val totalInQueue = reviewQueue.size
+            val remainingInQueue = (totalInQueue - currentIndex).coerceAtLeast(0)
+            val progress = ((currentIndex + 1).toFloat() / totalInQueue.toFloat()).coerceIn(0f, 1f)
 
             LazyColumn(
                 modifier = Modifier
@@ -147,7 +154,7 @@ fun SrsReviewScreen(
             ) {
                 item {
                     Spacer(modifier = Modifier.height(2.dp))
-                    // 1. Thanh chuyển đổi 3 chế độ xem: [ Hôm nay ] | Lịch trình | Thống kê
+                    // 1. Segmented Control 3 chế độ: [ Hôm nay ] | Lịch trình | Thống kê
                     SrsModeSegmentBar(
                         selectedMode = selectedViewMode,
                         onModeSelected = { mode ->
@@ -160,42 +167,58 @@ fun SrsReviewScreen(
                 }
 
                 item {
-                    // 2. Thẻ tóm tắt kế hoạch hôm nay (📅 Hôm nay: 5 thẻ cần ôn | Đã học: X | Còn lại: Y)
+                    // 2. Thẻ tóm tắt kế hoạch hôm nay với AnimatedContent
                     SrsDailyQuotaCard(
                         totalDue = cards.size,
-                        reviewedCount = currentIndex,
-                        remainingCount = cards.size - currentIndex
+                        reviewedCount = reviewedCount,
+                        remainingCount = remainingInQueue
                     )
                 }
 
                 item {
-                    // 3. Thẻ Flashcard Lật trực quan (Flip Card với hình nền phong cảnh mờ nhẹ)
-                    SrsFlipCard(
+                    // 3. Thẻ Flashcard 3D Lật trực quan (rotationY 0 -> 180)
+                    Srs3DFlipCard(
                         item = currentItem,
                         isFlipped = isFlipped,
                         currentIndex = currentIndex + 1,
-                        totalCards = cards.size,
+                        totalCards = totalInQueue,
                         progress = progress,
-                        onCardClick = { isFlipped = !isFlipped },
+                        onCardClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            isFlipped = !isFlipped
+                        },
                         onSpeak = { onSpeakWord(currentItem.word.headwordSnapshot) }
                     )
                 }
 
                 item {
-                    // 4. Hai nút đánh giá nhanh: [✕ Không nhớ (10 phút)] | [✓ Đã nhớ (3 ngày)]
+                    // 4. Hai nút đánh giá nhanh: [✕ Không nhớ] | [✓ Đã nhớ]
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // Nút Không nhớ
+                        val failInteraction = remember { MutableInteractionSource() }
+                        val failScale = rememberBounceScale(failInteraction)
+
                         Surface(
                             shape = RoundedCornerShape(14.dp),
                             color = Color(0xFFFEE2E2),
                             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFCA5A5)),
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable {
+                                .graphicsLayer {
+                                    scaleX = failScale
+                                    scaleY = failScale
+                                }
+                                .clickable(
+                                    interactionSource = failInteraction,
+                                    indication = null
+                                ) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     onRatingSelected(currentItem.card, ReviewRating.AGAIN)
+                                    // Re-queue this card to end of session so user masters it
+                                    reviewQueue.add(currentItem)
                                     isFlipped = false
                                     currentIndex++
                                 }
@@ -232,14 +255,26 @@ fun SrsReviewScreen(
                         }
 
                         // Nút Đã nhớ
+                        val passInteraction = remember { MutableInteractionSource() }
+                        val passScale = rememberBounceScale(passInteraction)
+
                         Surface(
                             shape = RoundedCornerShape(14.dp),
                             color = Color(0xFFDCFCE7),
                             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC)),
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable {
+                                .graphicsLayer {
+                                    scaleX = passScale
+                                    scaleY = passScale
+                                }
+                                .clickable(
+                                    interactionSource = passInteraction,
+                                    indication = null
+                                ) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     onRatingSelected(currentItem.card, ReviewRating.GOOD)
+                                    reviewedCount++
                                     isFlipped = false
                                     currentIndex++
                                 }
@@ -279,13 +314,23 @@ fun SrsReviewScreen(
 
                 item {
                     // 5. Nút [💡 Xem gợi ý] từ nguyên Hán-Việt
+                    val hintInteraction = remember { MutableInteractionSource() }
+                    val hintScale = rememberBounceScale(hintInteraction)
+
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = Color.White,
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable {
+                            .graphicsLayer {
+                                scaleX = hintScale
+                                scaleY = hintScale
+                            }
+                            .clickable(
+                                interactionSource = hintInteraction,
+                                indication = null
+                            ) {
                                 scope.launch {
                                     showHintSheet = true
                                     sheetState.show()
@@ -353,9 +398,9 @@ fun SrsReviewScreen(
             }
         }
 
-        // BottomSheet hiển thị gợi ý từ nguyên khi người dùng bấm [💡 Xem gợi ý]
-        if (showHintSheet && cards.isNotEmpty() && currentIndex < cards.size) {
-            val currentItem = cards[currentIndex]
+        // BottomSheet gợi ý từ nguyên
+        if (showHintSheet && reviewQueue.isNotEmpty() && currentIndex < reviewQueue.size) {
+            val currentItem = reviewQueue[currentIndex]
             ModalBottomSheet(
                 onDismissRequest = { showHintSheet = false },
                 sheetState = sheetState
@@ -378,7 +423,6 @@ fun SrsReviewScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Các thẻ thành tố chữ Hán
                     if (currentItem.hanjaSegments.isNotEmpty()) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -418,12 +462,18 @@ fun SrsReviewScreen(
                                 }
                             }
                         }
+                    } else {
+                        Text(
+                            text = "Gợi ý: Từ này thuộc nhóm từ vựng cốt lõi. Hãy liên tưởng âm thanh Hangul để gợi nhớ nghĩa.",
+                            fontSize = 13.sp,
+                            color = Color(0xFF475569)
+                        )
                     }
 
                     if (!currentItem.exampleSentenceKo.isNullOrBlank()) {
                         Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            text = "Câu ví dụ ngữ cảnh:",
+                            text = "Ngữ cảnh sử dụng:",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF475569)
@@ -435,29 +485,17 @@ fun SrsReviewScreen(
                             fontWeight = FontWeight.Medium,
                             color = Color(0xFF0F172A)
                         )
-                        if (!currentItem.exampleSentenceVi.isNullOrBlank()) {
-                            Text(
-                                text = currentItem.exampleSentenceVi,
-                                fontSize = 12.sp,
-                                color = Color(0xFF64748B)
-                            )
-                        }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
                 }
             }
         }
     }
 }
 
-/**
- * TopBar
- */
 @Composable
-private fun SrsTopBar(
-    onBackClick: () -> Unit
-) {
+private fun SrsTopBar(onBackClick: () -> Unit) {
     Surface(
         color = Color(0xFFF4F7FB),
         modifier = Modifier.fillMaxWidth()
@@ -497,9 +535,6 @@ private fun SrsTopBar(
     }
 }
 
-/**
- * 1. Thanh chuyển đổi 3 chế độ: [ Hôm nay ] | Lịch trình | Thống kê
- */
 @Composable
 private fun SrsModeSegmentBar(
     selectedMode: SrsViewMode,
@@ -565,7 +600,7 @@ private fun SrsSegmentItem(
 }
 
 /**
- * 2. Thẻ Kế hoạch hôm nay: 📅 Hôm nay: X thẻ cần ôn | Đã học: Y | Còn lại: Z
+ * Thẻ chỉ tiêu ôn tập: 📅 Hôm nay: X thẻ | Đã học: Y | Còn lại: Z (AnimatedContent flip số)
  */
 @Composable
 private fun SrsDailyQuotaCard(
@@ -618,12 +653,20 @@ private fun SrsDailyQuotaCard(
                     fontSize = 11.sp,
                     color = Color(0xFF64748B)
                 )
-                Text(
-                    text = "$reviewedCount",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF16A34A)
-                )
+                AnimatedContent(
+                    targetState = reviewedCount,
+                    transitionSpec = {
+                        (slideInVertically { it } + fadeIn()).togetherWith(slideOutVertically { -it } + fadeOut())
+                    },
+                    label = "reviewedCountFlip"
+                ) { count ->
+                    Text(
+                        text = "$count",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF16A34A)
+                    )
+                }
             }
 
             Box(
@@ -639,22 +682,30 @@ private fun SrsDailyQuotaCard(
                     fontSize = 11.sp,
                     color = Color(0xFF64748B)
                 )
-                Text(
-                    text = "$remainingCount",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2563EB)
-                )
+                AnimatedContent(
+                    targetState = remainingCount,
+                    transitionSpec = {
+                        (slideInVertically { it } + fadeIn()).togetherWith(slideOutVertically { -it } + fadeOut())
+                    },
+                    label = "remainingCountFlip"
+                ) { count ->
+                    Text(
+                        text = "$count",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2563EB)
+                    )
+                }
             }
         }
     }
 }
 
 /**
- * 3. Thẻ Flashcard Lật trực quan (Flip Card với hình nền phong cảnh mờ nhẹ)
+ * Thẻ Flashcard 3D với hiệu ứng lật rotationY và hiển thị 2 mặt rõ nét
  */
 @Composable
-private fun SrsFlipCard(
+private fun Srs3DFlipCard(
     item: SrsFlashcardData,
     isFlipped: Boolean,
     currentIndex: Int,
@@ -663,23 +714,32 @@ private fun SrsFlipCard(
     onCardClick: () -> Unit,
     onSpeak: () -> Unit
 ) {
+    val density = LocalDensity.current.density
+    val rotation by animateFloatAsState(
+        targetValue = if (isFlipped) 180f else 0f,
+        animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
+        label = "cardFlipRotation"
+    )
+
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = Color.White,
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
         modifier = Modifier
             .fillMaxWidth()
-            .height(280.dp)
+            .height(290.dp)
             .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0x1A1E3A8A))
+            .graphicsLayer {
+                rotationY = rotation
+                cameraDistance = 14f * density
+            }
             .clickable(onClick = onCardClick)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Hình nền phong cảnh núi mờ & mái đình truyền thống nhẹ nhàng
+            // Nền trang trí Canvas nhẹ
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
                 val h = size.height
-
-                // Núi xa mờ
                 val mountainPath = Path().apply {
                     moveTo(0f, h * 0.85f)
                     cubicTo(w * 0.25f, h * 0.65f, w * 0.5f, h * 0.75f, w, h * 0.8f)
@@ -687,115 +747,184 @@ private fun SrsFlipCard(
                     lineTo(0f, h)
                     close()
                 }
-                drawPath(mountainPath, Color(0xFFF1F5F9))
+                drawPath(mountainPath, Color(0xFFF8FAFC))
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Huy hiệu nguồn gốc
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFFDBEAFE)
+            if (rotation <= 90f) {
+                // Mặt trước (Front)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    val originLabel = when (item.word.originType) {
-                        "SINO_KOREAN" -> "Hán-Hàn"
-                        "LOANWORD" -> "Ngoại lai"
-                        "MIXED" -> "Hỗn hợp"
-                        else -> "Thuần Hàn"
-                    }
-                    Text(
-                        text = originLabel,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF1E40AF),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
-                    )
-                }
-
-                // Trung tâm: Từ khóa Hangul + Phiên âm + Nghĩa tiếng Việt
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Huy hiệu nguồn gốc
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = when (item.word.originType) {
+                            "SINO_KOREAN" -> Color(0xFFDBEAFE)
+                            "LOANWORD" -> Color(0xFFFEE2E2)
+                            "NATIVE_KOREAN", "NATIVE" -> Color(0xFFE0F2FE)
+                            else -> Color(0xFFECFDF5)
+                        }
+                    ) {
+                        val (label, textCol) = when (item.word.originType) {
+                            "SINO_KOREAN" -> Pair("Hán-Hàn [漢]", Color(0xFF1E40AF))
+                            "LOANWORD" -> Pair("Ngoại lai [🌐]", Color(0xFFBE123C))
+                            "NATIVE_KOREAN", "NATIVE" -> Pair("Thuần Hàn [🌱]", Color(0xFF0369A1))
+                            else -> Pair("Hỗn hợp [가]", Color(0xFF047857))
+                        }
                         Text(
-                            text = item.word.headwordSnapshot,
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
+                            text = label,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = textCol,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        IconButton(
-                            onClick = onSpeak,
-                            modifier = Modifier.size(24.dp)
-                        ) {
+                    }
+
+                    // Trung tâm: Headword + Phát âm
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = item.word.headwordSnapshot,
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0F172A)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            IconButton(
+                                onClick = onSpeak,
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.VolumeUp,
+                                    contentDescription = "Phát âm",
+                                    tint = Color(0xFF2563EB),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        if (!item.word.phoneticSnapshot.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "[${item.word.phoneticSnapshot}]",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF64748B)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(80.dp)
+                                .height(1.dp)
+                                .background(Color(0xFFE2E8F0))
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = Icons.Default.VolumeUp,
-                                contentDescription = "Phát âm",
-                                tint = Color(0xFF2563EB),
-                                modifier = Modifier.size(18.dp)
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                tint = Color(0xFF94A3B8),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Chạm vào thẻ để lật xem nghĩa",
+                                fontSize = 13.sp,
+                                color = Color(0xFF94A3B8)
                             )
                         }
                     }
 
-                    if (!item.word.phoneticSnapshot.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                    // Tiến độ ở đáy
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
                         Text(
-                            text = "[${item.word.phoneticSnapshot}]",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
+                            text = "$currentIndex / $totalCards",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
                             color = Color(0xFF64748B)
                         )
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Box(
-                        modifier = Modifier
-                            .width(80.dp)
-                            .height(1.dp)
-                            .background(Color(0xFFCBD5E1))
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    if (isFlipped) {
-                        Text(
-                            text = item.word.meaningSnapshot,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF1E293B),
-                            textAlign = TextAlign.Center
-                        )
-                    } else {
-                        Text(
-                            text = "Chạm để lật xem nghĩa",
-                            fontSize = 13.sp,
-                            color = Color(0xFF94A3B8)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        LinearProgressIndicator(
+                            progress = { progress },
+                            modifier = Modifier
+                                .fillMaxWidth(0.85f)
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = Color(0xFF2563EB),
+                            trackColor = Color(0xFFE2E8F0)
                         )
                     }
                 }
-
-                // Tiến độ ở đáy thẻ: 1 / 5 + Progress bar
+            } else {
+                // Mặt sau (Back) - Đảo ngược rotationY 180 để chữ không bị lộn ngược
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { rotationY = 180f }
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
+                    // Header mặt sau
                     Text(
-                        text = "$currentIndex / $totalCards",
-                        fontSize = 12.sp,
+                        text = "ĐÁP ÁN CHI TIẾT",
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF64748B)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier
-                            .fillMaxWidth(0.85f)
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp)),
                         color = Color(0xFF2563EB),
-                        trackColor = Color(0xFFE2E8F0)
+                        letterSpacing = 1.sp
+                    )
+
+                    // Nội dung nghĩa & từ nguyên
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    ) {
+                        Text(
+                            text = item.word.meaningSnapshot,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A),
+                            textAlign = TextAlign.Center,
+                            lineHeight = 24.sp
+                        )
+
+                        if (!item.word.phoneticSnapshot.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Hán-Việt: ${item.word.phoneticSnapshot}",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF1E40AF)
+                            )
+                        }
+
+                        if (!item.exampleSentenceKo.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Ví dụ: ${item.exampleSentenceKo}",
+                                fontSize = 12.sp,
+                                color = Color(0xFF475569),
+                                textAlign = TextAlign.Center,
+                                maxLines = 2
+                            )
+                        }
+                    }
+
+                    // Đáy thẻ mặt sau
+                    Text(
+                        text = "Chạm để lật lại mặt trước",
+                        fontSize = 12.sp,
+                        color = Color(0xFF94A3B8)
                     )
                 }
             }
@@ -837,63 +966,20 @@ private fun SrsCompletedView(
             lineHeight = 20.sp
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Button(
-            onClick = onBackClick,
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
-        ) {
-            Text("Về Trang chủ")
-        }
-    }
-}
-
-/**
- * Bottom Navigation Bar (5 tabs) với tab Từ vựng (index 3) được chọn
- */
-@Composable
-private fun SrsBottomBar(
-    onTabClick: (Int) -> Unit
-) {
-    NavigationBar(
-        containerColor = Color.White,
-        tonalElevation = 8.dp
-    ) {
-        val navItems = listOf(
-            Triple("Trang chủ", Icons.Default.Home, 0),
-            Triple("Tra cứu", Icons.Default.Search, 1),
-            Triple("AI Chat", Icons.Default.Psychology, 2),
-            Triple("Từ vựng", Icons.Default.BookmarkBorder, 3),
-            Triple("Cá nhân", Icons.Default.Person, 4)
-        )
-
-        navItems.forEach { (label, icon, index) ->
-            val isSelected = index == 3
-
-            NavigationBarItem(
-                selected = isSelected,
-                onClick = { onTabClick(index) },
-                icon = {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = label,
-                        modifier = Modifier.size(22.dp)
-                    )
-                },
-                label = {
-                    Text(
-                        text = label,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFF2563EB),
-                    selectedTextColor = Color(0xFF2563EB),
-                    indicatorColor = Color(0xFFDBEAFE),
-                    unselectedIconColor = Color(0xFF64748B),
-                    unselectedTextColor = Color(0xFF64748B)
-                )
-            )
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedButton(
+                onClick = onRestart,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Ôn tập lại")
+            }
+            Button(
+                onClick = onBackClick,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
+            ) {
+                Text("Về Trang chủ")
+            }
         }
     }
 }

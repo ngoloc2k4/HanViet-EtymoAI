@@ -39,8 +39,10 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Psychology
@@ -49,6 +51,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Work
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -63,6 +66,11 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import com.hanviet.etymoai.ui.components.DatabaseStatus
+import com.hanviet.etymoai.ui.components.KoreanJamoKeyboardBottomSheet
+import com.hanviet.etymoai.ui.components.OfflineStatusPill
+import com.hanviet.etymoai.ui.components.VoiceSearchOverlay
+import com.hanviet.etymoai.ui.components.rememberBounceScale
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -137,9 +145,17 @@ fun HomeScreen(
     onNavigateToAi: () -> Unit = {},
     onNavigateToSrs: () -> Unit = {},
     onNavigateToQuickLookupGuide: () -> Unit = {},
-    onOpenSettings: () -> Unit = {}
+    onOpenSettings: () -> Unit = {},
+    dueCardsCount: Int = 0,
+    onNavigateToAbout: () -> Unit = {},
+    onNavigateToHistory: () -> Unit = {},
+    onDeleteRecentSearch: (Long) -> Unit = {},
+    onBookmarkWord: (String) -> Unit = {}
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    var showJamoKeyboard by remember { mutableStateOf(false) }
+    var showVoiceSearch by remember { mutableStateOf(false) }
+    var showDbInfoDialog by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
     Scaffold(
@@ -221,32 +237,12 @@ fun HomeScreen(
 
                             Spacer(modifier = Modifier.width(8.dp))
 
-                            // Huy hiệu Offline (xanh lá nhạt)
-                            Surface(
-                                shape = RoundedCornerShape(14.dp),
-                                color = Color(0xFFDCFCE7),
-                                border = BorderStroke(1.dp, Color(0xFFBBF7D0)),
-                                modifier = Modifier.height(28.dp)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 10.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(7.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFF10B981))
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "Offline",
-                                        fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF065F46)
-                                    )
-                                }
-                            }
+                            // Huy hiệu Offline ([● Offline] Status Pill)
+                            OfflineStatusPill(
+                                status = DatabaseStatus.READY,
+                                versionLabel = "v1.2.0",
+                                onClick = { showDbInfoDialog = true }
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(4.dp))
@@ -271,6 +267,8 @@ fun HomeScreen(
                                 onWordClick(searchQuery)
                             }
                         },
+                        onOpenJamoKeyboard = { showJamoKeyboard = true },
+                        onOpenVoiceSearch = { showVoiceSearch = true },
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(horizontal = 16.dp)
@@ -462,6 +460,7 @@ fun HomeScreen(
                             subtitle = "Lưu & ôn tập (SRS)",
                             gradientColors = listOf(Color(0xFFFBBF24), Color(0xFFF59E0B)),
                             iconVector = Icons.Default.Bookmark,
+                            badgeCount = dueCardsCount,
                             modifier = Modifier.weight(1f),
                             onClick = onNavigateToSrs
                         )
@@ -517,22 +516,42 @@ fun HomeScreen(
                                 color = Color(0xFF0F172A)
                             )
                             Spacer(modifier = Modifier.weight(1f))
-                            if (recentSearches.isNotEmpty()) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (recentSearches.isNotEmpty()) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.clickable { onClearRecentSearches() }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.DeleteOutline,
+                                            contentDescription = "Xóa lịch sử",
+                                            tint = Color(0xFF94A3B8),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text(
+                                            text = "Xóa",
+                                            fontSize = 11.5.sp,
+                                            color = Color(0xFF94A3B8)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                }
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.clickable { onClearRecentSearches() }
+                                    modifier = Modifier.clickable { onNavigateToHistory() }
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DeleteOutline,
-                                        contentDescription = "Xóa lịch sử",
-                                        tint = Color(0xFF94A3B8),
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = "Xóa tất cả",
-                                        fontSize = 11.5.sp,
-                                        color = Color(0xFF94A3B8)
+                                        text = "Xem tất cả",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF2563EB)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.KeyboardArrowRight,
+                                        contentDescription = null,
+                                        tint = Color(0xFF2563EB),
+                                        modifier = Modifier.size(16.dp)
                                     )
                                 }
                             }
@@ -542,25 +561,33 @@ fun HomeScreen(
                         HorizontalDivider(color = Color(0xFFF1F5F9))
 
                         if (recentSearches.isEmpty()) {
-                            // Khi chưa có lịch sử, để trống hoặc thông báo tinh tế
+                            // Khi chưa có lịch sử, thông báo tinh tế
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 18.dp),
+                                    .padding(vertical = 20.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = "Chưa có lượt tra cứu nào gần đây",
-                                    fontSize = 12.5.sp,
-                                    color = Color(0xFF94A3B8)
-                                )
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(text = "🌱", fontSize = 24.sp)
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = "Chưa có lịch sử tra cứu gần đây.\nBắt đầu gõ từ bất kỳ để khám phá từ nguyên!",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF94A3B8),
+                                        textAlign = TextAlign.Center,
+                                        lineHeight = 17.sp
+                                    )
+                                }
                             }
                         } else {
                             // Danh sách các từ tra cứu thực tế từ search_history
                             recentSearches.take(5).forEachIndexed { index, item ->
                                 RealSearchHistoryRow(
                                     item = item,
-                                    onClick = { onWordClick(item.queryText) }
+                                    onClick = { onWordClick(item.queryText) },
+                                    onDelete = { onDeleteRecentSearch(item.id) },
+                                    onBookmark = { onBookmarkWord(item.queryText) }
                                 )
                                 if (index < minOf(recentSearches.size, 5) - 1) {
                                     HorizontalDivider(
@@ -585,7 +612,7 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .clickable { onNavigateToAi() }
+                        .clickable { onNavigateToAbout() }
                 ) {
                     Box(
                         modifier = Modifier
@@ -645,6 +672,73 @@ fun HomeScreen(
             }
         }
     }
+
+    if (showJamoKeyboard) {
+        KoreanJamoKeyboardBottomSheet(
+            currentText = searchQuery,
+            onTextChange = onSearchQueryChange,
+            onDismissRequest = { showJamoKeyboard = false }
+        )
+    }
+
+    if (showVoiceSearch) {
+        VoiceSearchOverlay(
+            onDismissRequest = { showVoiceSearch = false },
+            onVoiceResult = { result ->
+                onSearchQueryChange(result)
+                onWordClick(result)
+            }
+        )
+    }
+
+    if (showDbInfoDialog) {
+        AlertDialog(
+            onDismissRequest = { showDbInfoDialog = false },
+            title = {
+                Text(
+                    text = "Gói Dữ Liệu Offline NIKL",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color(0xFF0F172A)
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "• Phiên bản: KRDICT v1.2.0 (Chính thức)",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2563EB)
+                    )
+                    Text(
+                        text = "• 52.000+ mục từ tiếng Hàn – Việt",
+                        fontSize = 12.5.sp,
+                        color = Color(0xFF334155)
+                    )
+                    Text(
+                        text = "• 6.500+ chữ Hán chiết tự (Hanja master)",
+                        fontSize = 12.5.sp,
+                        color = Color(0xFF334155)
+                    )
+                    Text(
+                        text = "• Tìm kiếm FTS5 tức thì 0ms (Không cần internet)",
+                        fontSize = 12.5.sp,
+                        color = Color(0xFF059669)
+                    )
+                    Text(
+                        text = "• Giấy phép: CC BY-SA 2.0 KR (Viện Quốc ngữ Hàn Quốc)",
+                        fontSize = 11.5.sp,
+                        color = Color(0xFF64748B)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showDbInfoDialog = false }) {
+                    Text("Đã hiểu")
+                }
+            }
+        )
+    }
 }
 
 /**
@@ -653,29 +747,32 @@ fun HomeScreen(
 @Composable
 private fun RealSearchHistoryRow(
     item: SearchHistoryEntity,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDelete: () -> Unit = {},
+    onBookmark: () -> Unit = {}
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 10.dp)
+            .padding(vertical = 8.dp)
     ) {
-        // Icon hình tròn tròn nhỏ
+        // Icon ngữ cảnh tương ứng
+        val contextIcon = when {
+            item.queryText.any { it.code in 0x4E00..0x9FFF } -> "漢"
+            item.queryText.contains(" ") -> "📄"
+            item.queryText.any { it in 'a'..'z' || it in 'A'..'Z' } -> "🔗"
+            else -> "📖"
+        }
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(30.dp)
+                .size(32.dp)
                 .clip(CircleShape)
                 .background(Color(0xFFEFF6FF))
         ) {
-            Icon(
-                imageVector = Icons.Default.History,
-                contentDescription = null,
-                tint = Color(0xFF2563EB),
-                modifier = Modifier.size(16.dp)
-            )
+            Text(text = contextIcon, fontSize = 14.sp)
         }
 
         Spacer(modifier = Modifier.width(10.dp))
@@ -688,34 +785,39 @@ private fun RealSearchHistoryRow(
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF0F172A)
             )
-            val resultNote = if (item.resultCount > 0) "${item.resultCount} kết quả" else "Đã tra cứu"
+            val resultNote = if (item.resultCount > 0) "${item.resultCount} kết quả" else "Tra cứu gần đây"
             Text(
                 text = resultNote,
-                fontSize = 11.sp,
+                fontSize = 11.5.sp,
                 color = Color(0xFF64748B)
             )
         }
 
-        // Huy hiệu phân loại (Badge)
-        Surface(
-            shape = RoundedCornerShape(10.dp),
-            color = Color(0xFFF1F5F9),
-            modifier = Modifier.height(20.dp)
+        // Nút Lưu nhanh (Bookmark)
+        IconButton(
+            onClick = onBookmark,
+            modifier = Modifier.size(28.dp)
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            ) {
-                Text(
-                    text = "Gần đây",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF475569)
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.BookmarkBorder,
+                contentDescription = "Lưu từ",
+                tint = Color(0xFFD97706),
+                modifier = Modifier.size(16.dp)
+            )
         }
 
-        Spacer(modifier = Modifier.width(8.dp))
+        // Nút Xóa (Delete)
+        IconButton(
+            onClick = onDelete,
+            modifier = Modifier.size(28.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.DeleteOutline,
+                contentDescription = "Xóa",
+                tint = Color(0xFF94A3B8),
+                modifier = Modifier.size(16.dp)
+            )
+        }
 
         // Mũi tên ›
         Text(
@@ -1044,15 +1146,23 @@ private fun FeatureCard(
     modifier: Modifier = Modifier,
     iconVector: ImageVector? = null,
     hanjaText: String? = null,
+    badgeCount: Int = 0,
     onClick: () -> Unit
 ) {
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val scale = rememberBounceScale(interactionSource)
+
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = modifier
             .height(100.dp)
-            .clickable(onClick = onClick)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
     ) {
         Column(
             modifier = Modifier
@@ -1064,28 +1174,48 @@ private fun FeatureCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 // Container chứa Icon với Gradient
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Brush.linearGradient(gradientColors))
-                ) {
-                    if (hanjaText != null) {
-                        Text(
-                            text = hanjaText,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Serif,
-                            color = Color.White
-                        )
-                    } else if (iconVector != null) {
-                        Icon(
-                            imageVector = iconVector,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
+                Box(modifier = Modifier.size(34.dp)) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Brush.linearGradient(gradientColors))
+                    ) {
+                        if (hanjaText != null) {
+                            Text(
+                                text = hanjaText,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Serif,
+                                color = Color.White
+                            )
+                        } else if (iconVector != null) {
+                            Icon(
+                                imageVector = iconVector,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    if (badgeCount > 0) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(14.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFEF4444)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (badgeCount > 9) "9+" else badgeCount.toString(),
+                                color = Color.White,
+                                fontSize = 8.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
 
@@ -1132,6 +1262,8 @@ private fun FloatingSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onSearchSubmit: () -> Unit,
+    onOpenJamoKeyboard: () -> Unit = {},
+    onOpenVoiceSearch: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -1146,7 +1278,7 @@ private fun FloatingSearchBar(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 14.dp)
         ) {
             // Icon Kính lúp
             Icon(
@@ -1182,6 +1314,32 @@ private fun FloatingSearchBar(
                     keyboardActions = KeyboardActions(onSearch = { onSearchSubmit() }),
                     cursorBrush = SolidColor(Color(0xFF2563EB)),
                     modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // Nút Bàn phím Jamo Hàn Quốc
+            IconButton(
+                onClick = onOpenJamoKeyboard,
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Keyboard,
+                    contentDescription = "Bàn phím Jamo tiếng Hàn",
+                    tint = Color(0xFF64748B),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            // Nút Micro tìm kiếm giọng nói
+            IconButton(
+                onClick = onOpenVoiceSearch,
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Mic,
+                    contentDescription = "Tìm kiếm bằng giọng nói",
+                    tint = Color(0xFF2563EB),
+                    modifier = Modifier.size(18.dp)
                 )
             }
 

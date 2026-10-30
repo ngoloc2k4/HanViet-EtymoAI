@@ -88,6 +88,7 @@ import com.hanviet.etymoai.ui.settings.SettingsOverviewScreen
 import com.hanviet.etymoai.ui.srs.SrsDeckListScreen
 import com.hanviet.etymoai.ui.srs.SrsReviewScreen
 import com.hanviet.etymoai.ui.srs.StudyStatsScreen
+import com.hanviet.etymoai.ui.setup.FirstRunSetupScreen
 import com.hanviet.etymoai.ui.vocabulary.MyVocabularyScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -174,12 +175,38 @@ class MainActivity : ComponentActivity() {
     private val apiKeyStorage by lazy { DatabaseModule.provideApiKeyStorage(this) }
     private val translationService by lazy { UnifiedTranslationService(apiKeyStorage) }
 
+    private fun isFirstRunSetupNeeded(): Boolean {
+        val prefs = getSharedPreferences("hanviet_setup", android.content.Context.MODE_PRIVATE)
+        return prefs.getBoolean("is_first_run", true)
+    }
+
+    private fun markFirstRunCompleted() {
+        val prefs = getSharedPreferences("hanviet_setup", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("is_first_run", false).apply()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
             var currentThemeMode by remember {
                 mutableStateOf(ThemePreferences.getThemeMode(this@MainActivity))
+            }
+
+            var showFirstRunSetup by rememberSaveable {
+                mutableStateOf(isFirstRunSetupNeeded())
+            }
+
+            if (showFirstRunSetup) {
+                HanVietTheme(themeMode = currentThemeMode) {
+                    FirstRunSetupScreen(
+                        onSetupComplete = {
+                            markFirstRunCompleted()
+                            showFirstRunSetup = false
+                        }
+                    )
+                }
+                return@setContent
             }
 
             HanVietTheme(themeMode = currentThemeMode) {
@@ -241,6 +268,9 @@ class MainActivity : ComponentActivity() {
                     val savedWordsWithTags by userWorkspaceRepository.getAllSavedWordsFlow()
                         .collectAsState(initial = emptyList())
                     val savedWordsCount = savedWordsWithTags.size
+                    val dueCards by srsRepository.getDueCardsFlow()
+                        .collectAsState(initial = emptyList())
+                    val dueCardsCount = dueCards.size
 
                     // Debounce & live search khi người dùng gõ từ khóa
                     LaunchedEffect(searchQuery) {
@@ -386,6 +416,28 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onOpenSettings = {
                                         navigateTo(AppScreen.SettingsOverview, isTabSwitch = true)
+                                    },
+                                    dueCardsCount = dueCardsCount,
+                                    onNavigateToAbout = {
+                                        navigateTo(AppScreen.AboutDataLicense)
+                                    },
+                                    onNavigateToHistory = {
+                                        navigateTo(AppScreen.SearchHistory)
+                                    },
+                                    onDeleteRecentSearch = { historyId ->
+                                        scope.launch(Dispatchers.IO) {
+                                            userWorkspaceRepository.deleteSearchHistoryItem(historyId)
+                                        }
+                                    },
+                                    onBookmarkWord = { word ->
+                                        scope.launch(Dispatchers.IO) {
+                                            userWorkspaceRepository.saveWord(
+                                                stableKey = "saved_${word}_${System.currentTimeMillis()}",
+                                                headword = word,
+                                                meaning = "Từ đã lưu từ lịch sử",
+                                                isFavorite = true
+                                            )
+                                        }
                                     }
                                 )
                             }
@@ -417,6 +469,9 @@ class MainActivity : ComponentActivity() {
                                             "Phát âm: $word",
                                             Toast.LENGTH_SHORT
                                         ).show()
+                                    },
+                                    onNavigateToAi = { query ->
+                                        navigateTo(AppScreen.AiChat, isTabSwitch = true)
                                     },
                                     onNavigateTab = onTabSelected
                                 )
@@ -595,6 +650,7 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.StudyStats -> {
                                 StudyStatsScreen(
+                                    userWorkspaceRepository = userWorkspaceRepository,
                                     onBackClick = { navigateBack() },
                                     onWordClick = { headword ->
                                         navigateTo(
@@ -780,7 +836,7 @@ class MainActivity : ComponentActivity() {
                             is AppScreen.SettingsOverview -> {
                                 SettingsOverviewScreen(
                                     savedWordsCount = savedWordsCount,
-                                    dueCardsCount = 0,
+                                    dueCardsCount = dueCardsCount,
                                     onBackClick = { navigateBack() },
                                     onNavigateToSecurity = { navigateTo(AppScreen.SecuritySettings) },
                                     onNavigateToDataPack = { navigateTo(AppScreen.DataPackManager) },
