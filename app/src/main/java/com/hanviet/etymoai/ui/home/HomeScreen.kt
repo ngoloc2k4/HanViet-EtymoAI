@@ -181,8 +181,9 @@ fun HomeScreen(
                     selectedTab = tabIndex
                     when (tabIndex) {
                         1 -> onNavigateToDictionary()
-                        2 -> onNavigateToSrs()
-                        3 -> onOpenSettings()
+                        2 -> onNavigateToAi()
+                        3 -> onNavigateToSrs()
+                        4 -> onOpenSettings()
                     }
                 }
             )
@@ -949,8 +950,9 @@ private fun HomeBottomNavigationBar(
         val navItems = listOf(
             Triple("Trang chủ", Icons.Default.Home, 0),
             Triple("Tra cứu", Icons.Default.Search, 1),
-            Triple("Từ vựng", Icons.Default.BookmarkBorder, 2),
-            Triple("Cá nhân", Icons.Default.Person, 3)
+            Triple("AI Chat", Icons.Default.Psychology, 2),
+            Triple("Từ vựng", Icons.Default.BookmarkBorder, 3),
+            Triple("Cá nhân", Icons.Default.Person, 4)
         )
 
         navItems.forEach { (label, icon, index) ->

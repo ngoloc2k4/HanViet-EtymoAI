@@ -53,6 +53,8 @@ import com.hanviet.etymoai.domain.search.SearchResult
 import com.hanviet.etymoai.domain.srs.ReviewRating
 import com.hanviet.etymoai.domain.srs.SrsCard
 import com.hanviet.etymoai.domain.srs.SrsFlashcardData
+import com.hanviet.etymoai.ui.ai.AiChatScreen
+import com.hanviet.etymoai.ui.ai.AiDetailAnalysisScreen
 import com.hanviet.etymoai.ui.detail.WordDetailScreen
 import com.hanviet.etymoai.ui.home.HomeScreen
 import com.hanviet.etymoai.ui.quicklookup.QuickLookupActivity
@@ -68,6 +70,8 @@ sealed interface AppScreen {
     data object Home : AppScreen
     data class WordDetail(val lexemeId: Long, val headword: String) : AppScreen
     data object SrsReview : AppScreen
+    data object AiChat : AppScreen
+    data class AiDetailAnalysis(val headword: String) : AppScreen
 }
 
 class MainActivity : ComponentActivity() {
@@ -116,7 +120,10 @@ class MainActivity : ComponentActivity() {
 
                     // Xử lý nút Back của Android
                     BackHandler(enabled = currentScreen !is AppScreen.Home) {
-                        currentScreen = AppScreen.Home
+                        currentScreen = when (currentScreen) {
+                            is AppScreen.AiDetailAnalysis -> AppScreen.AiChat
+                            else -> AppScreen.Home
+                        }
                     }
 
                     AnimatedContent(
@@ -174,7 +181,7 @@ class MainActivity : ComponentActivity() {
                                         searchQuery = "들었어요"
                                     },
                                     onNavigateToAi = {
-                                        showSettingsDialog = true
+                                        currentScreen = AppScreen.AiChat
                                     },
                                     onNavigateToSrs = {
                                         currentScreen = AppScreen.SrsReview
@@ -276,6 +283,77 @@ class MainActivity : ComponentActivity() {
                                         ).show()
                                     },
                                     onBackClick = { currentScreen = AppScreen.Home }
+                                )
+                            }
+
+                            is AppScreen.AiChat -> {
+                                AiChatScreen(
+                                    onBackToHome = { currentScreen = AppScreen.Home },
+                                    onOpenDetailAnalysis = { word ->
+                                        currentScreen = AppScreen.AiDetailAnalysis(word)
+                                    },
+                                    onSaveWord = { word ->
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Đã lưu từ: $word",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onSpeakWord = { word ->
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Phát âm: $word",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onNavigateTab = { tabIndex ->
+                                        when (tabIndex) {
+                                            0 -> currentScreen = AppScreen.Home
+                                            1 -> {
+                                                currentScreen = AppScreen.Home
+                                                searchQuery = " "
+                                            }
+                                            2 -> { /* Đang ở tab AI Chat */ }
+                                            3 -> currentScreen = AppScreen.SrsReview
+                                            4 -> showSettingsDialog = true
+                                        }
+                                    }
+                                )
+                            }
+
+                            is AppScreen.AiDetailAnalysis -> {
+                                AiDetailAnalysisScreen(
+                                    headword = screen.headword,
+                                    onBackClick = { currentScreen = AppScreen.AiChat },
+                                    onSaveWord = { word ->
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Đã lưu từ: $word",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onSpeakWord = { word ->
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Phát âm: $word",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onFindSimilar = { word ->
+                                        currentScreen = AppScreen.AiDetailAnalysis(word)
+                                    },
+                                    onNavigateTab = { tabIndex ->
+                                        when (tabIndex) {
+                                            0 -> currentScreen = AppScreen.Home
+                                            1 -> {
+                                                currentScreen = AppScreen.Home
+                                                searchQuery = " "
+                                            }
+                                            2 -> currentScreen = AppScreen.AiChat
+                                            3 -> currentScreen = AppScreen.SrsReview
+                                            4 -> showSettingsDialog = true
+                                        }
+                                    }
                                 )
                             }
                         }
