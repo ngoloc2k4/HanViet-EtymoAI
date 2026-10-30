@@ -58,6 +58,7 @@ import com.hanviet.etymoai.ui.ai.AiDetailAnalysisScreen
 import com.hanviet.etymoai.ui.detail.WordDetailScreen
 import com.hanviet.etymoai.ui.home.HomeScreen
 import com.hanviet.etymoai.ui.quicklookup.QuickLookupActivity
+import com.hanviet.etymoai.ui.search.SearchResultsScreen
 import com.hanviet.etymoai.ui.srs.SrsReviewScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -68,6 +69,7 @@ import kotlinx.coroutines.withContext
  */
 sealed interface AppScreen {
     data object Home : AppScreen
+    data class SearchResults(val query: String = "도서관") : AppScreen
     data class WordDetail(val lexemeId: Long, val headword: String) : AppScreen
     data object SrsReview : AppScreen
     data object AiChat : AppScreen
@@ -122,6 +124,8 @@ class MainActivity : ComponentActivity() {
                     BackHandler(enabled = currentScreen !is AppScreen.Home) {
                         currentScreen = when (currentScreen) {
                             is AppScreen.AiDetailAnalysis -> AppScreen.AiChat
+                            is AppScreen.WordDetail -> AppScreen.SearchResults()
+                            is AppScreen.SearchResults -> AppScreen.Home
                             else -> AppScreen.Home
                         }
                     }
@@ -172,13 +176,13 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onNavigateToDictionary = {
-                                        searchQuery = " " // Kích hoạt hiển thị kết quả
+                                        currentScreen = AppScreen.SearchResults(searchQuery.ifBlank { "도서관" })
                                     },
                                     onNavigateToHanja = {
-                                        searchQuery = "學"
+                                        currentScreen = AppScreen.SearchResults("學")
                                     },
                                     onNavigateToMorphology = {
-                                        searchQuery = "들었어요"
+                                        currentScreen = AppScreen.SearchResults("들었어요")
                                     },
                                     onNavigateToAi = {
                                         currentScreen = AppScreen.AiChat
@@ -195,16 +199,72 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
 
+                            is AppScreen.SearchResults -> {
+                                SearchResultsScreen(
+                                    initialQuery = screen.query,
+                                    onWordClick = { headword ->
+                                        currentScreen = AppScreen.WordDetail(
+                                            lexemeId = 101L,
+                                            headword = headword
+                                        )
+                                    },
+                                    onBackClick = { currentScreen = AppScreen.Home },
+                                    onSpeakWord = { word ->
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Phát âm: $word",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onNavigateTab = { tabIndex ->
+                                        when (tabIndex) {
+                                            0 -> currentScreen = AppScreen.Home
+                                            1 -> { /* Đang ở Tra cứu */ }
+                                            2 -> currentScreen = AppScreen.AiChat
+                                            3 -> currentScreen = AppScreen.SrsReview
+                                            4 -> showSettingsDialog = true
+                                        }
+                                    }
+                                )
+                            }
+
                             is AppScreen.WordDetail -> {
                                 WordDetailScreen(
                                     lexemeId = screen.lexemeId,
+                                    headword = screen.headword,
                                     repository = etymologyRepository,
-                                    onBackClick = { currentScreen = AppScreen.Home },
+                                    onBackClick = { currentScreen = AppScreen.SearchResults() },
                                     onWordClick = { nextLexemeId ->
                                         currentScreen = AppScreen.WordDetail(
                                             lexemeId = nextLexemeId,
                                             headword = ""
                                         )
+                                    },
+                                    onAskAiClick = { word ->
+                                        currentScreen = AppScreen.AiDetailAnalysis(word)
+                                    },
+                                    onSaveWord = { word ->
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Đã lưu từ: $word",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onSpeakWord = { word ->
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Phát âm: $word",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onNavigateTab = { tabIndex ->
+                                        when (tabIndex) {
+                                            0 -> currentScreen = AppScreen.Home
+                                            1 -> currentScreen = AppScreen.SearchResults()
+                                            2 -> currentScreen = AppScreen.AiChat
+                                            3 -> currentScreen = AppScreen.SrsReview
+                                            4 -> showSettingsDialog = true
+                                        }
                                     }
                                 )
                             }
@@ -309,10 +369,7 @@ class MainActivity : ComponentActivity() {
                                     onNavigateTab = { tabIndex ->
                                         when (tabIndex) {
                                             0 -> currentScreen = AppScreen.Home
-                                            1 -> {
-                                                currentScreen = AppScreen.Home
-                                                searchQuery = " "
-                                            }
+                                            1 -> currentScreen = AppScreen.SearchResults()
                                             2 -> { /* Đang ở tab AI Chat */ }
                                             3 -> currentScreen = AppScreen.SrsReview
                                             4 -> showSettingsDialog = true
@@ -345,10 +402,7 @@ class MainActivity : ComponentActivity() {
                                     onNavigateTab = { tabIndex ->
                                         when (tabIndex) {
                                             0 -> currentScreen = AppScreen.Home
-                                            1 -> {
-                                                currentScreen = AppScreen.Home
-                                                searchQuery = " "
-                                            }
+                                            1 -> currentScreen = AppScreen.SearchResults()
                                             2 -> currentScreen = AppScreen.AiChat
                                             3 -> currentScreen = AppScreen.SrsReview
                                             4 -> showSettingsDialog = true
