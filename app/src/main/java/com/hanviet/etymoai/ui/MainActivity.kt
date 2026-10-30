@@ -60,11 +60,16 @@ import com.hanviet.etymoai.ui.ai.AiDetailAnalysisScreen
 import com.hanviet.etymoai.ui.ai.SentenceAnalyzerScreen
 import com.hanviet.etymoai.ui.detail.WordDetailScreen
 import com.hanviet.etymoai.ui.home.HomeScreen
+import com.hanviet.etymoai.ui.hanja.HanjaExplorerScreen
+import com.hanviet.etymoai.ui.history.SearchHistoryScreen
 import com.hanviet.etymoai.ui.quicklookup.QuickLookupActivity
 import com.hanviet.etymoai.ui.search.SearchResultsScreen
+import com.hanviet.etymoai.ui.settings.AboutDataLicenseScreen
 import com.hanviet.etymoai.ui.settings.AppearanceSettingsScreen
 import com.hanviet.etymoai.ui.settings.DataPackManagerScreen
 import com.hanviet.etymoai.ui.settings.SecuritySettingsScreen
+import com.hanviet.etymoai.ui.settings.SettingsOverviewScreen
+import com.hanviet.etymoai.ui.srs.SrsDeckListScreen
 import com.hanviet.etymoai.ui.srs.SrsReviewScreen
 import com.hanviet.etymoai.ui.srs.StudyStatsScreen
 import com.hanviet.etymoai.ui.vocabulary.MyVocabularyScreen
@@ -88,6 +93,11 @@ sealed interface AppScreen {
     data object SecuritySettings : AppScreen
     data object DataPackManager : AppScreen
     data object AppearanceSettings : AppScreen
+    data object SettingsOverview : AppScreen
+    data object AboutDataLicense : AppScreen
+    data object SrsDeckList : AppScreen
+    data class HanjaExplorer(val initialHanja: String = "學") : AppScreen
+    data object SearchHistory : AppScreen
 }
 
 class MainActivity : ComponentActivity() {
@@ -142,11 +152,16 @@ class MainActivity : ComponentActivity() {
                             is AppScreen.WordDetail -> AppScreen.SearchResults()
                             is AppScreen.SearchResults -> AppScreen.Home
                             is AppScreen.StudyStats -> AppScreen.SrsReview
-                            is AppScreen.SrsReview -> AppScreen.MyVocabulary
+                            is AppScreen.SrsReview -> AppScreen.SrsDeckList
+                            is AppScreen.SrsDeckList -> AppScreen.MyVocabulary
+                            is AppScreen.HanjaExplorer -> AppScreen.Home
+                            is AppScreen.SearchHistory -> AppScreen.SettingsOverview
                             is AppScreen.MyVocabulary -> AppScreen.Home
                             is AppScreen.SecuritySettings,
                             is AppScreen.DataPackManager,
-                            is AppScreen.AppearanceSettings -> AppScreen.Home
+                            is AppScreen.AppearanceSettings,
+                            is AppScreen.AboutDataLicense -> AppScreen.SettingsOverview
+                            is AppScreen.SettingsOverview -> AppScreen.Home
                             else -> AppScreen.Home
                         }
                     }
@@ -200,7 +215,7 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = AppScreen.SearchResults(searchQuery.ifBlank { "도서관" })
                                     },
                                     onNavigateToHanja = {
-                                        currentScreen = AppScreen.SearchResults("學")
+                                        currentScreen = AppScreen.HanjaExplorer("學")
                                     },
                                     onNavigateToMorphology = {
                                         currentScreen = AppScreen.SearchResults("들었어요")
@@ -215,7 +230,7 @@ class MainActivity : ComponentActivity() {
                                         showQuickLookupGuide = true
                                     },
                                     onOpenSettings = {
-                                        currentScreen = AppScreen.SecuritySettings
+                                        currentScreen = AppScreen.SettingsOverview
                                     }
                                 )
                             }
@@ -243,7 +258,7 @@ class MainActivity : ComponentActivity() {
                                             1 -> { /* Đang ở Tra cứu */ }
                                             2 -> currentScreen = AppScreen.AiChat
                                             3 -> currentScreen = AppScreen.MyVocabulary
-                                            4 -> currentScreen = AppScreen.SecuritySettings
+                                            4 -> currentScreen = AppScreen.SettingsOverview
                                         }
                                     }
                                 )
@@ -283,8 +298,8 @@ class MainActivity : ComponentActivity() {
                                             0 -> currentScreen = AppScreen.Home
                                             1 -> currentScreen = AppScreen.SearchResults()
                                             2 -> currentScreen = AppScreen.AiChat
-                                            3 -> currentScreen = AppScreen.SrsReview
-                                            4 -> showSettingsDialog = true
+                                            3 -> currentScreen = AppScreen.SrsDeckList
+                                            4 -> currentScreen = AppScreen.SettingsOverview
                                         }
                                     }
                                 )
@@ -363,7 +378,7 @@ class MainActivity : ComponentActivity() {
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     },
-                                    onBackClick = { currentScreen = AppScreen.MyVocabulary },
+                                    onBackClick = { currentScreen = AppScreen.SrsDeckList },
                                     onNavigateToStats = { currentScreen = AppScreen.StudyStats },
                                     onSpeakWord = { word ->
                                         Toast.makeText(
@@ -377,8 +392,8 @@ class MainActivity : ComponentActivity() {
                                             0 -> currentScreen = AppScreen.Home
                                             1 -> currentScreen = AppScreen.SearchResults()
                                             2 -> currentScreen = AppScreen.AiChat
-                                            3 -> currentScreen = AppScreen.MyVocabulary
-                                            4 -> showSettingsDialog = true
+                                            3 -> currentScreen = AppScreen.SrsDeckList
+                                            4 -> currentScreen = AppScreen.SettingsOverview
                                         }
                                     }
                                 )
@@ -401,7 +416,7 @@ class MainActivity : ComponentActivity() {
                                         ).show()
                                     },
                                     onStartSrsReview = {
-                                        currentScreen = AppScreen.SrsReview
+                                        currentScreen = AppScreen.SrsDeckList
                                     },
                                     onNavigateTab = { tabIndex ->
                                         when (tabIndex) {
@@ -409,7 +424,7 @@ class MainActivity : ComponentActivity() {
                                             1 -> currentScreen = AppScreen.SearchResults()
                                             2 -> currentScreen = AppScreen.AiChat
                                             3 -> { /* Đang ở tab Từ vựng */ }
-                                            4 -> showSettingsDialog = true
+                                            4 -> currentScreen = AppScreen.SettingsOverview
                                         }
                                     }
                                 )
@@ -417,7 +432,7 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.StudyStats -> {
                                 StudyStatsScreen(
-                                    onBackClick = { currentScreen = AppScreen.SrsReview },
+                                    onBackClick = { currentScreen = AppScreen.SettingsOverview },
                                     onWordClick = { headword ->
                                         currentScreen = AppScreen.WordDetail(
                                             lexemeId = 101L,
@@ -429,7 +444,7 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.SentenceAnalyzer -> {
                                 SentenceAnalyzerScreen(
-                                    onBackClick = { currentScreen = AppScreen.AiChat },
+                                    onBackClick = { currentScreen = AppScreen.SettingsOverview },
                                     onWordClick = { headword ->
                                         currentScreen = AppScreen.WordDetail(
                                             lexemeId = 101L,
@@ -441,7 +456,7 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.SecuritySettings -> {
                                 SecuritySettingsScreen(
-                                    onBackClick = { currentScreen = AppScreen.Home },
+                                    onBackClick = { currentScreen = AppScreen.SettingsOverview },
                                     onApiKeySaved = { provider, key ->
                                         Toast.makeText(
                                             this@MainActivity,
@@ -475,7 +490,7 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.DataPackManager -> {
                                 DataPackManagerScreen(
-                                    onBackClick = { currentScreen = AppScreen.Home },
+                                    onBackClick = { currentScreen = AppScreen.SettingsOverview },
                                     onCheckUpdate = {
                                         Toast.makeText(
                                             this@MainActivity,
@@ -488,7 +503,7 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.AppearanceSettings -> {
                                 AppearanceSettingsScreen(
-                                    onBackClick = { currentScreen = AppScreen.Home },
+                                    onBackClick = { currentScreen = AppScreen.SettingsOverview },
                                     onThemeChanged = { theme ->
                                         Toast.makeText(
                                             this@MainActivity,
@@ -524,8 +539,8 @@ class MainActivity : ComponentActivity() {
                                             0 -> currentScreen = AppScreen.Home
                                             1 -> currentScreen = AppScreen.SearchResults()
                                             2 -> { /* Đang ở tab AI Chat */ }
-                                            3 -> currentScreen = AppScreen.SrsReview
-                                            4 -> showSettingsDialog = true
+                                            3 -> currentScreen = AppScreen.MyVocabulary
+                                            4 -> currentScreen = AppScreen.SettingsOverview
                                         }
                                     }
                                 )
@@ -557,9 +572,101 @@ class MainActivity : ComponentActivity() {
                                             0 -> currentScreen = AppScreen.Home
                                             1 -> currentScreen = AppScreen.SearchResults()
                                             2 -> currentScreen = AppScreen.AiChat
-                                            3 -> currentScreen = AppScreen.SrsReview
-                                            4 -> showSettingsDialog = true
+                                            3 -> currentScreen = AppScreen.MyVocabulary
+                                            4 -> currentScreen = AppScreen.SettingsOverview
                                         }
+                                    }
+                                )
+                            }
+
+                            is AppScreen.SettingsOverview -> {
+                                SettingsOverviewScreen(
+                                    onBackClick = { currentScreen = AppScreen.Home },
+                                    onNavigateToSecurity = { currentScreen = AppScreen.SecuritySettings },
+                                    onNavigateToDataPack = { currentScreen = AppScreen.DataPackManager },
+                                    onNavigateToAppearance = { currentScreen = AppScreen.AppearanceSettings },
+                                    onNavigateToSentenceAnalyzer = { currentScreen = AppScreen.SentenceAnalyzer },
+                                    onNavigateToStudyStats = { currentScreen = AppScreen.StudyStats },
+                                    onNavigateToSrsDecks = { currentScreen = AppScreen.SrsDeckList },
+                                    onNavigateToHistory = { currentScreen = AppScreen.SearchHistory },
+                                    onNavigateToAbout = { currentScreen = AppScreen.AboutDataLicense },
+                                    onOpenQuickLookupGuide = { showQuickLookupGuide = true },
+                                    onNavigateTab = { tabIndex ->
+                                        when (tabIndex) {
+                                            0 -> currentScreen = AppScreen.Home
+                                            1 -> currentScreen = AppScreen.SearchResults()
+                                            2 -> currentScreen = AppScreen.AiChat
+                                            3 -> currentScreen = AppScreen.MyVocabulary
+                                            4 -> { /* Đang ở Cài đặt */ }
+                                        }
+                                    }
+                                )
+                            }
+
+                            is AppScreen.AboutDataLicense -> {
+                                AboutDataLicenseScreen(
+                                    onBackClick = { currentScreen = AppScreen.SettingsOverview },
+                                    onOpenGithub = {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Mở kho mã nguồn: https://github.com/ngoloc2k4/HanViet-EtymoAI",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onReportIssue = {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Mở trang góp ý & báo lỗi GitHub Issues",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                            }
+
+                            is AppScreen.SrsDeckList -> {
+                                SrsDeckListScreen(
+                                    onBackClick = { currentScreen = AppScreen.MyVocabulary },
+                                    onDeckClick = {
+                                        currentScreen = AppScreen.SrsReview
+                                    },
+                                    onStartReview = {
+                                        currentScreen = AppScreen.SrsReview
+                                    }
+                                )
+                            }
+
+                            is AppScreen.HanjaExplorer -> {
+                                HanjaExplorerScreen(
+                                    initialHanja = screen.initialHanja,
+                                    onBackClick = { currentScreen = AppScreen.Home },
+                                    onWordClick = { lexemeId, headword ->
+                                        currentScreen = AppScreen.WordDetail(
+                                            lexemeId = lexemeId,
+                                            headword = headword
+                                        )
+                                    },
+                                    onSpeakWord = { word ->
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Phát âm: $word",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                            }
+
+                            is AppScreen.SearchHistory -> {
+                                SearchHistoryScreen(
+                                    onBackClick = { currentScreen = AppScreen.SettingsOverview },
+                                    onItemClick = { query ->
+                                        currentScreen = AppScreen.SearchResults(query)
+                                    },
+                                    onClearAllHistory = {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Đã dọn sạch toàn bộ lịch sử tra cứu",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
                                 )
                             }
