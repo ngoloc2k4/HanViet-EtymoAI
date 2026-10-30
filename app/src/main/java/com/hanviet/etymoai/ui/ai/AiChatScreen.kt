@@ -75,7 +75,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hanviet.etymoai.ai.provider.AiProviderType
 import com.hanviet.etymoai.ai.security.ApiKeyStorage
-import com.hanviet.etymoai.data.repository.EtymologyRepository
+import com.hanviet.etymoai.domain.etymology.EtymologyRepository
 import com.hanviet.etymoai.domain.etymology.WordEtymology
 import com.hanviet.etymoai.domain.search.SearchPipeline
 import kotlinx.coroutines.Dispatchers
@@ -522,10 +522,10 @@ fun AiChatScreen(
                                         Spacer(modifier = Modifier.height(10.dp))
                                         etymo.segments.forEach { seg ->
                                             HanjaSegmentMiniCard(
-                                                hanja = seg.hanjaChar,
-                                                hangul = "${seg.syllableKo} (${seg.readingVi})",
-                                                meaning = seg.meaningVi,
-                                                sinoVietnamese = seg.readingVi
+                                                hanja = seg.hanjaChar ?: seg.syllableKo,
+                                                hangul = "${seg.syllableKo} (${seg.readingVi ?: ""})",
+                                                meaning = seg.meaningVi ?: "",
+                                                sinoVietnamese = seg.readingVi ?: ""
                                             )
                                             Spacer(modifier = Modifier.height(6.dp))
                                         }
@@ -539,14 +539,14 @@ fun AiChatScreen(
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Column(modifier = Modifier.padding(10.dp)) {
-                                            KeyValueRow(key = "Từ loại", value = etymo.partOfSpeech)
+                                            KeyValueRow(key = "Từ loại", value = etymo.partOfSpeech ?: "Từ vựng")
                                             if (!etymo.phoneticVi.isNullOrBlank()) {
                                                 KeyValueRow(key = "Âm Hán-Việt", value = etymo.phoneticVi)
                                             }
-                                            KeyValueRow(key = "Nghĩa tiếng Việt", value = etymo.meaningVi)
+                                            KeyValueRow(key = "Nghĩa tiếng Việt", value = etymo.meaningVi ?: "")
                                             if (etymo.examples.isNotEmpty()) {
                                                 val ex = etymo.examples.first()
-                                                KeyValueRow(key = "Ví dụ", value = "${ex.sentenceKo}\n(${ex.sentenceVi})")
+                                                KeyValueRow(key = "Ví dụ", value = "${ex.korean}\n(${ex.vietnamese})")
                                             }
                                         }
                                     }

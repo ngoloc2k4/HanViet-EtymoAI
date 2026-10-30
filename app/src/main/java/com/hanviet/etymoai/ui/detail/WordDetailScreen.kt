@@ -186,7 +186,7 @@ fun WordDetailScreen(
                     lexemeId = if (lexemeId > 0) lexemeId else System.currentTimeMillis(),
                     headword = targetWord,
                     originType = OriginType.NATIVE_KOREAN,
-                    verificationStatus = VerificationStatus.UNVERIFIED,
+                    verificationStatus = VerificationStatus.INFERRED,
                     phoneticVi = null,
                     segments = emptyList(),
                     adaptationNote = "Từ vựng: $targetWord. Dữ liệu đang được chuẩn hóa trong CSDL offline.",
