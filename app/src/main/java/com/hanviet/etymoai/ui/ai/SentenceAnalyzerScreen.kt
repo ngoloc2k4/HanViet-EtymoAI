@@ -41,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,10 +49,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hanviet.etymoai.ai.security.SecureApiKeyStorage
+import com.hanviet.etymoai.data.db.core.CoreDatabaseHelper
+import com.hanviet.etymoai.data.translation.UnifiedTranslationService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class AnalyzedSentenceSegment(
     val partKo: String,
@@ -69,9 +77,18 @@ fun SentenceAnalyzerScreen(
     onBackClick: () -> Unit = {},
     onWordClick: (String) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val storage = remember { SecureApiKeyStorage.create(context) }
+    val translationService = remember { UnifiedTranslationService(storage) }
+    val dbHelper = remember { CoreDatabaseHelper.getInstance(context) }
+
     var inputText by remember { mutableStateOf("오늘은 날씨가 정말 좋네요.") }
     var isAnalyzing by remember { mutableStateOf(false) }
     var hasAnalyzed by remember { mutableStateOf(false) }
+    var translatedSentence by remember { mutableStateOf("") }
+    var activeEngineDisplayName by remember { mutableStateOf("") }
+    var dynamicSegments by remember { mutableStateOf<List<AnalyzedSentenceSegment>>(emptyList()) }
 
     val quickExamples = remember {
         listOf(
@@ -80,17 +97,6 @@ fun SentenceAnalyzerScreen(
             "너무 좋다",
             "주말에 도서관에 갔어요",
             "한국어를 열심히 공부하고 있어요"
-        )
-    }
-
-    val analyzedResult = remember(inputText) {
-        listOf(
-            AnalyzedSentenceSegment("오늘", "Danh từ", "hôm nay (nguyên gốc thuần Hàn)", null),
-            AnalyzedSentenceSegment("은", "Trợ từ", "trợ từ chủ đề nhấn mạnh", null),
-            AnalyzedSentenceSegment("날씨", "Danh từ", "thời tiết, khí hậu", null),
-            AnalyzedSentenceSegment("가", "Trợ từ", "trợ từ chủ ngữ chỉ định", null),
-            AnalyzedSentenceSegment("정말", "Phó từ", "thực sự, quả thật", null),
-            AnalyzedSentenceSegment("좋네요", "Động/Tính từ", "thật là tốt/đẹp (gốc 좋다 + đuôi cảm thán -네요)", null)
         )
     }
 
@@ -147,10 +153,21 @@ fun SentenceAnalyzerScreen(
                 Button(
                     onClick = {
                         isAnalyzing = true
-                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        coroutineScope.launch {
+                            val transResult = translationService.translate(inputText)
+                            val transText = transResult.getOrNull()?.translatedText ?: "Không thể kết nối máy dịch"
+                            val engineName = transResult.getOrNull()?.engine?.displayName ?: "Google Dịch"
+
+                            val segments = withContext(Dispatchers.IO) {
+                                analyzeSentenceTokens(dbHelper, inputText)
+                            }
+
+                            translatedSentence = transText
+                            activeEngineDisplayName = engineName
+                            dynamicSegments = segments
                             isAnalyzing = false
                             hasAnalyzed = true
-                        }, 800)
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -169,7 +186,7 @@ fun SentenceAnalyzerScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "AI đang phân tích câu...",
+                            text = "Đang dịch câu & bóc tách cấu trúc...",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -177,7 +194,7 @@ fun SentenceAnalyzerScreen(
                         Text(text = "✨", fontSize = 16.sp)
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Phân tích câu & ngữ pháp",
+                            text = "Phân tích câu & dịch thuật",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -190,7 +207,9 @@ fun SentenceAnalyzerScreen(
                 item {
                     AnalysisResultCard(
                         inputText = inputText,
-                        segments = analyzedResult,
+                        translatedSentence = translatedSentence,
+                        engineDisplayName = activeEngineDisplayName,
+                        segments = dynamicSegments,
                         onWordClick = onWordClick
                     )
                 }
@@ -489,6 +508,8 @@ private fun QuickExamplesRow(
 @Composable
 private fun AnalysisResultCard(
     inputText: String,
+    translatedSentence: String,
+    engineDisplayName: String,
     segments: List<AnalyzedSentenceSegment>,
     onWordClick: (String) -> Unit
 ) {
@@ -504,28 +525,66 @@ private fun AnalysisResultCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "🎯", fontSize = 16.sp)
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Kết quả phân tích ngữ pháp",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E40AF)
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "🎯", fontSize = 16.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Kết quả phân tích ngữ pháp",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E40AF)
+                    )
+                }
+
+                if (engineDisplayName.isNotBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFFEFF6FF),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBFDBFE))
+                    ) {
+                        Text(
+                            text = engineDisplayName,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF1D4ED8),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
             }
 
-            Text(
-                text = "Dịch nghĩa: Hôm nay thời tiết thực sự rất đẹp nhỉ!",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF0F172A)
-            )
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = Color(0xFFF8FAFC),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    Text(
+                        text = "Bản dịch nghĩa:",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF64748B)
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = translatedSentence.ifBlank { "Đang dịch câu..." },
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF0F172A),
+                        lineHeight = 20.sp
+                    )
+                }
+            }
 
             HorizontalDivider(color = Color(0xFFF1F5F9))
 
             Text(
-                text = "Bóc tách thành phần câu:",
+                text = "Bóc tách thành phần câu & Từ nguyên:",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF64748B)
@@ -560,16 +619,106 @@ private fun AnalysisResultCard(
                             modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                         )
                     }
-                    Text(
-                        text = seg.explanationVi,
-                        fontSize = 12.sp,
-                        color = Color(0xFF334155),
-                        modifier = Modifier.weight(1f)
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = seg.explanationVi,
+                            fontSize = 12.sp,
+                            color = Color(0xFF334155),
+                            lineHeight = 16.sp
+                        )
+                        if (!seg.hanjaOriginal.isNullOrBlank()) {
+                            Text(
+                                text = "Hán tự: ${seg.hanjaOriginal}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF059669)
+                            )
+                        }
+                    }
                 }
             }
         }
     }
+}
+
+/**
+ * Bóc tách và tra cứu các từ tố trong câu từ CSDL từ điển Core SQLite thực tế
+ */
+private fun analyzeSentenceTokens(dbHelper: CoreDatabaseHelper, text: String): List<AnalyzedSentenceSegment> {
+    val tokens = text.trim().split(Regex("[\\s,;:.!?，。！？~]+")).filter { it.isNotBlank() }
+    val result = mutableListOf<AnalyzedSentenceSegment>()
+    val db = try { dbHelper.getReadableDatabase() } catch (_: Exception) { null } ?: return emptyList()
+
+    for (token in tokens) {
+        var foundPos = "Từ vựng"
+        var foundMeaning = ""
+        var foundHanja: String? = null
+
+        // 1. Tra cứu trực tiếp headword_nfc
+        db.rawQuery(
+            """
+            SELECT l.origin_type, s.part_of_speech, s.meaning_vi,
+                   (SELECT GROUP_CONCAT(seg.hanja_char || '(' || seg.reading_vi || ')', '')
+                    FROM lexeme_hanja_segments seg WHERE seg.lexeme_id = l.lexeme_id) AS hanja_decomp
+            FROM lexemes l
+            LEFT JOIN senses s ON l.lexeme_id = s.lexeme_id
+            WHERE l.headword_nfc = ?
+            LIMIT 1
+            """.trimIndent(),
+            arrayOf(token)
+        ).use { cursor ->
+            if (cursor.moveToFirst()) {
+                val origType = cursor.getString(0)
+                foundPos = if (!cursor.isNull(1)) cursor.getString(1) else "Từ vựng"
+                foundMeaning = if (!cursor.isNull(2)) cursor.getString(2) else ""
+                val decomp = if (!cursor.isNull(3)) cursor.getString(3) else null
+                if (!decomp.isNullOrBlank()) {
+                    foundHanja = decomp
+                } else if (origType == "NATIVE_KOREAN") {
+                    foundHanja = "Thuần Hàn"
+                } else if (origType == "LOANWORD") {
+                    foundHanja = "Ngoại lai"
+                }
+            }
+        }
+
+        // 2. Tra cứu precomputed_forms nếu không khớp trực tiếp
+        if (foundMeaning.isBlank()) {
+            db.rawQuery(
+                """
+                SELECT l.headword_nfc, s.part_of_speech, s.meaning_vi, pf.grammar_desc
+                FROM precomputed_forms pf
+                JOIN lexemes l ON pf.lexeme_id = l.lexeme_id
+                LEFT JOIN senses s ON l.lexeme_id = s.lexeme_id
+                WHERE pf.inflected_form = ?
+                LIMIT 1
+                """.trimIndent(),
+                arrayOf(token)
+            ).use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val root = cursor.getString(0)
+                    foundPos = if (!cursor.isNull(1)) cursor.getString(1) else "Động/Tính từ"
+                    val meaning = if (!cursor.isNull(2)) cursor.getString(2) else ""
+                    val desc = if (!cursor.isNull(3)) cursor.getString(3) else ""
+                    foundMeaning = "$meaning (Gốc: $root - $desc)"
+                }
+            }
+        }
+
+        if (foundMeaning.isBlank()) {
+            foundMeaning = "Thành phần câu / trợ từ"
+        }
+
+        result.add(
+            AnalyzedSentenceSegment(
+                partKo = token,
+                posTag = foundPos,
+                explanationVi = foundMeaning,
+                hanjaOriginal = foundHanja
+            )
+        )
+    }
+    return result
 }
 
 /**

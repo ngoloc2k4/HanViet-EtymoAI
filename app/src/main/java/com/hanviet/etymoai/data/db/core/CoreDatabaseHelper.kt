@@ -58,8 +58,19 @@ class CoreDatabaseHelper(
             }
             val destinationFile = File(dbDir, DB_NAME)
 
-            if (!destinationFile.exists() || destinationFile.length() == 0L) {
-                Log.i(TAG, "Đang sao chép $DB_NAME từ Assets vào ${destinationFile.absolutePath}...")
+            val assetLength = try {
+                context.assets.openFd(DB_NAME).length
+            } catch (_: Exception) {
+                -1L
+            }
+
+            val needsCopy = !destinationFile.exists() ||
+                destinationFile.length() == 0L ||
+                destinationFile.length() < 1_000_000L ||
+                (assetLength > 0 && destinationFile.length() != assetLength)
+
+            if (needsCopy) {
+                Log.i(TAG, "Đang sao chép $DB_NAME từ Assets vào ${destinationFile.absolutePath} (kích thước cũ: ${destinationFile.length()} bytes)...")
                 copyFromAssets(context, DB_NAME, destinationFile)
             }
             return destinationFile

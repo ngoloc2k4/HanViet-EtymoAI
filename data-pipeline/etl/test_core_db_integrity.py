@@ -76,7 +76,7 @@ def run_tests(db_path: str) -> bool:
         SELECT l.headword_nfc, a.alias_text
         FROM aliases a
         JOIN lexemes l ON a.lexeme_id = l.lexeme_id
-        WHERE a.alias_text = 'ㄱㅂ' AND a.alias_type = 'CHOSUNG'
+        WHERE a.alias_text = 'ㄱㅂ' AND a.alias_type = 'CHOSUNG' AND l.headword_nfc = '기분'
         LIMIT 5
         """
     ).fetchall()

@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -44,11 +45,15 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
+import com.hanviet.etymoai.ai.provider.AiProviderType
+import com.hanviet.etymoai.ai.security.SecureApiKeyStorage
+import com.hanviet.etymoai.data.translation.TranslationEngine
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -87,6 +92,7 @@ fun SecuritySettingsScreen(
     val storage = remember { SecureApiKeyStorage.create(context) }
 
     var showAiConfigDialog by remember { mutableStateOf(false) }
+    var showTranslationEngineDialog by remember { mutableStateOf(false) }
     var showClearCacheDialog by remember { mutableStateOf(false) }
     var showClearDataDialog by remember { mutableStateOf(false) }
 
@@ -95,6 +101,10 @@ fun SecuritySettingsScreen(
     var inputEndpoint by remember { mutableStateOf(storage.getEndpoint(selectedProvider)) }
     var inputModel by remember { mutableStateOf(storage.getModel(selectedProvider)) }
     var isKeyVisible by remember { mutableStateOf(false) }
+
+    var selectedEngine by remember { mutableStateOf(TranslationEngine.fromId(storage.getTranslationEngine())) }
+    var deepLApiKey by remember { mutableStateOf(storage.getDeepLKey() ?: "") }
+    var isDeepLKeyVisible by remember { mutableStateOf(false) }
 
     // Tính toán dung lượng cache thực tế trên đĩa
     var cacheSizeBytes by remember {
@@ -207,7 +217,28 @@ fun SecuritySettingsScreen(
             }
 
             item {
-                // Nhóm 2: Trình quản lý bộ nhớ đệm (Cache Manager - Real Data)
+                // Nhóm 2: Cấu hình Bộ máy Dịch thuật (Machine Translation Engine)
+                val engineStatus = when (selectedEngine) {
+                    TranslationEngine.GOOGLE_TRANSLATE -> "Google Dịch (Miễn phí)"
+                    TranslationEngine.DEEPL -> if (storage.hasDeepLKey()) "DeepL (Đã lưu API Key)" else "DeepL (Chưa nhập khóa)"
+                    TranslationEngine.AI_GROUNDED -> "AI BYOK (${selectedProvider.name})"
+                }
+
+                SettingMenuRow(
+                    icon = Icons.Default.Translate,
+                    iconBg = Color(0xFFECFDF5),
+                    iconTint = Color(0xFF059669),
+                    title = "Bộ máy Dịch thuật (Translation Engine)",
+                    subtitle = "$engineStatus • Chọn giữa Google Dịch, DeepL và AI trợ lý",
+                    onClick = {
+                        deepLApiKey = storage.getDeepLKey() ?: ""
+                        showTranslationEngineDialog = true
+                    }
+                )
+            }
+
+            item {
+                // Nhóm 3: Trình quản lý bộ nhớ đệm (Cache Manager - Real Data)
                 SettingMenuRow(
                     icon = Icons.Default.DeleteSweep,
                     iconBg = Color(0xFFFEF3C7),
@@ -479,6 +510,139 @@ fun SecuritySettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showAiConfigDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
+    // Dialog Cấu hình Bộ máy Dịch thuật (Machine Translation Engine & DeepL BYOK)
+    if (showTranslationEngineDialog) {
+        AlertDialog(
+            onDismissRequest = { showTranslationEngineDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Translate,
+                        contentDescription = null,
+                        tint = Color(0xFF059669),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Bộ máy Dịch thuật",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Chọn nguồn dịch thuật dùng cho tính năng Dịch câu & Phân tích ngữ cảnh:",
+                        fontSize = 13.sp,
+                        color = Color(0xFF64748B)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    TranslationEngine.entries.forEach { engine ->
+                        val isSelected = selectedEngine == engine
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) Color(0xFFECFDF5) else Color(0xFFF8FAFC),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (isSelected) Color(0xFF10B981) else Color(0xFFE2E8F0)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .clickable { selectedEngine = engine }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(10.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = { selectedEngine = engine },
+                                    colors = RadioButtonDefaults.colors(
+                                        selectedColor = Color(0xFF059669)
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Column {
+                                    Text(
+                                        text = engine.displayName,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSelected) Color(0xFF065F46) else Color(0xFF0F172A)
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = engine.description,
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF64748B),
+                                        lineHeight = 15.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (selectedEngine == TranslationEngine.DEEPL) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = deepLApiKey,
+                            onValueChange = { deepLApiKey = it },
+                            label = { Text("DeepL API Key (Free hoặc Pro)") },
+                            placeholder = { Text("vd: xxxxxxxx-xxxx:fx") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            visualTransformation = if (isDeepLKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { isDeepLKeyVisible = !isDeepLKeyVisible }) {
+                                    Icon(
+                                        imageVector = if (isDeepLKeyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                        contentDescription = null,
+                                        tint = Color(0xFF64748B)
+                                    )
+                                }
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "💡 Lưu ý: Key kết thúc bằng :fx là DeepL API Free (500k ký tự/tháng miễn phí). Khóa được mã hóa AES-256 trong Android Keystore.",
+                            fontSize = 11.sp,
+                            color = Color(0xFF059669),
+                            lineHeight = 15.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        storage.saveTranslationEngine(selectedEngine.id)
+                        if (selectedEngine == TranslationEngine.DEEPL) {
+                            storage.saveDeepLKey(deepLApiKey)
+                        }
+                        Toast.makeText(
+                            context,
+                            "Đã chọn bộ máy dịch: ${selectedEngine.displayName}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        showTranslationEngineDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669))
+                ) {
+                    Text("Lưu thiết lập")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTranslationEngineDialog = false }) {
                     Text("Hủy")
                 }
             }

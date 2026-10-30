@@ -27,6 +27,14 @@ interface ApiKeyStorage {
     fun getEndpoint(provider: AiProviderType): String
     fun saveModel(provider: AiProviderType, model: String)
     fun getModel(provider: AiProviderType): String
+
+    fun saveDeepLKey(key: String)
+    fun getDeepLKey(): String?
+    fun clearDeepLKey()
+    fun hasDeepLKey(): Boolean
+
+    fun saveTranslationEngine(engineName: String)
+    fun getTranslationEngine(): String
 }
 
 /**
@@ -211,5 +219,72 @@ class SecureApiKeyStorage(
     override fun getModel(provider: AiProviderType): String {
         val custom = prefs.getString(MODEL_PREFIX + provider.name, null)
         return if (!custom.isNullOrBlank()) custom else provider.defaultModel
+    }
+
+    override fun saveDeepLKey(key: String) {
+        val trimmed = key.trim()
+        if (trimmed.isEmpty()) {
+            clearDeepLKey()
+            return
+        }
+
+        try {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            val iv = ByteArray(GCM_IV_LENGTH)
+            SecureRandom().nextBytes(iv)
+            val gcmSpec = GCMParameterSpec(AES_GCM_TAG_LENGTH, iv)
+            cipher.init(Cipher.ENCRYPT_MODE, masterKey, gcmSpec)
+
+            val cipherText = cipher.doFinal(trimmed.toByteArray(Charsets.UTF_8))
+
+            val ivBase64 = Base64.encodeToString(iv, Base64.NO_WRAP)
+            val cipherBase64 = Base64.encodeToString(cipherText, Base64.NO_WRAP)
+
+            prefs.edit()
+                .putString(IV_PREFIX + "DEEPL", ivBase64)
+                .putString(KEY_PREFIX + "DEEPL", cipherBase64)
+                .apply()
+        } catch (e: Exception) {
+            throw IllegalStateException("Lỗi khi mã hóa khóa DeepL: ${e.message}", e)
+        }
+    }
+
+    override fun getDeepLKey(): String? {
+        val ivBase64 = prefs.getString(IV_PREFIX + "DEEPL", null) ?: return null
+        val cipherBase64 = prefs.getString(KEY_PREFIX + "DEEPL", null) ?: return null
+
+        return try {
+            val iv = Base64.decode(ivBase64, Base64.NO_WRAP)
+            val cipherText = Base64.decode(cipherBase64, Base64.NO_WRAP)
+
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            val gcmSpec = GCMParameterSpec(AES_GCM_TAG_LENGTH, iv)
+            cipher.init(Cipher.DECRYPT_MODE, masterKey, gcmSpec)
+
+            val plainBytes = cipher.doFinal(cipherText)
+            String(plainBytes, Charsets.UTF_8)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    override fun clearDeepLKey() {
+        prefs.edit()
+            .remove(IV_PREFIX + "DEEPL")
+            .remove(KEY_PREFIX + "DEEPL")
+            .apply()
+    }
+
+    override fun hasDeepLKey(): Boolean {
+        val key = getDeepLKey()
+        return !key.isNullOrBlank()
+    }
+
+    override fun saveTranslationEngine(engineName: String) {
+        prefs.edit().putString("pref_translation_engine", engineName).apply()
+    }
+
+    override fun getTranslationEngine(): String {
+        return prefs.getString("pref_translation_engine", "GOOGLE_TRANSLATE") ?: "GOOGLE_TRANSLATE"
     }
 }

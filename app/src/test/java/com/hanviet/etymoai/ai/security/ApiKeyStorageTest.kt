@@ -99,4 +99,31 @@ class ApiKeyStorageTest {
         assertEquals(AiProviderType.GEMINI.defaultBaseUrl, storage.getEndpoint(AiProviderType.GEMINI))
         assertEquals(AiProviderType.GEMINI.defaultModel, storage.getModel(AiProviderType.GEMINI))
     }
+
+    @Test
+    fun testDeepLKeyPersistence() {
+        assertFalse(storage.hasDeepLKey())
+        assertNull(storage.getDeepLKey())
+
+        val deepLKey = "12345678-abcd-1234-abcd-1234567890ab:fx"
+        storage.saveDeepLKey(deepLKey)
+
+        assertTrue(storage.hasDeepLKey())
+        assertEquals(deepLKey, storage.getDeepLKey())
+
+        storage.clearDeepLKey()
+        assertFalse(storage.hasDeepLKey())
+        assertNull(storage.getDeepLKey())
+    }
+
+    @Test
+    fun testTranslationEnginePersistence() {
+        assertEquals("GOOGLE_TRANSLATE", storage.getTranslationEngine())
+
+        storage.saveTranslationEngine("DEEPL")
+        assertEquals("DEEPL", storage.getTranslationEngine())
+
+        storage.saveTranslationEngine("AI_GROUNDED")
+        assertEquals("AI_GROUNDED", storage.getTranslationEngine())
+    }
 }
