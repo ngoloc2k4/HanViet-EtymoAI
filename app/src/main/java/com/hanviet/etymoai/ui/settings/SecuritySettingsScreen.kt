@@ -54,6 +54,7 @@ import androidx.compose.material3.TextButton
 import com.hanviet.etymoai.ai.provider.AiProviderType
 import com.hanviet.etymoai.ai.security.SecureApiKeyStorage
 import com.hanviet.etymoai.data.translation.TranslationEngine
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
