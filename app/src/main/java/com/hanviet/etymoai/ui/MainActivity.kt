@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -55,11 +57,17 @@ import com.hanviet.etymoai.domain.srs.SrsCard
 import com.hanviet.etymoai.domain.srs.SrsFlashcardData
 import com.hanviet.etymoai.ui.ai.AiChatScreen
 import com.hanviet.etymoai.ui.ai.AiDetailAnalysisScreen
+import com.hanviet.etymoai.ui.ai.SentenceAnalyzerScreen
 import com.hanviet.etymoai.ui.detail.WordDetailScreen
 import com.hanviet.etymoai.ui.home.HomeScreen
 import com.hanviet.etymoai.ui.quicklookup.QuickLookupActivity
 import com.hanviet.etymoai.ui.search.SearchResultsScreen
+import com.hanviet.etymoai.ui.settings.AppearanceSettingsScreen
+import com.hanviet.etymoai.ui.settings.DataPackManagerScreen
+import com.hanviet.etymoai.ui.settings.SecuritySettingsScreen
 import com.hanviet.etymoai.ui.srs.SrsReviewScreen
+import com.hanviet.etymoai.ui.srs.StudyStatsScreen
+import com.hanviet.etymoai.ui.vocabulary.MyVocabularyScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -71,9 +79,15 @@ sealed interface AppScreen {
     data object Home : AppScreen
     data class SearchResults(val query: String = "도서관") : AppScreen
     data class WordDetail(val lexemeId: Long, val headword: String) : AppScreen
+    data object MyVocabulary : AppScreen
     data object SrsReview : AppScreen
+    data object StudyStats : AppScreen
     data object AiChat : AppScreen
     data class AiDetailAnalysis(val headword: String) : AppScreen
+    data object SentenceAnalyzer : AppScreen
+    data object SecuritySettings : AppScreen
+    data object DataPackManager : AppScreen
+    data object AppearanceSettings : AppScreen
 }
 
 class MainActivity : ComponentActivity() {
@@ -124,8 +138,15 @@ class MainActivity : ComponentActivity() {
                     BackHandler(enabled = currentScreen !is AppScreen.Home) {
                         currentScreen = when (currentScreen) {
                             is AppScreen.AiDetailAnalysis -> AppScreen.AiChat
+                            is AppScreen.SentenceAnalyzer -> AppScreen.AiChat
                             is AppScreen.WordDetail -> AppScreen.SearchResults()
                             is AppScreen.SearchResults -> AppScreen.Home
+                            is AppScreen.StudyStats -> AppScreen.SrsReview
+                            is AppScreen.SrsReview -> AppScreen.MyVocabulary
+                            is AppScreen.MyVocabulary -> AppScreen.Home
+                            is AppScreen.SecuritySettings,
+                            is AppScreen.DataPackManager,
+                            is AppScreen.AppearanceSettings -> AppScreen.Home
                             else -> AppScreen.Home
                         }
                     }
@@ -188,13 +209,13 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = AppScreen.AiChat
                                     },
                                     onNavigateToSrs = {
-                                        currentScreen = AppScreen.SrsReview
+                                        currentScreen = AppScreen.MyVocabulary
                                     },
                                     onNavigateToQuickLookupGuide = {
                                         showQuickLookupGuide = true
                                     },
                                     onOpenSettings = {
-                                        showSettingsDialog = true
+                                        currentScreen = AppScreen.SecuritySettings
                                     }
                                 )
                             }
@@ -221,8 +242,8 @@ class MainActivity : ComponentActivity() {
                                             0 -> currentScreen = AppScreen.Home
                                             1 -> { /* Đang ở Tra cứu */ }
                                             2 -> currentScreen = AppScreen.AiChat
-                                            3 -> currentScreen = AppScreen.SrsReview
-                                            4 -> showSettingsDialog = true
+                                            3 -> currentScreen = AppScreen.MyVocabulary
+                                            4 -> currentScreen = AppScreen.SecuritySettings
                                         }
                                     }
                                 )
@@ -342,8 +363,141 @@ class MainActivity : ComponentActivity() {
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     },
-                                    onBackClick = { currentScreen = AppScreen.Home }
+                                    onBackClick = { currentScreen = AppScreen.MyVocabulary },
+                                    onNavigateToStats = { currentScreen = AppScreen.StudyStats },
+                                    onSpeakWord = { word ->
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Phát âm: $word",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onNavigateTab = { tabIndex ->
+                                        when (tabIndex) {
+                                            0 -> currentScreen = AppScreen.Home
+                                            1 -> currentScreen = AppScreen.SearchResults()
+                                            2 -> currentScreen = AppScreen.AiChat
+                                            3 -> currentScreen = AppScreen.MyVocabulary
+                                            4 -> showSettingsDialog = true
+                                        }
+                                    }
                                 )
+                            }
+
+                            is AppScreen.MyVocabulary -> {
+                                MyVocabularyScreen(
+                                    onWordClick = { headword ->
+                                        currentScreen = AppScreen.WordDetail(
+                                            lexemeId = 101L,
+                                            headword = headword
+                                        )
+                                    },
+                                    onBackClick = { currentScreen = AppScreen.Home },
+                                    onSpeakWord = { word ->
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Phát âm: $word",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onStartSrsReview = {
+                                        currentScreen = AppScreen.SrsReview
+                                    },
+                                    onNavigateTab = { tabIndex ->
+                                        when (tabIndex) {
+                                            0 -> currentScreen = AppScreen.Home
+                                            1 -> currentScreen = AppScreen.SearchResults()
+                                            2 -> currentScreen = AppScreen.AiChat
+                                            3 -> { /* Đang ở tab Từ vựng */ }
+                                            4 -> showSettingsDialog = true
+                                        }
+                                    }
+                                )
+                            }
+
+                            is AppScreen.StudyStats -> {
+                                StudyStatsScreen(
+                                    onBackClick = { currentScreen = AppScreen.SrsReview },
+                                    onWordClick = { headword ->
+                                        currentScreen = AppScreen.WordDetail(
+                                            lexemeId = 101L,
+                                            headword = headword
+                                        )
+                                    }
+                                )
+                            }
+
+                            is AppScreen.SentenceAnalyzer -> {
+                                SentenceAnalyzerScreen(
+                                    onBackClick = { currentScreen = AppScreen.AiChat },
+                                    onWordClick = { headword ->
+                                        currentScreen = AppScreen.WordDetail(
+                                            lexemeId = 101L,
+                                            headword = headword
+                                        )
+                                    }
+                                )
+                            }
+
+                            is AppScreen.SecuritySettings -> {
+                                SecuritySettingsScreen(
+                                    onBackClick = { currentScreen = AppScreen.Home },
+                                    onApiKeySaved = { provider, key ->
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Đã mã hóa và lưu API Key cho $provider vào Keystore",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onClearDataRequested = {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Đã dọn sạch dữ liệu cá nhân theo chuẩn Quyền riêng tư",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onExportData = {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Xuất dữ liệu user_workspace.db thành công",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onImportData = {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Nhập dữ liệu thành công",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                            }
+
+                            is AppScreen.DataPackManager -> {
+                                DataPackManagerScreen(
+                                    onBackClick = { currentScreen = AppScreen.Home },
+                                    onCheckUpdate = {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Bộ dữ liệu từ nguyên NIKL v1.2.0 đã là phiên bản mới nhất!",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                            }
+
+                            is AppScreen.AppearanceSettings -> {
+                                AppearanceSettingsScreen(
+                                    onBackClick = { currentScreen = AppScreen.Home },
+                                    onThemeChanged = { theme ->
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Đã chuyển chủ đề sang ${theme.name}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                            }
                             }
 
                             is AppScreen.AiChat -> {
@@ -413,7 +567,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    // Dialog Cài đặt & BYOK AI
+                    // Dialog Cài đặt & Phím tắt tính năng nâng cao
                     if (showSettingsDialog) {
                         AlertDialog(
                             onDismissRequest = { showSettingsDialog = false },
@@ -426,30 +580,89 @@ class MainActivity : ComponentActivity() {
                             },
                             title = {
                                 Text(
-                                    text = "Cài Đặt & Trí Tuệ Nhân Tạo",
+                                    text = "Cài Đặt & Tính Năng Nâng Cao",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 17.sp
                                 )
                             },
                             text = {
-                                Column {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Text(
                                         text = "HanViet-EtymoAI v1.0.0 (Beta)",
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color(0xFF0F172A)
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "• Kiến trúc: Offline-First SQLite FTS5\n• Bộ từ nguyên: NIKL & Viện Nghiên cứu Hán Nôm\n• Hỗ trợ BYOK (Google Gemini, OpenAI, Claude)\n• Không quảng cáo, bảo mật dữ liệu tuyệt đối.",
-                                        fontSize = 12.sp,
-                                        color = Color(0xFF475569),
-                                        lineHeight = 18.sp
+                                        text = "Offline-First • SQLite FTS5 • NIKL & Hán Nôm",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF64748B)
                                     )
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    Button(
+                                        onClick = {
+                                            showSettingsDialog = false
+                                            currentScreen = AppScreen.SecuritySettings
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))
+                                    ) {
+                                        Text("🛡️ Tài khoản & Bảo mật (BYOK)", fontSize = 12.sp)
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            showSettingsDialog = false
+                                            currentScreen = AppScreen.DataPackManager
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
+                                    ) {
+                                        Text("📦 Quản lý dữ liệu (Data Pack)", fontSize = 12.sp)
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            showSettingsDialog = false
+                                            currentScreen = AppScreen.AppearanceSettings
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF475569))
+                                    ) {
+                                        Text("🎨 Giao diện & Hiển thị", fontSize = 12.sp)
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            showSettingsDialog = false
+                                            currentScreen = AppScreen.SentenceAnalyzer
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C3AED))
+                                    ) {
+                                        Text("✨ AI Phân tích câu & Ngữ pháp", fontSize = 12.sp)
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            showSettingsDialog = false
+                                            currentScreen = AppScreen.StudyStats
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669))
+                                    ) {
+                                        Text("📊 Thống kê học tập SRS", fontSize = 12.sp)
+                                    }
                                 }
                             },
                             confirmButton = {
-                                Button(onClick = { showSettingsDialog = false }) {
+                                TextButton(onClick = { showSettingsDialog = false }) {
                                     Text("Đóng")
                                 }
                             }

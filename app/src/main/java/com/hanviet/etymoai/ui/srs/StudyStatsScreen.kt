@@ -1,0 +1,496 @@
+package com.hanviet.etymoai.ui.srs
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+data class LeechWordItem(
+    val rank: Int,
+    val headword: String,
+    val posLabel: String,
+    val lastReviewedDaysAgo: String,
+    val lapsesCount: Int = 3
+)
+
+/**
+ * 5. Màn hình Thống Kê Học Tập & Từ Thường Quên (Study Progress & Leech Words Screen)
+ * Hiện thực hóa Mục 15.2 (Thống kê SRS, phân tích từ hay quên / leech cards) của Idea 2.2.
+ */
+@Composable
+fun StudyStatsScreen(
+    onBackClick: () -> Unit = {},
+    onWordClick: (String) -> Unit = {}
+) {
+    var selectedTimeframe by remember { mutableStateOf("7 ngày") }
+
+    val leechWords = remember {
+        listOf(
+            LeechWordItem(1, "부탁하다", "động từ", "3 ngày", 5),
+            LeechWordItem(2, "자주", "phó từ", "4 ngày", 4),
+            LeechWordItem(3, "기분", "danh từ", "5 ngày", 4),
+            LeechWordItem(4, "학교", "danh từ", "6 ngày", 3),
+            LeechWordItem(5, "연습하다", "động từ", "7 ngày", 3)
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            StudyStatsTopBar(onBackClick = onBackClick)
+        },
+        containerColor = Color(0xFFF4F7FB)
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            item {
+                Spacer(modifier = Modifier.height(2.dp))
+                // 1. Timeframe Filter Chips
+                TimeframeChipsRow(
+                    selected = selectedTimeframe,
+                    onSelected = { selectedTimeframe = it }
+                )
+            }
+
+            item {
+                // 2. 4 Metric Cards Grid: Tổng lưu | Đã học | Đã thuộc | Chuỗi ngày
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    MetricCard(
+                        icon = "📖",
+                        title = "Tổng lưu",
+                        value = "128",
+                        valueColor = Color(0xFF2563EB),
+                        modifier = Modifier.weight(1f)
+                    )
+                    MetricCard(
+                        icon = "🎓",
+                        title = "Đã học",
+                        value = "86",
+                        valueColor = Color(0xFF7C3AED),
+                        modifier = Modifier.weight(1f)
+                    )
+                    MetricCard(
+                        icon = "🛡️",
+                        title = "Đã thuộc",
+                        value = "52",
+                        valueColor = Color(0xFF16A34A),
+                        modifier = Modifier.weight(1f)
+                    )
+                    MetricCard(
+                        icon = "🔥",
+                        title = "Chuỗi ngày",
+                        value = "7",
+                        valueColor = Color(0xFFEA580C),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            item {
+                Text(
+                    text = "Tiến độ học tập",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A),
+                    modifier = Modifier.padding(start = 2.dp, top = 2.dp)
+                )
+            }
+
+            item {
+                // 3. Hai thẻ Tiến độ: Donut Gauge 68% + Biểu đồ cột theo ngày trong tuần
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Card Donut Gauge
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(180.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(14.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.SpaceAround
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Canvas(modifier = Modifier.size(76.dp)) {
+                                    drawArc(
+                                        color = Color(0xFFE2E8F0),
+                                        startAngle = -90f,
+                                        sweepAngle = 360f,
+                                        useCenter = false,
+                                        style = Stroke(width = 9.dp.toPx(), cap = StrokeCap.Round)
+                                    )
+                                    drawArc(
+                                        color = Color(0xFF2563EB),
+                                        startAngle = -90f,
+                                        sweepAngle = 360f * 0.68f,
+                                        useCenter = false,
+                                        style = Stroke(width = 9.dp.toPx(), cap = StrokeCap.Round)
+                                    )
+                                }
+                                Text(
+                                    text = "68%",
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A)
+                                )
+                            }
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "Đã thuộc / Tổng từ",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF64748B)
+                                )
+                                Text(
+                                    text = "52 / 128",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF2563EB)
+                                )
+                            }
+                        }
+                    }
+
+                    // Card Bar Chart 7 ngày trong tuần
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier
+                            .weight(1.3f)
+                            .height(180.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Tuần này",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A)
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF2563EB)))
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(text = "Đã học", fontSize = 10.sp, color = Color(0xFF64748B))
+                                }
+                            }
+
+                            // 7 Cột biểu đồ T2 -> CN
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceAround,
+                                verticalAlignment = Alignment.Bottom
+                            ) {
+                                val dailyValues = listOf(4, 2, 7, 5, 8, 3, 6)
+                                val days = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
+
+                                days.forEachIndexed { i, day ->
+                                    val count = dailyValues[i]
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(12.dp)
+                                                .height((count * 10).dp)
+                                                .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
+                                                .background(if (i == 4) Color(0xFF2563EB) else Color(0xFF93C5FD))
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = day,
+                                            fontSize = 9.sp,
+                                            color = Color(0xFF64748B)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Từ thường quên (Leech Words)",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                    Text(
+                        text = "Xem tất cả ›",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2563EB),
+                        modifier = Modifier.clickable { /* View all */ }
+                    )
+                }
+            }
+
+            item {
+                // 4. Danh sách từ thường quên
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        leechWords.forEachIndexed { index, word ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onWordClick(word.headword) }
+                                    .padding(horizontal = 14.dp, vertical = 11.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = if (index < 2) Color(0xFFFEE2E2) else Color(0xFFF1F5F9),
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = "${word.rank}",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (index < 2) Color(0xFFDC2626) else Color(0xFF64748B)
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = word.headword,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "(${word.posLabel})",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF64748B)
+                                    )
+                                }
+
+                                Text(
+                                    text = "${word.lastReviewedDaysAgo} trước",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFFDC2626)
+                                )
+                            }
+
+                            if (index < leechWords.size - 1) {
+                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun StudyStatsTopBar(
+    onBackClick: () -> Unit
+) {
+    Surface(
+        color = Color(0xFFF4F7FB),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "9:41", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF334155))
+                Text(text = "📶 📡 🔋", fontSize = 12.sp, color = Color(0xFF475569))
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Quay lại",
+                            tint = Color(0xFF0F172A)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Thống kê học tập",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                }
+
+                IconButton(onClick = { /* Options */ }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Tùy chọn",
+                        tint = Color(0xFF64748B)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimeframeChipsRow(
+    selected: String,
+    onSelected: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        listOf("7 ngày", "30 ngày", "3 tháng", "Tùy chỉnh").forEach { label ->
+            val isSelected = selected == label
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = if (isSelected) Color(0xFF2563EB) else Color.White,
+                border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onSelected(label) }
+            ) {
+                Text(
+                    text = label,
+                    fontSize = 12.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isSelected) Color.White else Color(0xFF334155),
+                    modifier = Modifier.padding(vertical = 7.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MetricCard(
+    icon: String,
+    title: String,
+    value: String,
+    valueColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = icon, fontSize = 18.sp)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = title,
+                fontSize = 11.sp,
+                color = Color(0xFF64748B)
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = value,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = valueColor
+            )
+        }
+    }
+}
