@@ -498,7 +498,6 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
-                            }
 
                             is AppScreen.AiChat -> {
                                 AiChatScreen(
