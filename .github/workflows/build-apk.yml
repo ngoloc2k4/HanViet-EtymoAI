@@ -57,6 +57,16 @@ jobs:
         with:
           packages: 'build-tools;35.0.0 platforms;android-35'
 
+      - name: Cache Shared Gradle Packages & Wrapper
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
       - name: Restore Robolectric Offline Dependency Cache
         uses: actions/cache@v4
         with:
@@ -65,10 +75,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-robolectric-
 
-      - name: Set up Gradle with Build Cache
+      - name: Set up Gradle Environment
         uses: gradle/actions/setup-gradle@v4
         with:
-          cache-read-only: false
+          cache-disabled: true
 
       - name: Grant Execute Permission for Gradle Wrapper
         run: chmod +x gradlew
@@ -117,10 +127,20 @@ jobs:
         with:
           packages: 'build-tools;35.0.0 platforms;android-35'
 
-      - name: Set up Gradle with Shared Build Cache
+      - name: Cache Shared Gradle Packages & Wrapper
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Set up Gradle Environment
         uses: gradle/actions/setup-gradle@v4
         with:
-          cache-read-only: false
+          cache-disabled: true
 
       - name: Grant Execute Permission for Gradle Wrapper
         run: chmod +x gradlew
