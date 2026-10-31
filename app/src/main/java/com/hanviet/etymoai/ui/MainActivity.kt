@@ -174,6 +174,12 @@ class MainActivity : ComponentActivity() {
     private val userWorkspaceRepository by lazy { DatabaseModule.provideUserWorkspaceRepository(workspaceDb) }
     private val apiKeyStorage by lazy { DatabaseModule.provideApiKeyStorage(this) }
     private val translationService by lazy { UnifiedTranslationService(apiKeyStorage) }
+    private val ttsManager by lazy { com.hanviet.etymoai.util.TtsManager(this) }
+
+    override fun onDestroy() {
+        ttsManager.shutdown()
+        super.onDestroy()
+    }
 
     private fun isFirstRunSetupNeeded(): Boolean {
         val prefs = getSharedPreferences("hanviet_setup", android.content.Context.MODE_PRIVATE)
@@ -464,11 +470,7 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onBackClick = { navigateBack() },
                                     onSpeakWord = { word ->
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Phát âm: $word",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        ttsManager.speak(word, ThemePreferences.getTtsSpeed(this@MainActivity))
                                     },
                                     onNavigateToAi = { query ->
                                         navigateTo(AppScreen.AiChat, isTabSwitch = true)
@@ -517,97 +519,61 @@ class MainActivity : ComponentActivity() {
                                         ).show()
                                     },
                                     onSpeakWord = { word ->
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Phát âm: $word",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        ttsManager.speak(word, ThemePreferences.getTtsSpeed(this@MainActivity))
                                     },
                                     onNavigateTab = onTabSelected
                                 )
                             }
 
                             is AppScreen.SrsReview -> {
-                                val sampleCards = remember {
-                                    listOf(
-                                        SrsFlashcardData(
-                                            card = SrsCard(cardId = 1L, savedWordId = 101L),
-                                            word = SavedWordEntity(
-                                                id = 101L,
-                                                stableKey = "ko_gyeongje_101",
-                                                headwordSnapshot = "경제",
-                                                phoneticSnapshot = "Kinh tế",
-                                                originType = "SINO_KOREAN",
-                                                meaningSnapshot = "Nền kinh tế, hoạt động tài chính sản xuất"
-                                            ),
-                                            hanjaSegments = listOf(
-                                                HanjaSegment(
-                                                    segmentIndex = 0,
-                                                    syllableKo = "경",
-                                                    hanjaChar = "經",
-                                                    readingVi = "Kinh",
-                                                    meaningVi = "Kinh bang tế thế, kinh qua, đường dọc"
+                                // Tự động enroll toàn bộ từ đã lưu vào SRS nếu chưa được tạo thẻ
+                                LaunchedEffect(savedWordsWithTags) {
+                                    withContext(Dispatchers.IO) {
+                                        srsRepository.enrollAllSavedWords()
+                                    }
+                                }
+
+                                val realCards = remember(dueCards, savedWordsWithTags) {
+                                    if (dueCards.isNotEmpty()) {
+                                        dueCards
+                                    } else {
+                                        // Nếu chưa có thẻ đến hạn hôm nay, hiển thị toàn bộ từ đã lưu để ôn tập
+                                        savedWordsWithTags.mapIndexed { index, item ->
+                                            val segs = try {
+                                                etymologyRepository.getEtymologyForWordByHeadword(item.word.headwordSnapshot)?.segments ?: emptyList()
+                                            } catch (_: Exception) {
+                                                emptyList()
+                                            }
+                                            SrsFlashcardData(
+                                                card = SrsCard(
+                                                    cardId = (index + 1).toLong(),
+                                                    savedWordId = item.word.id,
+                                                    repetitions = 0,
+                                                    intervalDays = 0,
+                                                    dueTimestamp = System.currentTimeMillis()
                                                 ),
-                                                HanjaSegment(
-                                                    segmentIndex = 1,
-                                                    syllableKo = "제",
-                                                    hanjaChar = "濟",
-                                                    readingVi = "Tế",
-                                                    meaningVi = "Cứu giúp, tế thế, qua sông"
-                                                )
-                                            ),
-                                            exampleSentenceKo = "한국의 경제가 빠르게 발전했습니다.",
-                                            exampleSentenceVi = "Nền kinh tế Hàn Quốc đã phát triển nhanh chóng."
-                                        ),
-                                        SrsFlashcardData(
-                                            card = SrsCard(cardId = 2L, savedWordId = 102L),
-                                            word = SavedWordEntity(
-                                                id = 102L,
-                                                stableKey = "ko_seonsaengnim_102",
-                                                headwordSnapshot = "선생님",
-                                                phoneticSnapshot = "Tiên sinh",
-                                                originType = "SINO_KOREAN",
-                                                meaningSnapshot = "Thầy giáo, cô giáo, người đi trước"
-                                            ),
-                                            hanjaSegments = listOf(
-                                                HanjaSegment(
-                                                    segmentIndex = 0,
-                                                    syllableKo = "선",
-                                                    hanjaChar = "先",
-                                                    readingVi = "Tiên",
-                                                    meaningVi = "Đi trước, sớm hơn"
-                                                ),
-                                                HanjaSegment(
-                                                    segmentIndex = 1,
-                                                    syllableKo = "생",
-                                                    hanjaChar = "生",
-                                                    readingVi = "Sinh",
-                                                    meaningVi = "Sinh nở, người sinh ra"
-                                                )
-                                            ),
-                                            exampleSentenceKo = "선생님, 질문이 있습니다.",
-                                            exampleSentenceVi = "Thưa thầy, em có một câu hỏi ạ."
-                                        )
-                                    )
+                                                word = item.word,
+                                                hanjaSegments = segs
+                                            )
+                                        }
+                                    }
                                 }
 
                                 SrsReviewScreen(
-                                    cards = sampleCards,
+                                    cards = realCards,
                                     onRatingSelected = { card, rating ->
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Đã đánh giá: ${rating.labelVi}",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        scope.launch(Dispatchers.IO) {
+                                            try {
+                                                srsRepository.processReview(card, rating)
+                                            } catch (e: Exception) {
+                                                e.printStackTrace()
+                                            }
+                                        }
                                     },
                                     onBackClick = { navigateBack() },
                                     onNavigateToStats = { navigateTo(AppScreen.StudyStats) },
                                     onSpeakWord = { word ->
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Phát âm: $word",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        ttsManager.speak(word, ThemePreferences.getTtsSpeed(this@MainActivity))
                                     },
                                     onNavigateTab = onTabSelected
                                 )
@@ -635,11 +601,7 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onBackClick = { navigateBack() },
                                     onSpeakWord = { word ->
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Phát âm: $word",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        ttsManager.speak(word, ThemePreferences.getTtsSpeed(this@MainActivity))
                                     },
                                     onStartSrsReview = {
                                         navigateTo(AppScreen.SrsDeckList)
@@ -651,6 +613,7 @@ class MainActivity : ComponentActivity() {
                             is AppScreen.StudyStats -> {
                                 StudyStatsScreen(
                                     userWorkspaceRepository = userWorkspaceRepository,
+                                    srsRepository = srsRepository,
                                     onBackClick = { navigateBack() },
                                     onWordClick = { headword ->
                                         navigateTo(
@@ -774,11 +737,7 @@ class MainActivity : ComponentActivity() {
                                         ).show()
                                     },
                                     onSpeakWord = { word ->
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Phát âm: $word",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        ttsManager.speak(word, ThemePreferences.getTtsSpeed(this@MainActivity))
                                     },
                                     onNavigateTab = onTabSelected,
                                     onNavigateToSearch = {
@@ -820,11 +779,7 @@ class MainActivity : ComponentActivity() {
                                         ).show()
                                     },
                                     onSpeakWord = { word ->
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Phát âm: $word",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        ttsManager.speak(word, ThemePreferences.getTtsSpeed(this@MainActivity))
                                     },
                                     onFindSimilar = { word ->
                                         navigateTo(AppScreen.AiDetailAnalysis(word))
@@ -873,6 +828,8 @@ class MainActivity : ComponentActivity() {
 
                             is AppScreen.SrsDeckList -> {
                                 SrsDeckListScreen(
+                                    userWorkspaceRepository = userWorkspaceRepository,
+                                    srsRepository = srsRepository,
                                     onBackClick = { navigateBack() },
                                     onDeckClick = {
                                         navigateTo(AppScreen.SrsReview)
@@ -896,11 +853,7 @@ class MainActivity : ComponentActivity() {
                                         )
                                     },
                                     onSpeakWord = { word ->
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Phát âm: $word",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        ttsManager.speak(word, ThemePreferences.getTtsSpeed(this@MainActivity))
                                     }
                                 )
                             }
@@ -1108,11 +1061,11 @@ private fun AppBottomNavigationBar(
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFF2563EB),
-                    selectedTextColor = Color(0xFF2563EB),
-                    unselectedIconColor = Color(0xFF64748B),
-                    unselectedTextColor = Color(0xFF64748B),
-                    indicatorColor = Color(0xFFDBEAFE)
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer
                 )
             )
         }

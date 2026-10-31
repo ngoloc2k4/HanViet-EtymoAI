@@ -34,16 +34,21 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.hanviet.etymoai.data.repository.UserWorkspaceRepository
+import com.hanviet.etymoai.domain.srs.SrsRepository
+import kotlinx.coroutines.flow.flowOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,6 +75,8 @@ data class SrsDeckItem(
  */
 @Composable
 fun SrsDeckListScreen(
+    userWorkspaceRepository: UserWorkspaceRepository? = null,
+    srsRepository: SrsRepository? = null,
     onBackClick: () -> Unit = {},
     onDeckClick: (SrsDeckItem) -> Unit = {},
     onStartReview: (SrsDeckItem) -> Unit = {}
@@ -78,59 +85,86 @@ fun SrsDeckListScreen(
     var newDeckTitle by remember { mutableStateOf("") }
     var newDeckDesc by remember { mutableStateOf("") }
 
-    var decks by remember {
-        mutableStateOf(
-            listOf(
-                SrsDeckItem(
-                    id = 1L,
-                    title = "Tất cả từ vựng đã lưu",
-                    description = "Kho từ vựng cá nhân tổng hợp từ các bài tra cứu",
-                    totalCards = 128,
-                    dueCards = 15,
-                    masteredPercentage = 0.84f,
-                    iconEmoji = "📚",
-                    badgeColor = Color(0xFF2563EB)
-                ),
-                SrsDeckItem(
-                    id = 2L,
-                    title = "Từ vựng Hán-Hàn cốt lõi (Sino-Korean)",
-                    description = "Gồm các danh từ gốc Hán ghép có cấu trúc chiết tự đa tầng",
-                    totalCards = 86,
-                    dueCards = 10,
-                    masteredPercentage = 0.90f,
-                    iconEmoji = "漢",
-                    badgeColor = Color(0xFF1E3A8A)
-                ),
-                SrsDeckItem(
-                    id = 3L,
-                    title = "Từ mượn & Ngoại lai (Loanwords)",
-                    description = "Các từ vay mượn từ tiếng Anh, Đức, Bồ Đào Nha",
-                    totalCards = 24,
-                    dueCards = 3,
-                    masteredPercentage = 0.75f,
-                    iconEmoji = "🌐",
-                    badgeColor = Color(0xFF0D9488)
-                ),
-                SrsDeckItem(
-                    id = 4L,
-                    title = "Từ ngữ Thuần Hàn sinh hoạt (Native)",
-                    description = "Từ vựng giao tiếp tự nhiên và động từ thuần Hàn cơ bản",
-                    totalCards = 18,
-                    dueCards = 2,
-                    masteredPercentage = 0.70f,
-                    iconEmoji = "🌱",
-                    badgeColor = Color(0xFF16A34A)
-                ),
-                SrsDeckItem(
-                    id = 5L,
-                    title = "Từ thường quên (Leech words)",
-                    description = "Các mục từ đã quên ≥ 3 lần trong các chu kỳ ôn tập gần nhất",
-                    totalCards = 5,
-                    dueCards = 5,
-                    masteredPercentage = 0.35f,
-                    iconEmoji = "⚠️",
-                    badgeColor = Color(0xFFDC2626)
-                )
+    val savedWordsWithTags by (userWorkspaceRepository?.getAllSavedWordsFlow() ?: flowOf(emptyList()))
+        .collectAsState(initial = emptyList())
+    val dueCards by (srsRepository?.getDueCardsFlow() ?: flowOf(emptyList()))
+        .collectAsState(initial = emptyList())
+    val allCards by (srsRepository?.getAllCardsFlow() ?: flowOf(emptyList()))
+        .collectAsState(initial = emptyList())
+    val leechCards by (srsRepository?.getLeechCardsFlow() ?: flowOf(emptyList()))
+        .collectAsState(initial = emptyList())
+
+    val totalSavedCount = savedWordsWithTags.size
+    val totalDueCount = dueCards.size
+    val totalMastered = allCards.count { it.repetitions >= 3 || it.intervalDays >= 7 }
+    val overallMastery = if (totalSavedCount > 0) totalMastered.toFloat() / totalSavedCount.toFloat() else 0f
+
+    val sinoWords = savedWordsWithTags.filter { it.word.originType == "SINO_KOREAN" }
+    val nativeWords = savedWordsWithTags.filter { it.word.originType == "NATIVE_KOREAN" }
+    val loanWords = savedWordsWithTags.filter { it.word.originType == "LOANWORD" }
+    val favoriteWords = savedWordsWithTags.filter { it.word.isFavorite }
+
+    val decks = remember(savedWordsWithTags, dueCards, allCards, leechCards) {
+        listOf(
+            SrsDeckItem(
+                id = 1L,
+                title = "Tất cả từ vựng đã lưu",
+                description = "Kho từ vựng cá nhân tổng hợp từ các bài tra cứu thực tế",
+                totalCards = totalSavedCount,
+                dueCards = totalDueCount,
+                masteredPercentage = overallMastery,
+                iconEmoji = "📚",
+                badgeColor = Color(0xFF2563EB)
+            ),
+            SrsDeckItem(
+                id = 2L,
+                title = "Từ vựng Hán-Hàn cốt lõi (Sino-Korean)",
+                description = "Gồm các danh từ gốc Hán ghép có cấu trúc chiết tự đa tầng",
+                totalCards = sinoWords.size,
+                dueCards = dueCards.count { it.word.originType == "SINO_KOREAN" },
+                masteredPercentage = if (sinoWords.isNotEmpty()) (sinoWords.count { it.word.isFavorite }.toFloat() / sinoWords.size.toFloat()).coerceIn(0.1f, 1f) else 0f,
+                iconEmoji = "漢",
+                badgeColor = Color(0xFF1E3A8A)
+            ),
+            SrsDeckItem(
+                id = 3L,
+                title = "Từ vựng Yêu thích & Đánh dấu (★)",
+                description = "Các mục từ quan trọng được bạn gắn dấu sao ưu tiên",
+                totalCards = favoriteWords.size,
+                dueCards = dueCards.count { it.word.isFavorite },
+                masteredPercentage = if (favoriteWords.isNotEmpty()) 0.85f else 0f,
+                iconEmoji = "⭐",
+                badgeColor = Color(0xFFEAB308)
+            ),
+            SrsDeckItem(
+                id = 4L,
+                title = "Từ mượn & Ngoại lai (Loanwords)",
+                description = "Các từ vay mượn từ tiếng Anh, Đức, Bồ Đào Nha",
+                totalCards = loanWords.size,
+                dueCards = dueCards.count { it.word.originType == "LOANWORD" },
+                masteredPercentage = if (loanWords.isNotEmpty()) 0.70f else 0f,
+                iconEmoji = "🌐",
+                badgeColor = Color(0xFF0D9488)
+            ),
+            SrsDeckItem(
+                id = 5L,
+                title = "Từ ngữ Thuần Hàn sinh hoạt (Native)",
+                description = "Từ vựng giao tiếp tự nhiên và động từ thuần Hàn cơ bản",
+                totalCards = nativeWords.size,
+                dueCards = dueCards.count { it.word.originType == "NATIVE_KOREAN" },
+                masteredPercentage = if (nativeWords.isNotEmpty()) 0.65f else 0f,
+                iconEmoji = "🌱",
+                badgeColor = Color(0xFF16A34A)
+            ),
+            SrsDeckItem(
+                id = 6L,
+                title = "Từ thường quên (Leech words)",
+                description = "Các mục từ đã quên ≥ 1 lần trong các chu kỳ ôn tập gần nhất",
+                totalCards = leechCards.size,
+                dueCards = leechCards.size,
+                masteredPercentage = if (leechCards.isNotEmpty()) 0.20f else 1.0f,
+                iconEmoji = "⚠️",
+                badgeColor = Color(0xFFDC2626)
             )
         )
     }
@@ -149,7 +183,7 @@ fun SrsDeckListScreen(
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Tạo bộ thẻ mới")
             }
         },
-        containerColor = Color(0xFFF4F7FB)
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -254,7 +288,7 @@ fun SrsDeckListScreen(
 
 @Composable
 private fun SrsDeckTopBar(onBackClick: () -> Unit) {
-    Surface(color = Color(0xFFF4F7FB), modifier = Modifier.fillMaxWidth()) {
+    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -265,7 +299,7 @@ private fun SrsDeckTopBar(onBackClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Quay lại",
-                    tint = Color(0xFF1E293B)
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -275,7 +309,7 @@ private fun SrsDeckTopBar(onBackClick: () -> Unit) {
                 text = "Bộ thẻ ghi nhớ (SRS)",
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

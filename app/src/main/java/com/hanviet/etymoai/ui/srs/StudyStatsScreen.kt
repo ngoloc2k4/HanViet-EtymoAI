@@ -51,7 +51,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.MaterialTheme
 import com.hanviet.etymoai.data.repository.UserWorkspaceRepository
+import com.hanviet.etymoai.domain.srs.SrsRepository
 import com.hanviet.etymoai.ui.components.rememberBounceScale
 import kotlinx.coroutines.flow.flowOf
 
@@ -75,20 +77,33 @@ data class LeechWordItem(
 @Composable
 fun StudyStatsScreen(
     userWorkspaceRepository: UserWorkspaceRepository? = null,
+    srsRepository: SrsRepository? = null,
     onBackClick: () -> Unit = {},
     onWordClick: (String) -> Unit = {}
 ) {
     var selectedTimeframe by remember { mutableStateOf("7 ngày") }
     val haptic = LocalHapticFeedback.current
 
-    // Lấy số liệu thực tế từ workspace repository
+    // Lấy số liệu thực tế từ workspace repository và SRS repository
     val savedWordsWithTags by (userWorkspaceRepository?.getAllSavedWordsFlow() ?: flowOf(emptyList()))
         .collectAsState(initial = emptyList())
+    val allSrsCards by (srsRepository?.getAllCardsFlow() ?: flowOf(emptyList()))
+        .collectAsState(initial = emptyList())
+    val realLeechWords by (srsRepository?.getLeechCardsFlow(10) ?: flowOf(emptyList()))
+        .collectAsState(initial = emptyList())
 
-    val totalSaved = savedWordsWithTags.size.coerceAtLeast(1)
-    val masteredCount = (savedWordsWithTags.count { it.word.isFavorite }).coerceAtLeast(0)
-    val learningCount = (totalSaved - masteredCount).coerceAtLeast(0)
-    val masteryRatio = if (totalSaved > 0) masteredCount.toFloat() / totalSaved.toFloat() else 0.5f
+    val totalSaved = if (savedWordsWithTags.isNotEmpty()) savedWordsWithTags.size else allSrsCards.size.coerceAtLeast(0)
+    val masteredCount = if (allSrsCards.isNotEmpty()) {
+        allSrsCards.count { it.repetitions >= 3 || it.intervalDays >= 7 }
+    } else {
+        savedWordsWithTags.count { it.word.isFavorite }
+    }
+    val learningCount = if (allSrsCards.isNotEmpty()) {
+        allSrsCards.count { it.repetitions in 1..2 }
+    } else {
+        (totalSaved - masteredCount).coerceAtLeast(0)
+    }
+    val masteryRatio = if (totalSaved > 0) masteredCount.toFloat() / totalSaved.toFloat() else 0f
 
     // Animated Sweep cho Donut Chart
     var chartVisible by remember { mutableStateOf(false) }
@@ -97,26 +112,33 @@ fun StudyStatsScreen(
     }
 
     val animatedSweep by animateFloatAsState(
-        targetValue = if (chartVisible) masteryRatio.coerceIn(0.1f, 1f) else 0f,
+        targetValue = if (chartVisible) masteryRatio.coerceIn(0.05f, 1f) else 0f,
         animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
         label = "donutSweep"
     )
 
-    val leechWords = remember {
-        listOf(
-            LeechWordItem(1, "부탁하다", "động từ", "3 ngày", 5),
-            LeechWordItem(2, "자주", "phó từ", "4 ngày", 4),
-            LeechWordItem(3, "기분", "danh từ", "5 ngày", 4),
-            LeechWordItem(4, "학교", "danh từ", "6 ngày", 3),
-            LeechWordItem(5, "연습하다", "động từ", "7 ngày", 3)
-        )
+    val leechWords = remember(realLeechWords) {
+        realLeechWords.map {
+            LeechWordItem(
+                rank = it.rank,
+                headword = it.headword,
+                posLabel = when (it.posLabel) {
+                    "SINO_KOREAN" -> "Hán-Hàn"
+                    "NATIVE_KOREAN" -> "Thuần Hàn"
+                    "LOANWORD" -> "Ngoại lai"
+                    else -> "Từ vựng"
+                },
+                lastReviewedDaysAgo = it.lastReviewedDaysAgo,
+                lapsesCount = it.lapsesCount
+            )
+        }
     }
 
     Scaffold(
         topBar = {
             StudyStatsTopBar(onBackClick = onBackClick)
         },
-        containerColor = Color(0xFFF4F7FB)
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -328,88 +350,120 @@ fun StudyStatsScreen(
                         text = "Từ thường quên (Leech Words)",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "5 từ cần chú ý",
+                        text = if (leechWords.isNotEmpty()) "${leechWords.size} từ cần chú ý" else "0 từ",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
             item {
                 // 4. Danh sách từ thường quên
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        leechWords.forEachIndexed { index, word ->
-                            val rowInteraction = remember { MutableInteractionSource() }
-                            val rowScale = rememberBounceScale(rowInteraction)
+                if (leechWords.isEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(text = "🎉", fontSize = 32.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Tuyệt vời! Không có từ nào bị quên.",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Khi bạn đánh giá 'Không nhớ' trong các phiên ôn tập SRS, từ đó sẽ tự động xuất hiện ở đây để nhắc nhở rèn luyện thêm.",
+                                fontSize = 11.5.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            leechWords.forEachIndexed { index, word ->
+                                val rowInteraction = remember { MutableInteractionSource() }
+                                val rowScale = rememberBounceScale(rowInteraction)
 
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .graphicsLayer {
-                                        scaleX = rowScale
-                                        scaleY = rowScale
-                                    }
-                                    .clickable(
-                                        interactionSource = rowInteraction,
-                                        indication = null
-                                    ) {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        onWordClick(word.headword)
-                                    }
-                                    .padding(horizontal = 14.dp, vertical = 11.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = if (index < 2) Color(0xFFFEE2E2) else Color(0xFFF1F5F9),
-                                        modifier = Modifier.size(24.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = "${word.rank}",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (index < 2) Color(0xFFDC2626) else Color(0xFF64748B)
-                                            )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .graphicsLayer {
+                                            scaleX = rowScale
+                                            scaleY = rowScale
                                         }
+                                        .clickable(
+                                            interactionSource = rowInteraction,
+                                            indication = null
+                                        ) {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            onWordClick(word.headword)
+                                        }
+                                        .padding(horizontal = 14.dp, vertical = 11.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = if (index < 2) Color(0xFFFEE2E2) else MaterialTheme.colorScheme.surfaceVariant,
+                                            modifier = Modifier.size(24.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text(
+                                                    text = "${word.rank}",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (index < 2) Color(0xFFDC2626) else MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(
+                                            text = word.headword,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "(${word.posLabel})",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
-                                    Spacer(modifier = Modifier.width(10.dp))
+
                                     Text(
-                                        text = word.headword,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0F172A)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "(${word.posLabel})",
+                                        text = "${word.lastReviewedDaysAgo} trước",
                                         fontSize = 12.sp,
-                                        color = Color(0xFF64748B)
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFFDC2626)
                                     )
                                 }
 
-                                Text(
-                                    text = "${word.lastReviewedDaysAgo} trước",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFFDC2626)
-                                )
-                            }
-
-                            if (index < leechWords.size - 1) {
-                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                                if (index < leechWords.size - 1) {
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                                }
                             }
                         }
                     }
@@ -425,7 +479,7 @@ private fun StudyStatsTopBar(
     onBackClick: () -> Unit
 ) {
     Surface(
-        color = Color(0xFFF4F7FB),
+        color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -440,7 +494,7 @@ private fun StudyStatsTopBar(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Quay lại",
-                        tint = Color(0xFF0F172A)
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
@@ -448,7 +502,7 @@ private fun StudyStatsTopBar(
                     text = "Thống kê học tập",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -456,7 +510,7 @@ private fun StudyStatsTopBar(
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = "Tùy chọn",
-                    tint = Color(0xFF64748B)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

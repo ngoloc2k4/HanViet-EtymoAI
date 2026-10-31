@@ -36,4 +36,10 @@ interface SrsCardDao {
 
     @Query("SELECT * FROM srs_cards ORDER BY due_timestamp ASC")
     suspend fun getAllCardsSync(): List<SrsCardEntity>
+
+    @Query("SELECT * FROM srs_cards WHERE lapses > 0 ORDER BY lapses DESC LIMIT :limit")
+    fun getLeechCardsFlow(limit: Int = 10): Flow<List<SrsCardEntity>>
+
+    @Query("SELECT * FROM srs_cards WHERE lapses > 0 ORDER BY lapses DESC LIMIT :limit")
+    suspend fun getLeechCardsSync(limit: Int = 10): List<SrsCardEntity>
 }

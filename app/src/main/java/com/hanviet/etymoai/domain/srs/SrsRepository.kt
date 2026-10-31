@@ -1,9 +1,18 @@
 package com.hanviet.etymoai.domain.srs
 
 import com.hanviet.etymoai.data.db.workspace.WorkspaceDatabase
+import com.hanviet.etymoai.data.db.workspace.entity.SrsCardEntity
 import com.hanviet.etymoai.domain.etymology.EtymologyRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+
+data class LeechWordData(
+    val rank: Int,
+    val headword: String,
+    val posLabel: String,
+    val lastReviewedDaysAgo: String,
+    val lapsesCount: Int
+)
 
 class SrsRepository(
     private val db: WorkspaceDatabase,
@@ -52,6 +61,47 @@ class SrsRepository(
             dueTimestamp = System.currentTimeMillis()
         )
         return srsCardDao.insertCard(card.toEntity())
+    }
+
+    suspend fun enrollAllSavedWords() {
+        val allSaved = savedWordDao.getAllSync()
+        for (word in allSaved) {
+            val existing = srsCardDao.getCardBySavedWordId(word.id)
+            if (existing == null) {
+                val card = SrsCard(
+                    savedWordId = word.id,
+                    repetitions = 0,
+                    intervalDays = 0,
+                    easeFactor = SuperMemo2Engine.INITIAL_EASE_FACTOR,
+                    dueTimestamp = System.currentTimeMillis()
+                )
+                srsCardDao.insertCard(card.toEntity())
+            }
+        }
+    }
+
+    suspend fun getAllCardsSync(): List<SrsCardEntity> = srsCardDao.getAllCardsSync()
+
+    fun getAllCardsFlow(): Flow<List<SrsCardEntity>> = srsCardDao.getAllCardsFlow()
+
+    fun getLeechCardsFlow(limit: Int = 10): Flow<List<LeechWordData>> {
+        return srsCardDao.getLeechCardsFlow(limit).map { list ->
+            list.mapIndexedNotNull { index, card ->
+                val word = savedWordDao.getById(card.savedWordId) ?: return@mapIndexedNotNull null
+                val daysAgo = if (card.lastReviewedTimestamp != null) {
+                    ((System.currentTimeMillis() - card.lastReviewedTimestamp) / (24 * 3600 * 1000L)).coerceAtLeast(1)
+                } else {
+                    1L
+                }
+                LeechWordData(
+                    rank = index + 1,
+                    headword = word.headwordSnapshot,
+                    posLabel = word.originType,
+                    lastReviewedDaysAgo = "$daysAgo ngày",
+                    lapsesCount = card.lapses
+                )
+            }
+        }
     }
 
     suspend fun processReview(

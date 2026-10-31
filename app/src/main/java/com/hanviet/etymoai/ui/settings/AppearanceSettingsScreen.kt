@@ -26,14 +26,18 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,8 +50,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
 import com.hanviet.etymoai.ui.theme.ThemeModeOption
 import com.hanviet.etymoai.ui.theme.ThemePreferences
+import com.hanviet.etymoai.util.AppLanguage
+import com.hanviet.etymoai.util.I18nHelper
 
 /**
  * 3. Màn hình Giao diện & Hiển thị (Appearance, Accessibility & TTS Settings Screen)
@@ -63,7 +70,12 @@ fun AppearanceSettingsScreen(
     var selectedColorIndex by remember { mutableIntStateOf(0) }
     var selectedFontSizeIndex by remember { mutableIntStateOf(1) } // 0: Nhỏ, 1: Vừa, 2: Lớn, 3: Rất lớn
     var selectedHanjaFormat by remember { mutableStateOf("Hiển thị đầy đủ (Hán + Hán-Việt)") }
-    var selectedTtsVoice by remember { mutableStateOf("🔊 Giọng nữ chuẩn Seoul (mặc định)") }
+    var currentLanguage by remember { mutableStateOf(I18nHelper.getCurrentLanguage(context)) }
+    var currentTtsSpeed by remember { mutableFloatStateOf(ThemePreferences.getTtsSpeed(context)) }
+
+    var showLanguageDialog by remember { mutableStateOf(false) }
+    var showTtsDialog by remember { mutableStateOf(false) }
+    var showHanjaFormatDialog by remember { mutableStateOf(false) }
 
     val accentColors = listOf(
         Color(0xFF2563EB), // Xanh dương
@@ -77,7 +89,7 @@ fun AppearanceSettingsScreen(
         topBar = {
             AppearanceTopBar(onBackClick = onBackClick)
         },
-        containerColor = Color(0xFFF4F7FB)
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -258,13 +270,13 @@ fun AppearanceSettingsScreen(
                             }
                         }
 
-                        HorizontalDivider(color = Color(0xFFF1F5F9))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
 
-                        // Ngôn ngữ giao diện
+                        // Ngôn ngữ giao diện (i18n)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { /* Switch language */ },
+                                .clickable { showLanguageDialog = true },
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -273,10 +285,10 @@ fun AppearanceSettingsScreen(
                                     text = "Ngôn ngữ",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF0F172A)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "🇻🇳 Tiếng Việt",
+                                    text = "${currentLanguage.flag} ${currentLanguage.title}",
                                     fontSize = 13.sp,
                                     color = Color(0xFF2563EB),
                                     fontWeight = FontWeight.Medium
@@ -285,18 +297,18 @@ fun AppearanceSettingsScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                 contentDescription = null,
-                                tint = Color(0xFF94A3B8),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
 
-                        HorizontalDivider(color = Color(0xFFF1F5F9))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
 
                         // Định dạng Hán tự
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { /* Hanja format selection */ },
+                                .clickable { showHanjaFormatDialog = true },
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -305,49 +317,49 @@ fun AppearanceSettingsScreen(
                                     text = "Định dạng Hán",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF0F172A)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
                                     text = selectedHanjaFormat,
                                     fontSize = 13.sp,
-                                    color = Color(0xFF64748B)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                 contentDescription = null,
-                                tint = Color(0xFF94A3B8),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
 
-                        HorizontalDivider(color = Color(0xFFF1F5F9))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
 
                         // Cài đặt phát âm TTS
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { /* TTS voice selection */ },
+                                .clickable { showTtsDialog = true },
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Cài đặt phát âm",
+                                    text = "Cài đặt phát âm (TTS)",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF0F172A)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = selectedTtsVoice,
+                                    text = "Tốc độ: ${currentTtsSpeed}x • Chuẩn Seoul (ko-KR)",
                                     fontSize = 13.sp,
-                                    color = Color(0xFF64748B)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                 contentDescription = null,
-                                tint = Color(0xFF94A3B8),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -357,6 +369,159 @@ fun AppearanceSettingsScreen(
             }
         }
     }
+
+    // Dialog Chọn ngôn ngữ i18n
+    if (showLanguageDialog) {
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            title = {
+                Text(text = "Chọn ngôn ngữ ứng dụng", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AppLanguage.entries.forEach { lang ->
+                        val isChosen = currentLanguage == lang
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isChosen) Color(0xFFEFF6FF) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (isChosen) Color(0xFF2563EB) else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    currentLanguage = lang
+                                    ThemePreferences.setAppLanguage(context, lang.code)
+                                    Toast.makeText(context, "Đã chọn ngôn ngữ: ${lang.title}", Toast.LENGTH_SHORT).show()
+                                    showLanguageDialog = false
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = lang.flag, fontSize = 20.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = lang.title,
+                                    fontSize = 14.sp,
+                                    fontWeight = if (isChosen) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isChosen) Color(0xFF2563EB) else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLanguageDialog = false }) {
+                    Text("Đóng")
+                }
+            }
+        )
+    }
+
+    // Dialog Cài đặt tốc độ phát âm TTS
+    if (showTtsDialog) {
+        val speeds = listOf(
+            0.75f to "0.75x (Chậm - Dành cho người mới học)",
+            0.95f to "0.95x (Bình thường - Tự nhiên chuẩn Seoul)",
+            1.25f to "1.25x (Nhanh - Luyện nghe nâng cao)"
+        )
+        AlertDialog(
+            onDismissRequest = { showTtsDialog = false },
+            title = {
+                Text(text = "Tốc độ giọng đọc TTS tiếng Hàn", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    speeds.forEach { (speed, label) ->
+                        val isChosen = currentTtsSpeed == speed
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isChosen) Color(0xFFEFF6FF) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (isChosen) Color(0xFF2563EB) else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    currentTtsSpeed = speed
+                                    ThemePreferences.setTtsSpeed(context, speed)
+                                    Toast.makeText(context, "Đã cập nhật tốc độ phát âm: ${speed}x", Toast.LENGTH_SHORT).show()
+                                    showTtsDialog = false
+                                }
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 13.sp,
+                                fontWeight = if (isChosen) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isChosen) Color(0xFF2563EB) else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showTtsDialog = false }) {
+                    Text("Đóng")
+                }
+            }
+        )
+    }
+
+    // Dialog Định dạng Hán tự
+    if (showHanjaFormatDialog) {
+        val formats = listOf(
+            "Hiển thị đầy đủ (Hán + Hán-Việt)",
+            "Chỉ hiển thị chữ Hán (Hanja only)",
+            "Ưu tiên âm Hán-Việt",
+            "Ẩn chữ Hán khi luyện tập"
+        )
+        AlertDialog(
+            onDismissRequest = { showHanjaFormatDialog = false },
+            title = {
+                Text(text = "Định dạng hiển thị Hán tự", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    formats.forEach { fmt ->
+                        val isChosen = selectedHanjaFormat == fmt
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isChosen) Color(0xFFEFF6FF) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (isChosen) Color(0xFF2563EB) else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedHanjaFormat = fmt
+                                    showHanjaFormatDialog = false
+                                }
+                        ) {
+                            Text(
+                                text = fmt,
+                                fontSize = 13.sp,
+                                fontWeight = if (isChosen) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isChosen) Color(0xFF2563EB) else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showHanjaFormatDialog = false }) {
+                    Text("Đóng")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -364,7 +529,7 @@ private fun AppearanceTopBar(
     onBackClick: () -> Unit
 ) {
     Surface(
-        color = Color(0xFFF4F7FB),
+        color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -377,7 +542,7 @@ private fun AppearanceTopBar(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Quay lại",
-                    tint = Color(0xFF0F172A)
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.width(4.dp))
@@ -385,7 +550,7 @@ private fun AppearanceTopBar(
                 text = "Giao diện & Hiển thị",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

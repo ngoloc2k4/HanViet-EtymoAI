@@ -216,7 +216,7 @@ fun WordDetailScreen(
                 onMenuClick = { /* More actions */ }
             )
         },
-        containerColor = Color(0xFFF4F7FB)
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         if (isLoading) {
             Box(
@@ -421,7 +421,7 @@ private fun WordDetailTopBar(
     onMenuClick: () -> Unit
 ) {
     Surface(
-        color = Color(0xFFF4F7FB),
+        color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(

@@ -22,6 +22,8 @@ enum class ThemeModeOption(val titleVi: String, val icon: ImageVector) {
 object ThemePreferences {
     private const val PREFS_NAME = "appearance_settings"
     private const val KEY_THEME_MODE = "key_theme_mode"
+    private const val KEY_TTS_SPEED = "key_tts_speed"
+    private const val KEY_APP_LANGUAGE = "key_app_language"
 
     fun getThemeMode(context: Context): ThemeModeOption {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -36,6 +38,26 @@ object ThemePreferences {
     fun setThemeMode(context: Context, mode: ThemeModeOption) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(KEY_THEME_MODE, mode.name).apply()
+    }
+
+    fun getTtsSpeed(context: Context): Float {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getFloat(KEY_TTS_SPEED, 0.95f)
+    }
+
+    fun setTtsSpeed(context: Context, speed: Float) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putFloat(KEY_TTS_SPEED, speed).apply()
+    }
+
+    fun getAppLanguage(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_APP_LANGUAGE, "vi") ?: "vi"
+    }
+
+    fun setAppLanguage(context: Context, lang: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_APP_LANGUAGE, lang).apply()
     }
 }
 

@@ -45,6 +45,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -52,6 +53,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.hanviet.etymoai.data.hanja.HanjaMasterData
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -146,15 +148,101 @@ fun AiChatScreen(
 
         coroutineScope.launch {
             if (isOfflineMode) {
-                var etymo: WordEtymology? = null
+                var responseText = ""
+                var resolvedEtymo: WordEtymology? = null
+
                 try {
-                    etymo = etymologyRepository?.getEtymologyForWordByHeadword(q)
-                    if (etymo == null) {
-                        val searchResults = searchPipeline?.search(q, limit = 5) ?: emptyList()
-                        val first = searchResults.firstOrNull()
-                        if (first != null) {
-                            etymo = etymologyRepository?.getEtymologyForWord(first.lexemeId)
-                                ?: etymologyRepository?.getEtymologyForWordByHeadword(first.headwordNfc)
+                    withContext(Dispatchers.IO) {
+                        // 1. Kiểm tra nếu có chữ Hán trong query
+                        val hanjaRegex = Regex("[\\u4E00-\\u9FFF]+")
+                        val hanjaMatches = hanjaRegex.findAll(q).map { it.value }.toList()
+                        if (hanjaMatches.isNotEmpty()) {
+                            val firstHanja = hanjaMatches.first()
+                            val masterInfo = HanjaMasterData.findHanja(firstHanja)
+                            if (masterInfo != null) {
+                                val sb = StringBuilder()
+                                sb.append("🈴 **Phân tích Hán tự [${masterInfo.hanjaChar}]**:\n")
+                                sb.append("• Âm Hán-Việt: ${masterInfo.readingVi}\n")
+                                sb.append("• Bộ thủ: ${masterInfo.radicalChar} (${masterInfo.radicalMeaning}) • ${masterInfo.strokeCount} nét\n")
+                                sb.append("• Cấp độ: ${masterInfo.gradeLevel}\n")
+                                sb.append("• Ý nghĩa: ${masterInfo.meaningSummary}\n\n")
+                                sb.append("📚 **Các từ ghép tiếng Hàn tiêu biểu**:\n")
+                                masterInfo.derivedWords.forEach { dw ->
+                                    sb.append("• **${dw.headwordKo}** (${dw.hanjaCombo} - ${dw.readingVi}): ${dw.meaningVi}\n")
+                                }
+                                responseText = sb.toString().trim()
+                            }
+                        }
+
+                        // 2. Kiểm tra nếu có chữ Hangul tiếng Hàn trong query
+                        if (responseText.isBlank()) {
+                            val hangulRegex = Regex("[\\uAC00-\\uD7AF]+")
+                            val hangulMatches = hangulRegex.findAll(q).map { it.value }.toList()
+
+                            for (token in hangulMatches) {
+                                // A. Tra trực tiếp
+                                var etymo = etymologyRepository?.getEtymologyForWordByHeadword(token)
+                                if (etymo != null) {
+                                    resolvedEtymo = etymo
+                                    responseText = buildOfflineEtymologyText(etymo)
+                                    break
+                                }
+
+                                // B. Khôi phục dạng nguyên thể (Deconjugation / Stemming)
+                                val stems = getKoreanDeconjugationStems(token)
+                                for (stem in stems) {
+                                    etymo = etymologyRepository?.getEtymologyForWordByHeadword(stem)
+                                    if (etymo != null) {
+                                        resolvedEtymo = etymo
+                                        responseText = "🔍 Phân tích hình thái: \"$token\" là dạng chia của gốc \"$stem\":\n\n" + buildOfflineEtymologyText(etymo)
+                                        break
+                                    }
+                                }
+                                if (resolvedEtymo != null) break
+
+                                // C. Tra cứu qua search pipeline
+                                val searchResults = searchPipeline?.search(token, limit = 5) ?: emptyList()
+                                val first = searchResults.firstOrNull()
+                                if (first != null) {
+                                    etymo = etymologyRepository?.getEtymologyForWord(first.lexemeId)
+                                        ?: etymologyRepository?.getEtymologyForWordByHeadword(first.headwordNfc)
+                                    if (etymo != null) {
+                                        resolvedEtymo = etymo
+                                        responseText = buildOfflineEtymologyText(etymo)
+                                        break
+                                    }
+                                }
+                            }
+                        }
+
+                        // 3. Nếu là truy vấn tiếng Việt -> Reverse Search
+                        if (responseText.isBlank()) {
+                            val cleanedVi = cleanVietnameseSearchQuery(q)
+                            val viResults = searchPipeline?.search(cleanedVi, limit = 5) ?: emptyList()
+                            if (viResults.isNotEmpty()) {
+                                val sb = StringBuilder()
+                                sb.append("🔍 Kết quả đối chiếu tiếng Hàn cho \"$cleanedVi\":\n\n")
+                                viResults.forEachIndexed { idx, res ->
+                                    val etymo = try {
+                                        etymologyRepository?.getEtymologyForWord(res.lexemeId)
+                                    } catch (_: Exception) { null }
+                                    val phonetic = if (!res.phoneticSnapshot.isNullOrBlank()) " (${res.phoneticSnapshot})" else ""
+                                    val originBadge = when (res.originType) {
+                                        "SINO_KOREAN" -> "[Hán-Hàn]"
+                                        "NATIVE_KOREAN" -> "[Thuần Hàn]"
+                                        "LOANWORD" -> "[Ngoại lai]"
+                                        else -> ""
+                                    }
+                                    sb.append("${idx + 1}. **${res.headwordNfc}**$phonetic $originBadge: ${res.meaningSnapshot}\n")
+                                    if (etymo != null && etymo.segments.isNotEmpty()) {
+                                        val hanjaStr = etymo.segments.joinToString(" + ") { "${it.hanjaChar} (${it.readingVi})" }
+                                        sb.append("   ↳ Chiết tự: $hanjaStr\n")
+                                    }
+                                }
+                                sb.append("\n💡 Bấm vào từ vựng hoặc nhập tên từ để xem chiết tự chi tiết.")
+                                responseText = sb.toString().trim()
+                                resolvedEtymo = etymologyRepository?.getEtymologyForWord(viResults.first().lexemeId)
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -163,20 +251,24 @@ fun AiChatScreen(
 
                 messages.removeAll { it.id == loadingId }
 
-                if (etymo != null) {
-                    val intro = "${etymo.headword} ${if (etymo.phoneticVi != null) "(${etymo.phoneticVi})" else ""} là từ ${etymo.originType.titleVi}, có nghĩa là: “${etymo.meaningVi}”."
+                if (responseText.isNotBlank()) {
                     messages.add(
                         ChatMessage(
                             isUser = false,
-                            text = intro,
-                            etymology = etymo
+                            text = responseText,
+                            etymology = resolvedEtymo
                         )
                     )
                 } else {
                     messages.add(
                         ChatMessage(
                             isUser = false,
-                            text = "Không tìm thấy từ \"$q\" trong CSDL 50k offline. Ở chế độ Offline, bạn có thể tra cứu từ vựng, từ Hán-Hàn hoặc dạng chia gốc động từ (ví dụ: 도서관, 들었어요, 행복, 사랑).\n\nNếu muốn phân tích câu dài hoặc hỏi tự do, bạn có thể chuyển sang chế độ [Online (BYOK)] ở góc trên."
+                            text = "Không tìm thấy dữ liệu từ khóa đối chiếu cho \"$q\" trong CSDL 50k offline.\n\n" +
+                                "💡 Mẹo ở chế độ Offline:\n" +
+                                "• Tra từ tiếng Hàn (ví dụ: 도서관, 축하합니다, 사랑, 들었어요)\n" +
+                                "• Tra theo nghĩa tiếng Việt (ví dụ: trường học, thư viện, kinh tế)\n" +
+                                "• Tra theo chữ Hán (ví dụ: 學, 圖, 生, 館)\n\n" +
+                                "Để trò chuyện tự do hoặc phân tích câu văn bản dài, bạn có thể chuyển sang chế độ [Online (BYOK)] ở góc trên."
                         )
                     )
                 }
@@ -209,7 +301,7 @@ fun AiChatScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFF4F7FB),
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         Column(
@@ -1016,4 +1108,71 @@ private fun AiChatBottomNavigationBar(
             )
         }
     }
+}
+
+private fun getKoreanDeconjugationStems(token: String): List<String> {
+    val candidates = mutableListOf<String>()
+    when {
+        token.endsWith("했습니다") || token.endsWith("했어요") || token.endsWith("합니다") -> {
+            val prefix = token.removeSuffix("했습니다").removeSuffix("했어요").removeSuffix("합니다")
+            candidates.add(prefix + "하다")
+            candidates.add(prefix)
+        }
+        token.endsWith("았다") || token.endsWith("았다면") || token.endsWith("았어요") -> {
+            candidates.add(token.substringBeforeLast("았") + "다")
+        }
+        token.endsWith("었다") || token.endsWith("었다면") || token.endsWith("었어요") -> {
+            candidates.add(token.substringBeforeLast("었") + "다")
+        }
+        token.endsWith("습니다") || token.endsWith("습니까") -> {
+            candidates.add(token.removeSuffix("습니다").removeSuffix("습니까") + "다")
+        }
+        token.endsWith("는다") || token.endsWith("ㄴ다") -> {
+            candidates.add(token.removeSuffix("는다").removeSuffix("ㄴ다") + "다")
+        }
+        token.endsWith("고") -> {
+            candidates.add(token.removeSuffix("고") + "다")
+        }
+        token.endsWith("아서") || token.endsWith("어서") -> {
+            candidates.add(token.removeSuffix("아서").removeSuffix("어서") + "다")
+        }
+    }
+    return candidates
+}
+
+private fun cleanVietnameseSearchQuery(q: String): String {
+    var s = q.lowercase()
+    val removePatterns = listOf("nghĩa là gì", "tiếng hàn là gì", "từ nào là", "từ nào", "là gì", "nghĩa là", "tiếng hàn", "cho tôi biết", "hỏi về", "tra từ")
+    for (p in removePatterns) {
+        s = s.replace(p, "")
+    }
+    return s.trim()
+}
+
+private fun buildOfflineEtymologyText(etymo: WordEtymology): String {
+    val sb = StringBuilder()
+    val phonetic = if (!etymo.phoneticVi.isNullOrBlank()) " (${etymo.phoneticVi})" else ""
+    sb.append("📖 **${etymo.headword}**$phonetic • Nguồn gốc: ${etymo.originType.titleVi}\n")
+    sb.append("Nghĩa: “${etymo.meaningVi}”\n\n")
+
+    if (etymo.segments.isNotEmpty()) {
+        sb.append("🔍 **Phân tích chiết tự Hán tự đa tầng:**\n")
+        etymo.segments.forEach { seg ->
+            sb.append("• **${seg.syllableKo} [${seg.hanjaChar}]** (${seg.readingVi}): ${seg.meaningVi}\n")
+        }
+        sb.append("\n")
+    }
+
+    if (!etymo.notes.isNullOrBlank()) {
+        sb.append("💡 **Ghi chú từ nguyên:** ${etymo.notes}\n\n")
+    }
+
+    if (etymo.examples.isNotEmpty()) {
+        sb.append("📝 **Câu ví dụ minh họa:**\n")
+        etymo.examples.take(2).forEach { ex ->
+            sb.append("• ${ex.sentenceKo}\n")
+            sb.append("  ↳ ${ex.sentenceVi}\n")
+        }
+    }
+    return sb.toString().trim()
 }

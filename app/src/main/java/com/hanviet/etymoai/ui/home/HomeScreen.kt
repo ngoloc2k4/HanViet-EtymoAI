@@ -161,7 +161,7 @@ fun HomeScreen(
     val focusManager = LocalFocusManager.current
 
     Scaffold(
-        containerColor = Color(0xFFF4F7FB),
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         LazyColumn(

@@ -34,6 +34,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -104,7 +105,7 @@ fun SentenceAnalyzerScreen(
         topBar = {
             SentenceAnalyzerTopBar(onBackClick = onBackClick)
         },
-        containerColor = Color(0xFFF4F7FB)
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -181,7 +182,7 @@ fun SentenceAnalyzerScreen(
                     if (isAnalyzing) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(18.dp),
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.surface,
                             strokeWidth = 2.dp
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -229,7 +230,7 @@ private fun SentenceAnalyzerTopBar(
     onBackClick: () -> Unit
 ) {
     Surface(
-        color = Color(0xFFF4F7FB),
+        color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -244,7 +245,7 @@ private fun SentenceAnalyzerTopBar(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Quay lại",
-                        tint = Color(0xFF0F172A)
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
@@ -252,7 +253,7 @@ private fun SentenceAnalyzerTopBar(
                     text = "AI phân tích câu & ngữ pháp",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -274,7 +275,7 @@ private fun SentenceAnalyzerTopBar(
 private fun AiGroundingStatusCard() {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -316,7 +317,7 @@ private fun AiGroundingStatusCard() {
 private fun ModelOptionsCard() {
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -384,7 +385,7 @@ private fun SentenceInputBox(
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -485,7 +486,7 @@ private fun QuickExamplesRow(
             examples.forEach { example ->
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.surface,
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
                     modifier = Modifier.clickable { onSelect(example) }
                 ) {
@@ -515,7 +516,7 @@ private fun AnalysisResultCard(
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF93C5FD)),
         modifier = Modifier.fillMaxWidth()
     ) {

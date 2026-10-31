@@ -41,9 +41,11 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
@@ -52,6 +54,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import com.hanviet.etymoai.ai.provider.AiProviderType
+import com.hanviet.etymoai.ai.provider.LiveModelInfo
+import com.hanviet.etymoai.ai.provider.LiveModelService
 import com.hanviet.etymoai.ai.security.SecureApiKeyStorage
 import com.hanviet.etymoai.data.translation.TranslationEngine
 import androidx.compose.runtime.Composable
@@ -59,7 +63,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -101,6 +107,14 @@ fun SecuritySettingsScreen(
     var inputModel by remember { mutableStateOf(storage.getModel(selectedProvider)) }
     var isKeyVisible by remember { mutableStateOf(false) }
 
+    val coroutineScope = rememberCoroutineScope()
+    val liveModelService = remember { LiveModelService(context) }
+    var liveModels by remember(selectedProvider) {
+        mutableStateOf<List<LiveModelInfo>?>(liveModelService.getCachedModels(selectedProvider))
+    }
+    var isFetchingLiveModels by remember { mutableStateOf(false) }
+    var liveModelError by remember { mutableStateOf<String?>(null) }
+
     var selectedEngine by remember { mutableStateOf(TranslationEngine.fromId(storage.getTranslationEngine())) }
     var deepLApiKey by remember { mutableStateOf(storage.getDeepLKey() ?: "") }
     var isDeepLKeyVisible by remember { mutableStateOf(false) }
@@ -116,13 +130,15 @@ fun SecuritySettingsScreen(
         inputApiKey = storage.getApiKey(newProvider) ?: ""
         inputEndpoint = storage.getEndpoint(newProvider)
         inputModel = storage.getModel(newProvider)
+        liveModels = liveModelService.getCachedModels(newProvider)
+        liveModelError = null
     }
 
     Scaffold(
         topBar = {
             SecuritySettingsTopBar(onBackClick = onBackClick)
         },
-        containerColor = Color(0xFFF4F7FB)
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -356,7 +372,9 @@ fun SecuritySettingsScreen(
             },
             text = {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
@@ -440,29 +458,135 @@ fun SecuritySettingsScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // 4. Lựa chọn Model gợi ý (2025/2026 models)
-                    Column {
-                        Text(
-                            text = "Model đề xuất mới nhất:",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF475569)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
+                    // 4. Lựa chọn Model từ API GET & Bộ nhớ đệm 7 ngày
+                    val cacheAgeText = liveModelService.getCacheAgeText(selectedProvider)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Danh sách Model khả dụng:",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (cacheAgeText != null) {
+                                Text(
+                                    text = "⚡ Đã lưu đệm 7 ngày",
+                                    fontSize = 10.sp,
+                                    color = Color(0xFF059669),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
+                        if (cacheAgeText != null) {
+                            Text(
+                                text = cacheAgeText,
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                            )
+                        }
+
+                        // Nút Gọi GET Endpoint tải Model thực tế
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isFetchingLiveModels) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFEFF6FF),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = !isFetchingLiveModels) {
+                                    coroutineScope.launch {
+                                        isFetchingLiveModels = true
+                                        liveModelError = null
+                                        val res = liveModelService.fetchLiveModels(
+                                            provider = selectedProvider,
+                                            apiKey = inputApiKey,
+                                            customEndpoint = inputEndpoint
+                                        )
+                                        res.onSuccess { list ->
+                                            liveModels = list
+                                            if (list.isNotEmpty() && (inputModel.isBlank() || inputModel == selectedProvider.defaultModel)) {
+                                                inputModel = list.first().id
+                                            }
+                                            Toast.makeText(context, "Đã tải ${list.size} models thành công (Lưu cache 7 ngày)!", Toast.LENGTH_SHORT).show()
+                                        }.onFailure { err ->
+                                            liveModelError = err.message ?: "Lỗi kết nối API"
+                                        }
+                                        isFetchingLiveModels = false
+                                    }
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                if (isFetchingLiveModels) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(14.dp),
+                                        strokeWidth = 2.dp,
+                                        color = Color(0xFF2563EB)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Đang gửi GET request đến API...",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF2563EB),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = null,
+                                        tint = Color(0xFF2563EB),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (!liveModels.isNullOrEmpty()) "Làm mới từ API (${liveModels?.size} models)" else "Tải danh sách model trực tiếp từ API (GET)",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF2563EB),
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+
+                        if (liveModelError != null) {
+                            Text(
+                                text = "⚠️ $liveModelError",
+                                fontSize = 10.5.sp,
+                                color = Color(0xFFDC2626)
+                            )
+                        }
+
+                        // Danh sách chip model (Ưu tiên liveModels, fallback recommendedModels)
+                        val modelsToDisplay: List<String> = if (!liveModels.isNullOrEmpty()) {
+                            liveModels!!.map { it.id }
+                        } else {
+                            recommendedModels
+                        }
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            recommendedModels.forEach { modelName ->
+                            modelsToDisplay.forEach { modelName ->
                                 val isChosen = inputModel == modelName
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
-                                    color = if (isChosen) Color(0xFFEFF6FF) else Color(0xFFF8FAFC),
+                                    color = if (isChosen) Color(0xFFEFF6FF) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                     border = androidx.compose.foundation.BorderStroke(
                                         1.dp,
-                                        if (isChosen) Color(0xFF2563EB) else Color(0xFFE2E8F0)
+                                        if (isChosen) Color(0xFF2563EB) else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                                     ),
                                     modifier = Modifier.clickable { inputModel = modelName }
                                 ) {
@@ -470,7 +594,7 @@ fun SecuritySettingsScreen(
                                         text = modelName,
                                         fontSize = 11.sp,
                                         fontWeight = if (isChosen) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (isChosen) Color(0xFF2563EB) else Color(0xFF334155),
+                                        color = if (isChosen) Color(0xFF2563EB) else MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                     )
                                 }
@@ -777,7 +901,7 @@ private fun SecuritySettingsTopBar(
     onBackClick: () -> Unit
 ) {
     Surface(
-        color = Color(0xFFF4F7FB),
+        color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -790,7 +914,7 @@ private fun SecuritySettingsTopBar(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Quay lại",
-                    tint = Color(0xFF0F172A)
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.width(4.dp))
@@ -798,7 +922,7 @@ private fun SecuritySettingsTopBar(
                 text = "Tài khoản & Bảo mật",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

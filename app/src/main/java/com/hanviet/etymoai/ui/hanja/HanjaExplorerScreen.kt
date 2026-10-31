@@ -31,6 +31,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -49,25 +50,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-data class HanjaMasterInfo(
-    val hanjaChar: String,
-    val readingVi: String,
-    val strokeCount: Int,
-    val radicalChar: String,
-    val radicalMeaning: String,
-    val gradeLevel: String,
-    val meaningSummary: String,
-    val derivedWords: List<HanjaDerivedWord>
-)
-
-data class HanjaDerivedWord(
-    val lexemeId: Long,
-    val headwordKo: String,
-    val hanjaCombo: String,
-    val readingVi: String,
-    val meaningVi: String
-)
+import com.hanviet.etymoai.data.hanja.HanjaDerivedWord
+import com.hanviet.etymoai.data.hanja.HanjaMasterData
+import com.hanviet.etymoai.data.hanja.HanjaMasterInfo
 
 /**
  * Màn hình Khám phá & Đồ thị Họ Từ vựng Hán tự (HanjaExplorerScreen)
@@ -82,88 +67,14 @@ fun HanjaExplorerScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
 
-    val sampleHanjaList = remember {
-        listOf(
-            HanjaMasterInfo(
-                hanjaChar = "學",
-                readingVi = "HỌC",
-                strokeCount = 16,
-                radicalChar = "子",
-                radicalMeaning = "Tử (đứa trẻ)",
-                gradeLevel = "Cấp 8 (Sơ cấp)",
-                meaningSummary = "Bắt chước, học tập, tiếp thu tri thức và rèn luyện kỹ năng",
-                derivedWords = listOf(
-                    HanjaDerivedWord(101L, "학교", "學校", "Học hiệu", "Trường học, cơ sở giáo dục đào tạo"),
-                    HanjaDerivedWord(102L, "학생", "學生", "Học sinh", "Người theo học tại nhà trường"),
-                    HanjaDerivedWord(103L, "학습", "學習", "Học tập", "Sự tiếp thu tri thức và rèn luyện"),
-                    HanjaDerivedWord(104L, "학원", "學院", "Học viện", "Viện học thuật, trung tâm bồi dưỡng"),
-                    HanjaDerivedWord(105L, "학문", "學問", "Học vấn", "Tri thức học thuật chuyên sâu"),
-                    HanjaDerivedWord(106L, "장학금", "奬學金", "Tưởng học kim", "Học bổng khen thưởng học tập")
-                )
-            ),
-            HanjaMasterInfo(
-                hanjaChar = "生",
-                readingVi = "SINH",
-                strokeCount = 5,
-                radicalChar = "生",
-                radicalMeaning = "Sinh (mầm sống)",
-                gradeLevel = "Cấp 8 (Sơ cấp)",
-                meaningSummary = "Sinh nở, sinh ra, sự sống, người còn sống",
-                derivedWords = listOf(
-                    HanjaDerivedWord(201L, "선생님", "先生님", "Tiên sinh", "Người sinh trước, thầy giáo đáng kính"),
-                    HanjaDerivedWord(202L, "학생", "學生", "Học sinh", "Người theo học tại nhà trường"),
-                    HanjaDerivedWord(203L, "생활", "生活", "Sinh hoạt", "Đời sống, nếp sống thường nhật"),
-                    HanjaDerivedWord(204L, "생명", "生命", "Sinh mệnh", "Tính mạng, mạng sống con người")
-                )
-            ),
-            HanjaMasterInfo(
-                hanjaChar = "圖",
-                readingVi = "ĐỒ",
-                strokeCount = 14,
-                radicalChar = "囗",
-                radicalMeaning = "Vi (khung bao)",
-                gradeLevel = "Cấp 6 (Trung cấp)",
-                meaningSummary = "Bản đồ, hình vẽ, dự tính, sách vở đồ họa",
-                derivedWords = listOf(
-                    HanjaDerivedWord(301L, "도서관", "圖書館", "Đồ thư quán", "Thư viện, nơi lưu trữ sách và tài liệu"),
-                    HanjaDerivedWord(302L, "지도", "地圖", "Địa đồ", "Bản đồ chỉ dẫn địa lý"),
-                    HanjaDerivedWord(303L, "의도", "意圖", "Ý đồ", "Ý định, mục đích dự tính")
-                )
-            ),
-            HanjaMasterInfo(
-                hanjaChar = "書",
-                readingVi = "THƯ",
-                strokeCount = 10,
-                radicalChar = "曰",
-                radicalMeaning = "Viết (nói rằng)",
-                gradeLevel = "Cấp 7 (Sơ cấp)",
-                meaningSummary = "Sách vở, văn tự, ghi chép thư tịch",
-                derivedWords = listOf(
-                    HanjaDerivedWord(401L, "도서관", "圖書館", "Đồ thư quán", "Thư viện lưu trữ sách"),
-                    HanjaDerivedWord(402L, "교과서", "敎科書", "Giáo khoa thư", "Sách giáo khoa giảng dạy"),
-                    HanjaDerivedWord(403L, "서점", "書店", "Thư điếm", "Hiệu sách, cửa hàng bán sách")
-                )
-            ),
-            HanjaMasterInfo(
-                hanjaChar = "館",
-                readingVi = "QUÁN",
-                strokeCount = 16,
-                radicalChar = "食",
-                radicalMeaning = "Thực (ăn uống)",
-                gradeLevel = "Cấp 5 (Trung cấp)",
-                meaningSummary = "Nhà trọ, tòa nhà công cộng, công sở chứa sách",
-                derivedWords = listOf(
-                    HanjaDerivedWord(501L, "도서관", "圖書館", "Đồ thư quán", "Thư viện sách"),
-                    HanjaDerivedWord(502L, "박물관", "博物館", "Bác vật quán", "Bảo tàng lưu giữ hiện vật cổ"),
-                    HanjaDerivedWord(503L, "대사관", "大使館", "Đại sứ quán", "Tòa nhà đại sứ ngoại giao")
-                )
-            )
-        )
+    val allHanjaList = remember { HanjaMasterData.allHanjaList }
+    val filteredHanjaList = remember(searchQuery) {
+        HanjaMasterData.searchHanja(searchQuery)
     }
 
     var selectedHanja by remember {
         mutableStateOf(
-            sampleHanjaList.find { it.hanjaChar == initialHanja } ?: sampleHanjaList.first()
+            HanjaMasterData.findHanja(initialHanja) ?: allHanjaList.first()
         )
     }
 
@@ -171,7 +82,7 @@ fun HanjaExplorerScreen(
         topBar = {
             HanjaTopBar(onBackClick = onBackClick)
         },
-        containerColor = Color(0xFFF4F7FB)
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -187,14 +98,12 @@ fun HanjaExplorerScreen(
                     value = searchQuery,
                     onValueChange = { query ->
                         searchQuery = query
-                        val matched = sampleHanjaList.find {
-                            it.hanjaChar == query.trim() || it.readingVi.equals(query.trim(), ignoreCase = true)
-                        }
+                        val matched = HanjaMasterData.findHanja(query)
                         if (matched != null) selectedHanja = matched
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
-                    placeholder = { Text("Nhập chữ Hán hoặc âm Hán-Việt (Học, Sinh, Thư...)") },
+                    placeholder = { Text("Nhập chữ Hán, âm Hán-Việt hoặc từ ghép (Học, Sinh, Thư, Thủy...)") },
                     leadingIcon = {
                         Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = Color(0xFF2563EB))
                     },
@@ -206,10 +115,10 @@ fun HanjaExplorerScreen(
                         }
                     },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                         focusedBorderColor = Color(0xFF2563EB),
-                        unfocusedBorderColor = Color(0xFFE2E8F0)
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                     ),
                     singleLine = true
                 )
@@ -220,7 +129,7 @@ fun HanjaExplorerScreen(
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(sampleHanjaList) { item ->
+                    items(filteredHanjaList) { item ->
                         val isSelected = item.hanjaChar == selectedHanja.hanjaChar
                         Surface(
                             shape = RoundedCornerShape(12.dp),
@@ -302,7 +211,7 @@ fun HanjaExplorerScreen(
 
 @Composable
 private fun HanjaTopBar(onBackClick: () -> Unit) {
-    Surface(color = Color(0xFFF4F7FB), modifier = Modifier.fillMaxWidth()) {
+    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -313,7 +222,7 @@ private fun HanjaTopBar(onBackClick: () -> Unit) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Quay lại",
-                        tint = Color(0xFF1E293B)
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
@@ -323,7 +232,7 @@ private fun HanjaTopBar(onBackClick: () -> Unit) {
                     text = "Khám phá Chữ Hán (Hanja)",
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -334,7 +243,7 @@ private fun HanjaTopBar(onBackClick: () -> Unit) {
 private fun HanjaMasterDetailCard(hanjaInfo: HanjaMasterInfo) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -423,7 +332,7 @@ private fun HanjaDerivedWordCard(
 ) {
     Card(
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier
             .fillMaxWidth()
@@ -441,7 +350,7 @@ private fun HanjaDerivedWordCard(
                         text = word.headwordKo,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E293B)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(

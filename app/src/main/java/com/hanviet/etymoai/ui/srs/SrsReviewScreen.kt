@@ -44,6 +44,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -120,7 +121,7 @@ fun SrsReviewScreen(
         topBar = {
             SrsTopBar(onBackClick = onBackClick)
         },
-        containerColor = Color(0xFFF4F7FB),
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         if (reviewQueue.isEmpty() || currentIndex >= reviewQueue.size) {
@@ -497,7 +498,7 @@ fun SrsReviewScreen(
 @Composable
 private fun SrsTopBar(onBackClick: () -> Unit) {
     Surface(
-        color = Color(0xFFF4F7FB),
+        color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
