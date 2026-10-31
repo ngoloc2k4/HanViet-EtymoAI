@@ -40,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,6 +96,7 @@ fun AboutDataLicenseScreen(
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = EtymoTheme.cardBorder(),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -104,14 +106,14 @@ fun AboutDataLicenseScreen(
                             title = "Viện Ngôn ngữ Quốc gia Hàn Quốc (NIKL)",
                             subtitle = "Cung cấp kho từ điển chuẩn quốc gia KRDICT, phát âm chuẩn Seoul và phân loại từ tính."
                         )
-                        HorizontalDivider(color = Color(0xFFF1F5F9))
+                        HorizontalDivider(color = EtymoTheme.divider())
                         DataSourceItem(
                             icon = Icons.Default.MenuBook,
                             iconColor = Color(0xFF9333EA),
                             title = "Viện Nghiên cứu Hán Nôm & Thiều Chửu",
                             subtitle = "Kho tư liệu chữ Hán truyền thống, bộ thủ, quy tắc chuyển âm Hán-Việt tương ứng."
                         )
-                        HorizontalDivider(color = Color(0xFFF1F5F9))
+                        HorizontalDivider(color = EtymoTheme.divider())
                         DataSourceItem(
                             icon = Icons.Default.Public,
                             iconColor = Color(0xFF0D9488),
@@ -128,7 +130,7 @@ fun AboutDataLicenseScreen(
                     text = "CAM KẾT BẢO MẬT & QUYỀN RIÊNG TƯ (MỤC 18)",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF64748B),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 0.5.sp,
                     modifier = Modifier.padding(start = 4.dp)
                 )
@@ -138,6 +140,7 @@ fun AboutDataLicenseScreen(
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = EtymoTheme.cardBorder(),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -163,7 +166,7 @@ fun AboutDataLicenseScreen(
                     text = "GIẤY PHÉP PHẦN MỀM & MÃ NGUỒN MỞ",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF64748B),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 0.5.sp,
                     modifier = Modifier.padding(start = 4.dp)
                 )
@@ -173,6 +176,7 @@ fun AboutDataLicenseScreen(
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = EtymoTheme.cardBorder(),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -188,7 +192,7 @@ fun AboutDataLicenseScreen(
                                 text = "Dữ liệu mở: CC BY-SA 4.0 Quốc tế",
                                 fontSize = 13.5.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF1E293B)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -203,7 +207,7 @@ fun AboutDataLicenseScreen(
                                 text = "Mã nguồn ứng dụng: Giấy phép MIT Open-Source",
                                 fontSize = 13.5.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF1E293B)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
@@ -217,7 +221,9 @@ fun AboutDataLicenseScreen(
                                 onClick = onOpenGithub,
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E293B))
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (EtymoTheme.isDark()) Color(0xFF334155) else Color(0xFF1E293B)
+                                )
                             ) {
                                 Icon(imageVector = Icons.Default.Code, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -314,7 +320,7 @@ private fun VersionHeroCard() {
                 text = "HanViet-EtymoAI",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(2.dp))
@@ -334,28 +340,28 @@ private fun VersionHeroCard() {
             ) {
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFFDCFCE7),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC))
+                    color = if (EtymoTheme.isDark()) Color(0xFF064E3B).copy(alpha = 0.5f) else Color(0xFFDCFCE7),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, if (EtymoTheme.isDark()) Color(0xFF059669) else Color(0xFF86EFAC))
                 ) {
                     Text(
                         text = "Gói lõi: v1.2.0 (~8.4 MB)",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF166534),
+                        color = if (EtymoTheme.isDark()) Color(0xFF6EE7B7) else Color(0xFF166534),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }
 
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFFFEF3C7),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFDE68A))
+                    color = if (EtymoTheme.isDark()) Color(0xFF451A03).copy(alpha = 0.5f) else Color(0xFFFEF3C7),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, if (EtymoTheme.isDark()) Color(0xFF92400E) else Color(0xFFFDE68A))
                 ) {
                     Text(
                         text = "52.846 từ vựng",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF92400E),
+                        color = if (EtymoTheme.isDark()) Color(0xFFFDE68A) else Color(0xFF92400E),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }
@@ -385,9 +391,9 @@ private fun DataSourceItem(
         Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
+            Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(2.dp))
-            Text(text = subtitle, fontSize = 12.sp, color = Color(0xFF64748B), lineHeight = 17.sp)
+            Text(text = subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 17.sp)
         }
     }
 }
@@ -406,9 +412,9 @@ private fun PrivacyCommitmentItem(
         )
         Spacer(modifier = Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
+            Text(text = title, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(2.dp))
-            Text(text = detail, fontSize = 12.sp, color = Color(0xFF64748B), lineHeight = 17.sp)
+            Text(text = detail, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 17.sp)
         }
     }
 }

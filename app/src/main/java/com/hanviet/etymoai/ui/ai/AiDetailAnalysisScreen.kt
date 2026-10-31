@@ -46,6 +46,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -92,7 +93,7 @@ fun AiDetailAnalysisScreen(
                         text = "Phân tích chi tiết bằng AI",
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E293B)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 navigationIcon = {
@@ -100,7 +101,7 @@ fun AiDetailAnalysisScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Quay lại",
-                            tint = Color(0xFF1E293B)
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
@@ -109,14 +110,14 @@ fun AiDetailAnalysisScreen(
                         Icon(
                             imageVector = Icons.Default.BookmarkBorder,
                             contentDescription = "Lưu từ",
-                            tint = Color(0xFF334155)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     IconButton(onClick = { /* Menu */ }) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "Thêm",
-                            tint = Color(0xFF334155)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
@@ -147,9 +148,10 @@ fun AiDetailAnalysisScreen(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.CenterEnd
                     ) {
+                        val isDark = EtymoTheme.isDark()
                         Surface(
                             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 4.dp, bottomStart = 16.dp, bottomEnd = 16.dp),
-                            color = Color(0xFFDBEAFE),
+                            color = if (isDark) Color(0xFF1E3A8A) else Color(0xFFDBEAFE),
                             modifier = Modifier.padding(start = 50.dp)
                         ) {
                             Column(
@@ -160,20 +162,20 @@ fun AiDetailAnalysisScreen(
                                     text = "Giải thích giúp tôi từ “$headword” nhé",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF1E3A8A)
+                                    color = if (isDark) Color(0xFFEFF6FF) else Color(0xFF1E3A8A)
                                 )
                                 Spacer(modifier = Modifier.height(3.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         text = "09:42",
                                         fontSize = 10.sp,
-                                        color = Color(0xFF64748B)
+                                        color = if (isDark) Color(0xFF93C5FD) else Color(0xFF64748B)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Icon(
                                         imageVector = Icons.Default.DoneAll,
                                         contentDescription = "Đã nhận",
-                                        tint = Color(0xFF2563EB),
+                                        tint = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB),
                                         modifier = Modifier.size(13.dp)
                                     )
                                 }
@@ -187,6 +189,7 @@ fun AiDetailAnalysisScreen(
                     Card(
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = EtymoTheme.cardBorder(),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -203,20 +206,20 @@ fun AiDetailAnalysisScreen(
                                         text = "아르바이트 (Arbeit)",
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0F172A)
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         text = "Từ ngoại lai (tiếng Đức)",
                                         fontSize = 11.5.sp,
-                                        color = Color(0xFF64748B)
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
 
                                 // Huy hiệu [✓ Đã xác minh nguồn] (Chuẩn Idea 2.2 thay vì phần trăm độ tin cậy)
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = Color(0xFFDCFCE7),
-                                    border = BorderStroke(1.dp, Color(0xFFBBF7D0)),
+                                    color = if (EtymoTheme.isDark()) Color(0xFF064E3B).copy(alpha = 0.5f) else Color(0xFFDCFCE7),
+                                    border = BorderStroke(1.dp, if (EtymoTheme.isDark()) Color(0xFF059669) else Color(0xFFBBF7D0)),
                                     modifier = Modifier.height(24.dp)
                                 ) {
                                     Box(
@@ -227,7 +230,7 @@ fun AiDetailAnalysisScreen(
                                             text = "✓ Đã xác minh nguồn",
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF065F46)
+                                            color = if (EtymoTheme.isDark()) Color(0xFF6EE7B7) else Color(0xFF065F46)
                                         )
                                     }
                                 }
@@ -240,13 +243,13 @@ fun AiDetailAnalysisScreen(
                                 text = "1. Nghĩa và thông tin cơ bản",
                                 fontSize = 12.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFFF8FAFC),
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                color = EtymoTheme.subtleSurface(),
+                                border = EtymoTheme.cardBorder(),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(modifier = Modifier.padding(10.dp)) {
@@ -268,20 +271,20 @@ fun AiDetailAnalysisScreen(
                                 text = "2. Giải thích từ nguyên",
                                 fontSize = 12.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFFF8FAFC),
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                color = EtymoTheme.subtleSurface(),
+                                border = EtymoTheme.cardBorder(),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
                                     text = "아르바이트 là từ phiên âm tiếng Đức “Arbeit” (nghĩa gốc là công việc). Khi du nhập vào tiếng Hàn qua trung gian tiếng Nhật (アルバイト - arubaito), từ này đã trải qua hiện tượng thu hẹp ngữ nghĩa, chỉ dùng để chỉ công việc làm thêm, thường là việc bán thời gian cho sinh viên hoặc người đi làm.",
                                     fontSize = 11.5.sp,
                                     lineHeight = 17.5.sp,
-                                    color = Color(0xFF334155),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(10.dp)
                                 )
                             }
@@ -293,13 +296,13 @@ fun AiDetailAnalysisScreen(
                                 text = "3. Ví dụ sử dụng",
                                 fontSize = 12.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFFF8FAFC),
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                color = EtymoTheme.subtleSurface(),
+                                border = EtymoTheme.cardBorder(),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(modifier = Modifier.padding(10.dp)) {
@@ -307,24 +310,24 @@ fun AiDetailAnalysisScreen(
                                         text = "• 지금 아르바이트를 하고 있어요.",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF0F172A)
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         text = "  (Hiện tại tôi đang làm thêm.)",
                                         fontSize = 11.sp,
-                                        color = Color(0xFF64748B)
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
                                         text = "• 주말에 아르바이트를 해요.",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF0F172A)
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         text = "  (Cuối tuần tôi làm thêm.)",
                                         fontSize = 11.sp,
-                                        color = Color(0xFF64748B)
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -334,8 +337,8 @@ fun AiDetailAnalysisScreen(
                             // ---------------- 4. KHỐI CẢNH BÁO CHUYỂN NGHĨA ----------------
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFFFFFBEB),
-                                border = BorderStroke(1.dp, Color(0xFFFDE68A)),
+                                color = if (EtymoTheme.isDark()) Color(0xFF451A03).copy(alpha = 0.5f) else Color(0xFFFFFBEB),
+                                border = BorderStroke(1.dp, if (EtymoTheme.isDark()) Color(0xFF92400E) else Color(0xFFFDE68A)),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(modifier = Modifier.padding(10.dp)) {
@@ -343,14 +346,14 @@ fun AiDetailAnalysisScreen(
                                         text = "⚠️ Lưu ý chuyển nghĩa (Cách dùng tại Hàn)",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFB45309)
+                                        color = if (EtymoTheme.isDark()) Color(0xFFFBBF24) else Color(0xFFB45309)
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
                                         text = "Trong tiếng Hàn hiện đại, \"아르바이트\" (viết tắt thông tục là 알바 - alba) chỉ dùng với nghĩa làm thêm/bán thời gian, không dùng để chỉ công việc chính thức/nghề nghiệp ổn định (직업, 직장).",
                                         fontSize = 11.5.sp,
                                         lineHeight = 17.sp,
-                                        color = Color(0xFF78350F)
+                                        color = if (EtymoTheme.isDark()) Color(0xFFFDE68A) else Color(0xFF78350F)
                                     )
                                 }
                             }
@@ -361,20 +364,23 @@ fun AiDetailAnalysisScreen(
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(Color(0xFFEFF6FF), RoundedCornerShape(10.dp))
+                                    .background(
+                                        if (EtymoTheme.isDark()) Color(0xFF1E3A8A).copy(alpha = 0.35f) else Color(0xFFEFF6FF),
+                                        RoundedCornerShape(10.dp)
+                                    )
                                     .padding(10.dp)
                             ) {
                                 Text(
                                     text = "🔗 Liên quan và mở rộng",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1E3A8A)
+                                    color = if (EtymoTheme.isDark()) Color(0xFF93C5FD) else Color(0xFF1E3A8A)
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = "Các từ gốc ngoại lai mượn từ tiếng Đức đã xác minh học thuật:",
                                     fontSize = 11.sp,
-                                    color = Color(0xFF475569)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -405,7 +411,7 @@ fun AiDetailAnalysisScreen(
                                 text = "💡 Bạn có muốn:",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1E293B)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             Row(
@@ -435,7 +441,7 @@ fun AiDetailAnalysisScreen(
 
             // ================= 4. KHUNG NHẬP LIỆU PHÍA DƯỚI (INPUT BAR) =================
             Surface(
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 8.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -447,7 +453,7 @@ fun AiDetailAnalysisScreen(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(24.dp),
-                        color = Color(0xFFF1F5F9),
+                        color = EtymoTheme.inputBackground(),
                         modifier = Modifier
                             .weight(1f)
                             .height(44.dp)
@@ -460,7 +466,7 @@ fun AiDetailAnalysisScreen(
                                 Text(
                                     text = "Hỏi thêm về từ này...",
                                     fontSize = 13.sp,
-                                    color = Color(0xFF94A3B8)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                 )
                             }
                             BasicTextField(
@@ -469,7 +475,7 @@ fun AiDetailAnalysisScreen(
                                 singleLine = true,
                                 textStyle = TextStyle(
                                     fontSize = 13.5.sp,
-                                    color = Color(0xFF0F172A)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 ),
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                                 keyboardActions = KeyboardActions(onSend = {
@@ -521,8 +527,8 @@ private fun GermanLoanwordChip(
 ) {
     Surface(
         shape = RoundedCornerShape(8.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier
             .clickable(onClick = onClick)
     ) {
@@ -534,12 +540,12 @@ private fun GermanLoanwordChip(
                 text = word,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E3A8A)
+                color = if (EtymoTheme.isDark()) Color(0xFF93C5FD) else Color(0xFF1E3A8A)
             )
             Text(
                 text = meaning,
                 fontSize = 9.sp,
-                color = Color(0xFF64748B)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -560,13 +566,13 @@ private fun DetailKeyValueRow(key: String, value: String) {
             text = key,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF64748B),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(115.dp)
         )
         Text(
             text = value,
             fontSize = 11.5.sp,
-            color = Color(0xFF0F172A),
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
     }
@@ -583,8 +589,8 @@ private fun ActionSuggestPill(
 ) {
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = Color(0xFFF1F5F9),
-        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+        color = EtymoTheme.subtleSurface(),
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier
             .height(30.dp)
             .clickable(onClick = onClick)
@@ -596,7 +602,7 @@ private fun ActionSuggestPill(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = Color(0xFF334155),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(13.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
@@ -604,7 +610,7 @@ private fun ActionSuggestPill(
                 text = label,
                 fontSize = 10.5.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF334155)
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -619,7 +625,7 @@ private fun AiDetailBottomNavigationBar(
     onTabSelected: (Int) -> Unit
 ) {
     NavigationBar(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp,
         modifier = Modifier.height(64.dp)
     ) {
@@ -653,8 +659,8 @@ private fun AiDetailBottomNavigationBar(
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Color(0xFF2563EB),
                     selectedTextColor = Color(0xFF2563EB),
-                    unselectedIconColor = Color(0xFF64748B),
-                    unselectedTextColor = Color(0xFF64748B),
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     indicatorColor = Color.Transparent
                 )
             )

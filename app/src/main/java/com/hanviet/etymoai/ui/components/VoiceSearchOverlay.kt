@@ -28,8 +28,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -76,7 +78,8 @@ fun VoiceSearchOverlay(
     Dialog(onDismissRequest = onDismissRequest) {
         Card(
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = EtymoTheme.cardBorder(),
             elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
             modifier = Modifier
                 .fillMaxWidth()
@@ -99,7 +102,7 @@ fun VoiceSearchOverlay(
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Đóng",
-                            tint = Color(0xFF64748B)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -108,13 +111,13 @@ fun VoiceSearchOverlay(
                     text = "Đang lắng nghe...",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
                     text = "Nói từ hoặc câu tiếng Hàn / tiếng Việt",
                     fontSize = 12.5.sp,
-                    color = Color(0xFF64748B),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
 
@@ -157,14 +160,15 @@ fun VoiceSearchOverlay(
                 Text(
                     text = "Ví dụ nói thử:",
                     fontSize = 11.5.sp,
-                    color = Color(0xFF94A3B8)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("도서관", "들었어요", "thư viện").forEach { sample ->
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = Color(0xFFF1F5F9),
+                            color = EtymoTheme.subtleSurface(),
+                            border = EtymoTheme.cardBorder(),
                             modifier = Modifier.clickable {
                                 onVoiceResult(sample)
                                 onDismissRequest()
@@ -174,7 +178,7 @@ fun VoiceSearchOverlay(
                                 text = sample,
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = Color(0xFF334155),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                             )
                         }

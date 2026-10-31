@@ -38,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -212,7 +213,7 @@ fun SrsDeckListScreen(
                     text = "DANH SÁCH BỘ THẺ ÔN TẬP",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF64748B),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 0.5.sp,
                     modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                 )
@@ -365,7 +366,8 @@ private fun DeckItemCard(
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = EtymoTheme.cardBorder(),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier
             .fillMaxWidth()
@@ -390,13 +392,13 @@ private fun DeckItemCard(
                         text = deck.title,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = deck.description,
                         fontSize = 11.5.sp,
-                        color = Color(0xFF64748B),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
                     )
                 }
@@ -404,13 +406,13 @@ private fun DeckItemCard(
                 if (deck.dueCards > 0) {
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = Color(0xFFEFF6FF)
+                        color = if (EtymoTheme.isDark()) Color(0xFF1E3A8A).copy(alpha = 0.35f) else Color(0xFFEFF6FF)
                     ) {
                         Text(
                             text = "${deck.dueCards} thẻ",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF2563EB),
+                            color = if (EtymoTheme.isDark()) Color(0xFF93C5FD) else Color(0xFF2563EB),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
@@ -431,14 +433,14 @@ private fun DeckItemCard(
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp)),
                     color = deck.badgeColor,
-                    trackColor = Color(0xFFF1F5F9)
+                    trackColor = EtymoTheme.divider()
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = "${(deck.masteredPercentage * 100).toInt()}% thuộc",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF64748B)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -452,7 +454,7 @@ private fun DeckItemCard(
                 Text(
                     text = "${deck.totalCards} thẻ tổng cộng",
                     fontSize = 12.sp,
-                    color = Color(0xFF94A3B8)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
 
                 Button(

@@ -35,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -104,7 +105,7 @@ fun AppearanceSettingsScreen(
                     text = "Chế độ giao diện",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -124,11 +125,8 @@ fun AppearanceSettingsScreen(
                                     onThemeChanged(option)
                                 },
                             shape = RoundedCornerShape(14.dp),
-                            color = Color.White,
-                            border = androidx.compose.foundation.BorderStroke(
-                                if (isSelected) 2.dp else 1.dp,
-                                if (isSelected) Color(0xFF2563EB) else Color(0xFFE2E8F0)
-                            )
+                            color = MaterialTheme.colorScheme.surface,
+                            border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF2563EB)) else EtymoTheme.cardBorder()
                         ) {
                             Column(
                                 modifier = Modifier
@@ -139,7 +137,7 @@ fun AppearanceSettingsScreen(
                                 Icon(
                                     imageVector = option.icon,
                                     contentDescription = null,
-                                    tint = if (isSelected) Color(0xFF2563EB) else Color(0xFF64748B),
+                                    tint = if (isSelected) Color(0xFF2563EB) else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(28.dp)
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -147,7 +145,7 @@ fun AppearanceSettingsScreen(
                                     text = option.titleVi,
                                     fontSize = 12.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) Color(0xFF2563EB) else Color(0xFF334155),
+                                    color = if (isSelected) Color(0xFF2563EB) else MaterialTheme.colorScheme.onSurface,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
                                 if (isSelected) {
@@ -169,8 +167,8 @@ fun AppearanceSettingsScreen(
                 // Card Tùy chọn hiển thị chi tiết
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = EtymoTheme.cardBorder(),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -190,12 +188,12 @@ fun AppearanceSettingsScreen(
                                     text = "Màu sắc chủ đạo",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF0F172A)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                     contentDescription = null,
-                                    tint = Color(0xFF94A3B8),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
@@ -232,7 +230,7 @@ fun AppearanceSettingsScreen(
                             }
                         }
 
-                        HorizontalDivider(color = Color(0xFFF1F5F9))
+                        HorizontalDivider(color = EtymoTheme.divider())
 
                         // Kích thước chữ
                         Column {
@@ -240,7 +238,7 @@ fun AppearanceSettingsScreen(
                                 text = "Kích thước chữ (Accessibility)",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF0F172A)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             Row(
@@ -251,8 +249,8 @@ fun AppearanceSettingsScreen(
                                     val isSelected = selectedFontSizeIndex == index
                                     Surface(
                                         shape = RoundedCornerShape(10.dp),
-                                        color = if (isSelected) Color(0xFF2563EB) else Color(0xFFF1F5F9),
-                                        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                        color = if (isSelected) Color(0xFF2563EB) else EtymoTheme.subtleSurface(),
+                                        border = if (isSelected) null else EtymoTheme.cardBorder(),
                                         modifier = Modifier
                                             .weight(1f)
                                             .clickable { selectedFontSizeIndex = index }
@@ -261,7 +259,7 @@ fun AppearanceSettingsScreen(
                                             text = sizeLabel,
                                             fontSize = 12.sp,
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (isSelected) Color.White else Color(0xFF334155),
+                                            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.padding(vertical = 8.dp),
                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                         )
@@ -381,12 +379,13 @@ fun AppearanceSettingsScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     AppLanguage.entries.forEach { lang ->
                         val isChosen = currentLanguage == lang
+                        val isDark = EtymoTheme.isDark()
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = if (isChosen) Color(0xFFEFF6FF) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            color = if (isChosen) (if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.4f) else Color(0xFFEFF6FF)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
-                                if (isChosen) Color(0xFF2563EB) else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                                if (isChosen) Color(0xFF2563EB) else EtymoTheme.divider()
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -407,7 +406,7 @@ fun AppearanceSettingsScreen(
                                     text = lang.title,
                                     fontSize = 14.sp,
                                     fontWeight = if (isChosen) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isChosen) Color(0xFF2563EB) else MaterialTheme.colorScheme.onSurface
+                                    color = if (isChosen) (if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB)) else MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
@@ -436,14 +435,15 @@ fun AppearanceSettingsScreen(
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val isDark = EtymoTheme.isDark()
                     speeds.forEach { (speed, label) ->
                         val isChosen = currentTtsSpeed == speed
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = if (isChosen) Color(0xFFEFF6FF) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            color = if (isChosen) (if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.4f) else Color(0xFFEFF6FF)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
-                                if (isChosen) Color(0xFF2563EB) else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                                if (isChosen) Color(0xFF2563EB) else EtymoTheme.divider()
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -458,7 +458,7 @@ fun AppearanceSettingsScreen(
                                 text = label,
                                 fontSize = 13.sp,
                                 fontWeight = if (isChosen) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isChosen) Color(0xFF2563EB) else MaterialTheme.colorScheme.onSurface,
+                                color = if (isChosen) (if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB)) else MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp)
                             )
                         }
@@ -488,14 +488,15 @@ fun AppearanceSettingsScreen(
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val isDark = EtymoTheme.isDark()
                     formats.forEach { fmt ->
                         val isChosen = selectedHanjaFormat == fmt
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = if (isChosen) Color(0xFFEFF6FF) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            color = if (isChosen) (if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.4f) else Color(0xFFEFF6FF)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
-                                if (isChosen) Color(0xFF2563EB) else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                                if (isChosen) Color(0xFF2563EB) else EtymoTheme.divider()
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -508,7 +509,7 @@ fun AppearanceSettingsScreen(
                                 text = fmt,
                                 fontSize = 13.sp,
                                 fontWeight = if (isChosen) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isChosen) Color(0xFF2563EB) else MaterialTheme.colorScheme.onSurface,
+                                color = if (isChosen) (if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB)) else MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp)
                             )
                         }

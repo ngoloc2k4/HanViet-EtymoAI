@@ -54,6 +54,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import com.hanviet.etymoai.data.hanja.HanjaMasterData
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -313,7 +314,7 @@ fun AiChatScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(top = 8.dp, bottom = 10.dp)
             ) {
                 // Hàng 1: Menu ☰, Logo + Tên App, Trạng thái Offline/Online
@@ -327,7 +328,7 @@ fun AiChatScreen(
                         Icon(
                             imageVector = Icons.Default.Menu,
                             contentDescription = "Menu",
-                            tint = Color(0xFF334155)
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
@@ -342,16 +343,17 @@ fun AiChatScreen(
                         text = "HanViet EtymoAI",
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E293B)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
 
                     // Huy hiệu Chế độ Offline / Online AI (Bấm để chuyển đổi nhanh)
+                    val isDark = EtymoTheme.isDark()
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = if (isOfflineMode) Color(0xFFDCFCE7) else Color(0xFFEEF2FF),
-                        border = BorderStroke(1.dp, if (isOfflineMode) Color(0xFFBBF7D0) else Color(0xFFC7D2FE)),
+                        color = if (isOfflineMode) (if (isDark) Color(0xFF064E3B) else Color(0xFFDCFCE7)) else (if (isDark) Color(0xFF312E81) else Color(0xFFEEF2FF)),
+                        border = BorderStroke(1.dp, if (isOfflineMode) (if (isDark) Color(0xFF059669) else Color(0xFFBBF7D0)) else (if (isDark) Color(0xFF6366F1) else Color(0xFFC7D2FE))),
                         modifier = Modifier
                             .height(28.dp)
                             .clickable { isOfflineMode = !isOfflineMode }
@@ -371,7 +373,7 @@ fun AiChatScreen(
                                 text = if (isOfflineMode) "Offline" else "Online (BYOK)",
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isOfflineMode) Color(0xFF065F46) else Color(0xFF3730A3)
+                                color = if (isOfflineMode) (if (isDark) Color(0xFFA7F3D0) else Color(0xFF065F46)) else (if (isDark) Color(0xFFC7D2FE) else Color(0xFF3730A3))
                             )
                         }
                     }
@@ -393,11 +395,11 @@ fun AiChatScreen(
                             .clickable { isOfflineMode = true },
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isOfflineMode) Color(0xFFF0FDF4) else Color(0xFFF8FAFC)
+                            containerColor = if (isOfflineMode) (if (isDark) Color(0xFF064E3B).copy(alpha = 0.35f) else Color(0xFFF0FDF4)) else MaterialTheme.colorScheme.surface
                         ),
                         border = BorderStroke(
                             width = if (isOfflineMode) 1.5.dp else 1.dp,
-                            color = if (isOfflineMode) Color(0xFF16A34A) else Color(0xFFE2E8F0)
+                            color = if (isOfflineMode) Color(0xFF16A34A) else EtymoTheme.divider()
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = if (isOfflineMode) 2.dp else 0.dp)
                     ) {
@@ -409,26 +411,26 @@ fun AiChatScreen(
                                     text = "Offline 50k",
                                     fontSize = 12.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isOfflineMode) Color(0xFF15803D) else Color(0xFF1E293B)
+                                    color = if (isOfflineMode) (if (isDark) Color(0xFF4ADE80) else Color(0xFF15803D)) else MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             Spacer(modifier = Modifier.height(3.dp))
                             Text(
                                 text = "Chiết tự Hán-Hàn, âm Hán-Việt tức thì không mạng",
                                 fontSize = 10.5.sp,
-                                color = Color(0xFF64748B),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 lineHeight = 14.sp
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = if (isOfflineMode) Color(0xFFDCFCE7) else Color(0xFFE2E8F0)
+                                color = if (isOfflineMode) (if (isDark) Color(0xFF064E3B) else Color(0xFFDCFCE7)) else EtymoTheme.subtleSurface()
                             ) {
                                 Text(
                                     text = if (isOfflineMode) "✓ Đang dùng" else "Bật Offline",
                                     fontSize = 9.5.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = if (isOfflineMode) Color(0xFF15803D) else Color(0xFF64748B),
+                                    color = if (isOfflineMode) (if (isDark) Color(0xFFA7F3D0) else Color(0xFF15803D)) else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
@@ -442,11 +444,11 @@ fun AiChatScreen(
                             .clickable { isOfflineMode = false },
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (!isOfflineMode) Color(0xFFEEF2FF) else Color(0xFFF8FAFC)
+                            containerColor = if (!isOfflineMode) (if (isDark) Color(0xFF312E81).copy(alpha = 0.35f) else Color(0xFFEEF2FF)) else MaterialTheme.colorScheme.surface
                         ),
                         border = BorderStroke(
                             width = if (!isOfflineMode) 1.5.dp else 1.dp,
-                            color = if (!isOfflineMode) Color(0xFF4F46E5) else Color(0xFFE2E8F0)
+                            color = if (!isOfflineMode) Color(0xFF4F46E5) else EtymoTheme.divider()
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = if (!isOfflineMode) 2.dp else 0.dp)
                     ) {
@@ -458,26 +460,26 @@ fun AiChatScreen(
                                     text = "Online AI",
                                     fontSize = 12.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (!isOfflineMode) Color(0xFF4338CA) else Color(0xFF1E293B)
+                                    color = if (!isOfflineMode) (if (isDark) Color(0xFF818CF8) else Color(0xFF4338CA)) else MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             Spacer(modifier = Modifier.height(3.dp))
                             Text(
                                 text = "Hỏi đáp tự do, phân tích ngữ pháp Gemini/OpenAI",
                                 fontSize = 10.5.sp,
-                                color = Color(0xFF64748B),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 lineHeight = 14.sp
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = if (!isOfflineMode) Color(0xFFE0E7FF) else Color(0xFFE2E8F0)
+                                color = if (!isOfflineMode) (if (isDark) Color(0xFF312E81) else Color(0xFFE0E7FF)) else EtymoTheme.subtleSurface()
                             ) {
                                 Text(
                                     text = if (!isOfflineMode) "✓ Đang dùng" else "Bật Online",
                                     fontSize = 9.5.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = if (!isOfflineMode) Color(0xFF4338CA) else Color(0xFF64748B),
+                                    color = if (!isOfflineMode) (if (isDark) Color(0xFFC7D2FE) else Color(0xFF4338CA)) else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
@@ -486,7 +488,7 @@ fun AiChatScreen(
                 }
             }
 
-            HorizontalDivider(color = Color(0xFFE2E8F0))
+            HorizontalDivider(color = EtymoTheme.divider())
 
             // ================= 2. VÙNG NỘI DUNG TIN NHẮN (MESSAGE LIST) =================
             LazyColumn(
@@ -501,7 +503,8 @@ fun AiChatScreen(
                 item {
                     Card(
                         shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = EtymoTheme.cardBorder(),
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -520,14 +523,14 @@ fun AiChatScreen(
                                     text = "Chào bạn!",
                                     fontSize = 14.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Spacer(modifier = Modifier.height(3.dp))
                                 Text(
                                     text = "Mình là trợ lý AI của HanViet EtymoAI. Bạn có thể hỏi bất kỳ từ, câu, ngữ pháp hoặc chủ đề nào liên quan đến tiếng Hàn.",
                                     fontSize = 12.sp,
                                     lineHeight = 18.sp,
-                                    color = Color(0xFF475569)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -543,8 +546,8 @@ fun AiChatScreen(
                         items(starterQuestions) { question ->
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = Color.White,
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                color = MaterialTheme.colorScheme.surface,
+                                border = EtymoTheme.cardBorder(),
                                 modifier = Modifier
                                     .clickable { inputText = question }
                                     .padding(vertical = 2.dp)
@@ -557,7 +560,7 @@ fun AiChatScreen(
                                         text = question,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF334155)
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                             }
@@ -573,9 +576,11 @@ fun AiChatScreen(
                             modifier = Modifier.fillMaxWidth(),
                             contentAlignment = Alignment.CenterEnd
                         ) {
+                            val userBubbleBg = if (EtymoTheme.isDark()) Color(0xFF1E3A8A) else Color(0xFFDBEAFE)
+                            val userBubbleText = if (EtymoTheme.isDark()) Color(0xFFEFF6FF) else Color(0xFF1E3A8A)
                             Surface(
                                 shape = RoundedCornerShape(topStart = 16.dp, topEnd = 4.dp, bottomStart = 16.dp, bottomEnd = 16.dp),
-                                color = Color(0xFFDBEAFE),
+                                color = userBubbleBg,
                                 modifier = Modifier.padding(start = 60.dp)
                             ) {
                                 Column(
@@ -586,20 +591,20 @@ fun AiChatScreen(
                                         text = msg.text,
                                         fontSize = 14.5.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF1E3A8A)
+                                        color = userBubbleText
                                     )
                                     Spacer(modifier = Modifier.height(3.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
                                             text = msg.timestamp,
                                             fontSize = 10.sp,
-                                            color = Color(0xFF64748B)
+                                            color = if (EtymoTheme.isDark()) Color(0xFF93C5FD) else Color(0xFF64748B)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Icon(
                                             imageVector = Icons.Default.DoneAll,
                                             contentDescription = "Đã gửi",
-                                            tint = Color(0xFF2563EB),
+                                            tint = if (EtymoTheme.isDark()) Color(0xFF60A5FA) else Color(0xFF2563EB),
                                             modifier = Modifier.size(13.dp)
                                         )
                                     }
@@ -616,8 +621,8 @@ fun AiChatScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = Color.White,
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                color = MaterialTheme.colorScheme.surface,
+                                border = EtymoTheme.cardBorder(),
                                 modifier = Modifier.padding(vertical = 4.dp)
                             ) {
                                 Row(
@@ -633,7 +638,7 @@ fun AiChatScreen(
                                     Text(
                                         text = "Đang tra cứu từ điển và phân tích...",
                                         fontSize = 12.sp,
-                                        color = Color(0xFF64748B)
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -654,7 +659,8 @@ fun AiChatScreen(
 
                             Card(
                                 shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                border = EtymoTheme.cardBorder(),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -662,7 +668,7 @@ fun AiChatScreen(
                                     Text(
                                         text = msg.text,
                                         fontSize = 13.sp,
-                                        color = Color(0xFF1E293B),
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         lineHeight = 19.sp
                                     )
 
@@ -682,8 +688,8 @@ fun AiChatScreen(
                                     Spacer(modifier = Modifier.height(10.dp))
                                     Surface(
                                         shape = RoundedCornerShape(10.dp),
-                                        color = Color(0xFFF8FAFC),
-                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                        color = EtymoTheme.subtleSurface(),
+                                        border = EtymoTheme.cardBorder(),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Column(modifier = Modifier.padding(10.dp)) {
@@ -737,7 +743,8 @@ fun AiChatScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Card(
                                 shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                border = EtymoTheme.cardBorder(),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -745,7 +752,7 @@ fun AiChatScreen(
                                     Text(
                                         text = msg.text,
                                         fontSize = 13.sp,
-                                        color = Color(0xFF1E293B),
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         lineHeight = 19.sp
                                     )
                                     if (msg.promptApiKey) {
@@ -768,7 +775,7 @@ fun AiChatScreen(
 
             // ================= 3. KHUNG NHẬP LIỆU PHÍA DƯỚI (INPUT BAR) =================
             Surface(
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 8.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -780,7 +787,8 @@ fun AiChatScreen(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(24.dp),
-                        color = Color(0xFFF1F5F9),
+                        color = EtymoTheme.inputBackground(),
+                        border = EtymoTheme.cardBorder(),
                         modifier = Modifier
                             .weight(1f)
                             .height(44.dp)
@@ -793,7 +801,7 @@ fun AiChatScreen(
                                 Text(
                                     text = if (isOfflineMode) "Nhập từ khóa tiếng Hàn để tra cứu offline..." else "Hỏi trợ lý AI bằng tiếng Hàn hoặc tiếng Việt...",
                                     fontSize = 12.5.sp,
-                                    color = Color(0xFF94A3B8)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                                 )
                             }
                             BasicTextField(
@@ -802,7 +810,7 @@ fun AiChatScreen(
                                 singleLine = true,
                                 textStyle = TextStyle(
                                     fontSize = 13.5.sp,
-                                    color = Color(0xFF0F172A)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 ),
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                                 keyboardActions = KeyboardActions(onSend = {
@@ -940,8 +948,8 @@ private fun HanjaSegmentMiniCard(
 ) {
     Surface(
         shape = RoundedCornerShape(8.dp),
-        color = Color(0xFFF8FAFC),
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = EtymoTheme.subtleSurface(),
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -954,14 +962,14 @@ private fun HanjaSegmentMiniCard(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFFEFF6FF))
+                    .background(EtymoTheme.hanjaBoxBg())
             ) {
                 Text(
                     text = hanja,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Serif,
-                    color = Color(0xFF1E3A8A)
+                    color = if (EtymoTheme.isDark()) Color(0xFF93C5FD) else Color(0xFF1E3A8A)
                 )
             }
 
@@ -973,12 +981,12 @@ private fun HanjaSegmentMiniCard(
                         text = "[$hanja]  ($sinoVietnamese)",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = " — $meaning",
                         fontSize = 11.5.sp,
-                        color = Color(0xFF475569),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -986,7 +994,7 @@ private fun HanjaSegmentMiniCard(
                 Text(
                     text = "Âm Hán-Việt: $sinoVietnamese",
                     fontSize = 10.5.sp,
-                    color = Color(0xFF64748B)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -1008,13 +1016,13 @@ private fun KeyValueRow(key: String, value: String) {
             text = key,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF64748B),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(95.dp)
         )
         Text(
             text = value,
             fontSize = 11.5.sp,
-            color = Color(0xFF0F172A),
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
     }
@@ -1031,8 +1039,8 @@ private fun ActionPillButton(
 ) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFF1F5F9),
-        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+        color = EtymoTheme.subtleSurface(),
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier
             .height(28.dp)
             .clickable(onClick = onClick)
@@ -1044,7 +1052,7 @@ private fun ActionPillButton(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = Color(0xFF334155),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(13.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
@@ -1052,7 +1060,7 @@ private fun ActionPillButton(
                 text = label,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF334155)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -1067,7 +1075,7 @@ private fun AiChatBottomNavigationBar(
     onTabSelected: (Int) -> Unit
 ) {
     NavigationBar(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp,
         modifier = Modifier.height(64.dp)
     ) {
@@ -1101,8 +1109,8 @@ private fun AiChatBottomNavigationBar(
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Color(0xFF2563EB),
                     selectedTextColor = Color(0xFF2563EB),
-                    unselectedIconColor = Color(0xFF64748B),
-                    unselectedTextColor = Color(0xFF64748B),
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     indicatorColor = Color.Transparent
                 )
             )

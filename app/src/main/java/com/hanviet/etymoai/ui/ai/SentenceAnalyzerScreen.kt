@@ -38,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -276,7 +277,7 @@ private fun AiGroundingStatusCard() {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -302,7 +303,7 @@ private fun AiGroundingStatusCard() {
                 Text(
                     text = "Hỗ trợ phân tích cấu trúc ngữ pháp, bóc tách thành phần câu và liên kết trực tiếp với dữ liệu từ điển offline.",
                     fontSize = 12.sp,
-                    color = Color(0xFF64748B),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 16.sp
                 )
             }
@@ -318,7 +319,7 @@ private fun ModelOptionsCard() {
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -336,13 +337,13 @@ private fun ModelOptionsCard() {
                         text = "Gemini",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Text(
                     text = "Model: gemini-2.5-flash",
                     fontSize = 11.sp,
-                    color = Color(0xFF64748B)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -350,7 +351,7 @@ private fun ModelOptionsCard() {
                 modifier = Modifier
                     .width(1.dp)
                     .height(26.dp)
-                    .background(Color(0xFFE2E8F0))
+                    .background(EtymoTheme.divider())
             )
 
             Column {
@@ -361,7 +362,7 @@ private fun ModelOptionsCard() {
                         text = "BYOK",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Text(
@@ -386,7 +387,7 @@ private fun SentenceInputBox(
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -403,7 +404,7 @@ private fun SentenceInputBox(
                 textStyle = TextStyle(
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF0F172A),
+                    color = MaterialTheme.colorScheme.onSurface,
                     lineHeight = 22.sp
                 ),
                 decorationBox = { innerTextField ->
@@ -411,7 +412,7 @@ private fun SentenceInputBox(
                         Text(
                             text = "Nhập câu tiếng Hàn hoặc dán đoạn văn bản cần phân tích...\nVí dụ: 오늘은 날씨가 정말 좋네요.",
                             fontSize = 14.sp,
-                            color = Color(0xFF94A3B8),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             lineHeight = 20.sp
                         )
                     }
@@ -426,7 +427,7 @@ private fun SentenceInputBox(
                 Text(
                     text = "${text.length}/1000",
                     fontSize = 11.sp,
-                    color = Color(0xFF94A3B8)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
             }
         }
@@ -487,14 +488,14 @@ private fun QuickExamplesRow(
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                    border = EtymoTheme.cardBorder(),
                     modifier = Modifier.clickable { onSelect(example) }
                 ) {
                     Text(
                         text = example,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF1E293B),
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
@@ -517,7 +518,7 @@ private fun AnalysisResultCard(
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF93C5FD)),
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -538,21 +539,21 @@ private fun AnalysisResultCard(
                         text = "Kết quả phân tích ngữ pháp",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E40AF)
+                        color = if (EtymoTheme.isDark()) Color(0xFF93C5FD) else Color(0xFF1E40AF)
                     )
                 }
 
                 if (engineDisplayName.isNotBlank()) {
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = Color(0xFFEFF6FF),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBFDBFE))
+                        color = if (EtymoTheme.isDark()) Color(0xFF1E3A8A).copy(alpha = 0.35f) else Color(0xFFEFF6FF),
+                        border = EtymoTheme.cardBorder()
                     ) {
                         Text(
                             text = engineDisplayName,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF1D4ED8),
+                            color = if (EtymoTheme.isDark()) Color(0xFF93C5FD) else Color(0xFF1D4ED8),
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
@@ -561,7 +562,8 @@ private fun AnalysisResultCard(
 
             Surface(
                 shape = RoundedCornerShape(10.dp),
-                color = Color(0xFFF8FAFC),
+                color = EtymoTheme.subtleSurface(),
+                border = EtymoTheme.cardBorder(),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(10.dp)) {
@@ -569,26 +571,26 @@ private fun AnalysisResultCard(
                         text = "Bản dịch nghĩa:",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = translatedSentence.ifBlank { "Đang dịch câu..." },
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF0F172A),
+                        color = MaterialTheme.colorScheme.onSurface,
                         lineHeight = 20.sp
                     )
                 }
             }
 
-            HorizontalDivider(color = Color(0xFFF1F5F9))
+            HorizontalDivider(color = EtymoTheme.divider())
 
             Text(
                 text = "Bóc tách thành phần câu & Từ nguyên:",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF64748B)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             segments.forEach { seg ->
@@ -609,14 +611,15 @@ private fun AnalysisResultCard(
                     )
                     Surface(
                         shape = RoundedCornerShape(4.dp),
-                        color = Color(0xFFF1F5F9),
+                        color = EtymoTheme.subtleSurface(),
+                        border = EtymoTheme.cardBorder(),
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
                         Text(
                             text = seg.posTag,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF475569),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                         )
                     }
@@ -624,7 +627,7 @@ private fun AnalysisResultCard(
                         Text(
                             text = seg.explanationVi,
                             fontSize = 12.sp,
-                            color = Color(0xFF334155),
+                            color = MaterialTheme.colorScheme.onSurface,
                             lineHeight = 16.sp
                         )
                         if (!seg.hanjaOriginal.isNullOrBlank()) {
@@ -729,8 +732,8 @@ private fun analyzeSentenceTokens(dbHelper: CoreDatabaseHelper, text: String): L
 private fun AiFeaturesHelpCard() {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFF8FAFC),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = EtymoTheme.subtleSurface(),
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -746,7 +749,7 @@ private fun AiFeaturesHelpCard() {
                     text = "AI có thể giúp gì?",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -770,7 +773,7 @@ private fun AiFeaturesHelpCard() {
                     Text(
                         text = feature,
                         fontSize = 12.sp,
-                        color = Color(0xFF475569),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 16.sp
                     )
                 }

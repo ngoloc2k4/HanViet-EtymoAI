@@ -35,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -97,12 +98,17 @@ fun FirstRunSetupScreen(
         }
     }
 
+    val isDark = EtymoTheme.isDark()
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(
+                    colors = if (isDark) listOf(
+                        Color(0xFF0F172A),
+                        Color(0xFF1E293B),
+                        Color(0xFF0F172A)
+                    ) else listOf(
                         Color(0xFFE0EAFC),
                         Color(0xFFCFDEF3),
                         Color(0xFFF4F7FB)
@@ -117,6 +123,7 @@ fun FirstRunSetupScreen(
                 .padding(16.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = EtymoTheme.cardBorder(),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
@@ -151,13 +158,13 @@ fun FirstRunSetupScreen(
                     text = "HanViet EtymoAI",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
                     text = "Hiểu từ gốc • Giỏi ngôn ngữ • Kết nối văn hóa",
                     fontSize = 12.sp,
-                    color = Color(0xFF64748B),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
 
@@ -167,8 +174,8 @@ fun FirstRunSetupScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    colors = CardDefaults.cardColors(containerColor = EtymoTheme.subtleSurface()),
+                    border = EtymoTheme.cardBorder()
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -184,12 +191,12 @@ fun FirstRunSetupScreen(
                                     text = "Gói Từ điển Lõi NIKL v1.2.0",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
                                     text = "KRDICT Hàn–Việt + 6.500 Hán tự chuẩn (~8.4 MB)",
                                     fontSize = 11.5.sp,
-                                    color = Color(0xFF64748B)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -226,7 +233,7 @@ fun FirstRunSetupScreen(
                                         .height(8.dp)
                                         .clip(RoundedCornerShape(4.dp)),
                                     color = if (isDone) Color(0xFF10B981) else Color(0xFF2563EB),
-                                    trackColor = Color(0xFFE2E8F0)
+                                    trackColor = EtymoTheme.divider()
                                 )
                                 Spacer(modifier = Modifier.height(10.dp))
                                 Row(
@@ -255,7 +262,7 @@ fun FirstRunSetupScreen(
                                     Text(
                                         text = statusText,
                                         fontSize = 12.sp,
-                                        color = if (isDone) Color(0xFF065F46) else Color(0xFF334155),
+                                        color = if (isDone) (if (isDark) Color(0xFFA7F3D0) else Color(0xFF065F46)) else MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontWeight = if (isDone) FontWeight.Bold else FontWeight.Normal,
                                         textAlign = TextAlign.Center
                                     )
@@ -271,8 +278,13 @@ fun FirstRunSetupScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF4)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDCFCE7))
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isDark) Color(0xFF064E3B).copy(alpha = 0.35f) else Color(0xFFF0FDF4)
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        if (isDark) Color(0xFF059669) else Color(0xFFDCFCE7)
+                    )
                 ) {
                     Row(
                         modifier = Modifier.padding(14.dp),
@@ -290,13 +302,13 @@ fun FirstRunSetupScreen(
                                 text = "Tính năng AI hỗ trợ (BYOK - Tùy chọn)",
                                 fontSize = 12.5.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF065F46)
+                                color = if (isDark) Color(0xFFA7F3D0) else Color(0xFF065F46)
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "Tính năng AI giải thích ngữ cảnh là tùy chọn (BYOK). Bạn có thể thiết lập API Key cá nhân sau trong phần Cài đặt.",
                                 fontSize = 11.5.sp,
-                                color = Color(0xFF047857),
+                                color = if (isDark) Color(0xFF86EFAC) else Color(0xFF047857),
                                 lineHeight = 16.sp
                             )
                         }
@@ -312,14 +324,14 @@ fun FirstRunSetupScreen(
                     Icon(
                         imageVector = Icons.Default.Security,
                         contentDescription = null,
-                        tint = Color(0xFF64748B),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "100% Offline-First • Không gửi dữ liệu tra cứu",
                         fontSize = 11.sp,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

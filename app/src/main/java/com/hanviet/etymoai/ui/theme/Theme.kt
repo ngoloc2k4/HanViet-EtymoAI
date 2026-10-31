@@ -11,7 +11,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 
 enum class ThemeModeOption(val titleVi: String, val icon: ImageVector) {
     LIGHT("Sáng", Icons.Default.LightMode),
@@ -106,4 +108,57 @@ fun HanVietTheme(
         colorScheme = colorScheme,
         content = content
     )
+}
+
+object EtymoTheme {
+    @Composable
+    fun isDark(): Boolean = MaterialTheme.colorScheme.background.luminance() < 0.5f
+
+    @Composable
+    fun cardBorder(): androidx.compose.foundation.BorderStroke {
+        return androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (isDark()) Color(0xFF334155) else Color(0xFFE2E8F0)
+        )
+    }
+
+    @Composable
+    fun originBadgeBg(originType: String): Color {
+        return when (originType) {
+            "SINO_KOREAN" -> if (isDark()) Color(0xFF1E3A8A) else Color(0xFFEFF6FF)
+            "NATIVE_KOREAN" -> if (isDark()) Color(0xFF0C4A6E) else Color(0xFFE0F2FE)
+            "LOANWORD" -> if (isDark()) Color(0xFF881337) else Color(0xFFFFF1F2)
+            "MIXED" -> if (isDark()) Color(0xFF064E3B) else Color(0xFFECFDF5)
+            else -> if (isDark()) Color(0xFF334155) else Color(0xFFF1F5F9)
+        }
+    }
+
+    @Composable
+    fun originBadgeText(originType: String): Color {
+        return when (originType) {
+            "SINO_KOREAN" -> if (isDark()) Color(0xFF93C5FD) else Color(0xFF2563EB)
+            "NATIVE_KOREAN" -> if (isDark()) Color(0xFF7DD3FC) else Color(0xFF0284C7)
+            "LOANWORD" -> if (isDark()) Color(0xFFFDA4AF) else Color(0xFFE11D48)
+            "MIXED" -> if (isDark()) Color(0xFF6EE7B7) else Color(0xFF059669)
+            else -> if (isDark()) Color(0xFFCBD5E1) else Color(0xFF475569)
+        }
+    }
+
+    @Composable
+    fun subtleSurface(): Color = if (isDark()) Color(0xFF1E293B) else Color(0xFFF8FAFC)
+
+    @Composable
+    fun inputBackground(): Color = if (isDark()) Color(0xFF1E293B) else Color(0xFFF1F5F9)
+
+    @Composable
+    fun divider(): Color = if (isDark()) Color(0xFF334155) else Color(0xFFF1F5F9)
+
+    @Composable
+    fun border(): Color = if (isDark()) Color(0xFF334155) else Color(0xFFE2E8F0)
+
+    @Composable
+    fun hanjaBoxBg(): Color = if (isDark()) Color(0xFF1E3A8A).copy(alpha = 0.35f) else Color(0xFFEFF6FF)
+
+    @Composable
+    fun hanjaBoxBorder(): Color = if (isDark()) Color(0xFF3B82F6).copy(alpha = 0.5f) else Color(0xFFBFDBFE)
 }

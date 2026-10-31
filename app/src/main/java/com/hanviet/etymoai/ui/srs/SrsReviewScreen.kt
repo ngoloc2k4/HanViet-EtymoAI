@@ -78,6 +78,7 @@ import com.hanviet.etymoai.domain.srs.ReviewRating
 import com.hanviet.etymoai.domain.srs.SrsCard
 import com.hanviet.etymoai.domain.srs.SrsFlashcardData
 import com.hanviet.etymoai.ui.components.rememberBounceScale
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import kotlinx.coroutines.launch
 
 enum class SrsViewMode {
@@ -320,8 +321,8 @@ fun SrsReviewScreen(
 
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = Color.White,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = EtymoTheme.cardBorder(),
                         modifier = Modifier
                             .fillMaxWidth()
                             .graphicsLayer {
@@ -361,7 +362,8 @@ fun SrsReviewScreen(
                     // 6. Thẻ Mẹo ôn tập SRS
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = Color(0xFFF1F5F9),
+                        color = EtymoTheme.subtleSurface(),
+                        border = EtymoTheme.cardBorder(),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -377,19 +379,19 @@ fun SrsReviewScreen(
                                     text = "Mẹo ôn tập SRS",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
                                     text = "Ôn tập đều đặn 5–10 phút mỗi ngày sẽ kích hoạt đường mòn trí nhớ dài hạn hiệu quả nhất!",
                                     fontSize = 12.sp,
-                                    color = Color(0xFF64748B),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     lineHeight = 16.sp
                                 )
                             }
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                 contentDescription = null,
-                                tint = Color(0xFF94A3B8),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -418,7 +420,7 @@ fun SrsReviewScreen(
                             text = "Gợi ý liên tưởng từ nguyên",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
@@ -432,8 +434,8 @@ fun SrsReviewScreen(
                             currentItem.hanjaSegments.forEach { seg ->
                                 Surface(
                                     shape = RoundedCornerShape(10.dp),
-                                    color = Color(0xFFF8FAFC),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                    color = EtymoTheme.subtleSurface(),
+                                    border = EtymoTheme.cardBorder(),
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Column(
@@ -445,7 +447,7 @@ fun SrsReviewScreen(
                                             fontSize = 20.sp,
                                             fontWeight = FontWeight.Bold,
                                             fontFamily = FontFamily.Serif,
-                                            color = Color(0xFF1E3A8A)
+                                            color = if (EtymoTheme.isDark()) Color(0xFF93C5FD) else Color(0xFF1E3A8A)
                                         )
                                         Text(
                                             text = "${seg.syllableKo} • ${seg.readingVi ?: ""}",
@@ -456,7 +458,7 @@ fun SrsReviewScreen(
                                         Text(
                                             text = seg.meaningVi ?: "",
                                             fontSize = 9.sp,
-                                            color = Color(0xFF64748B),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             textAlign = TextAlign.Center
                                         )
                                     }
@@ -467,7 +469,7 @@ fun SrsReviewScreen(
                         Text(
                             text = "Gợi ý: Từ này thuộc nhóm từ vựng cốt lõi. Hãy liên tưởng âm thanh Hangul để gợi nhớ nghĩa.",
                             fontSize = 13.sp,
-                            color = Color(0xFF475569)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -477,14 +479,14 @@ fun SrsReviewScreen(
                             text = "Ngữ cảnh sử dụng:",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF475569)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = currentItem.exampleSentenceKo,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF0F172A)
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
@@ -513,7 +515,7 @@ private fun SrsTopBar(onBackClick: () -> Unit) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Quay lại",
-                        tint = Color(0xFF0F172A)
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
@@ -521,7 +523,7 @@ private fun SrsTopBar(onBackClick: () -> Unit) {
                     text = "Ôn tập & Flashcard",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -529,7 +531,7 @@ private fun SrsTopBar(onBackClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = "Tùy chọn",
-                    tint = Color(0xFF64748B)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -543,8 +545,8 @@ private fun SrsModeSegmentBar(
 ) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -593,7 +595,7 @@ private fun SrsSegmentItem(
             text = label,
             fontSize = 13.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) Color.White else Color(0xFF64748B),
+            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(vertical = 8.dp),
             textAlign = TextAlign.Center
         )
@@ -611,8 +613,8 @@ private fun SrsDailyQuotaCard(
 ) {
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -630,14 +632,14 @@ private fun SrsDailyQuotaCard(
                         text = "Hôm nay",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "$totalDue thẻ cần ôn",
                     fontSize = 12.sp,
-                    color = Color(0xFF64748B)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -645,14 +647,14 @@ private fun SrsDailyQuotaCard(
                 modifier = Modifier
                     .width(1.dp)
                     .height(24.dp)
-                    .background(Color(0xFFE2E8F0))
+                    .background(EtymoTheme.divider())
             )
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "Đã học",
                     fontSize = 11.sp,
-                    color = Color(0xFF64748B)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 AnimatedContent(
                     targetState = reviewedCount,
@@ -674,14 +676,14 @@ private fun SrsDailyQuotaCard(
                 modifier = Modifier
                     .width(1.dp)
                     .height(24.dp)
-                    .background(Color(0xFFE2E8F0))
+                    .background(EtymoTheme.divider())
             )
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "Còn lại",
                     fontSize = 11.sp,
-                    color = Color(0xFF64748B)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 AnimatedContent(
                     targetState = remainingCount,
@@ -724,8 +726,8 @@ private fun Srs3DFlipCard(
 
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier
             .fillMaxWidth()
             .height(290.dp)
@@ -738,6 +740,7 @@ private fun Srs3DFlipCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Nền trang trí Canvas nhẹ
+            val isDark = EtymoTheme.isDark()
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
                 val h = size.height
@@ -748,7 +751,7 @@ private fun Srs3DFlipCard(
                     lineTo(0f, h)
                     close()
                 }
-                drawPath(mountainPath, Color(0xFFF8FAFC))
+                drawPath(mountainPath, if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
             }
 
             if (rotation <= 90f) {
@@ -763,24 +766,19 @@ private fun Srs3DFlipCard(
                     // Huy hiệu nguồn gốc
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = when (item.word.originType) {
-                            "SINO_KOREAN" -> Color(0xFFDBEAFE)
-                            "LOANWORD" -> Color(0xFFFEE2E2)
-                            "NATIVE_KOREAN", "NATIVE" -> Color(0xFFE0F2FE)
-                            else -> Color(0xFFECFDF5)
-                        }
+                        color = EtymoTheme.originBadgeBg(item.word.originType)
                     ) {
-                        val (label, textCol) = when (item.word.originType) {
-                            "SINO_KOREAN" -> Pair("Hán-Hàn [漢]", Color(0xFF1E40AF))
-                            "LOANWORD" -> Pair("Ngoại lai [🌐]", Color(0xFFBE123C))
-                            "NATIVE_KOREAN", "NATIVE" -> Pair("Thuần Hàn [🌱]", Color(0xFF0369A1))
-                            else -> Pair("Hỗn hợp [가]", Color(0xFF047857))
+                        val label = when (item.word.originType) {
+                            "SINO_KOREAN" -> "Hán-Hàn [漢]"
+                            "LOANWORD" -> "Ngoại lai [🌐]"
+                            "NATIVE_KOREAN", "NATIVE" -> "Thuần Hàn [🌱]"
+                            else -> "Hỗn hợp [가]"
                         }
                         Text(
                             text = label,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = textCol,
+                            color = EtymoTheme.originBadgeText(item.word.originType),
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                         )
                     }
@@ -792,7 +790,7 @@ private fun Srs3DFlipCard(
                                 text = item.word.headwordSnapshot,
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             IconButton(
@@ -814,7 +812,7 @@ private fun Srs3DFlipCard(
                                 text = "[${item.word.phoneticSnapshot}]",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = Color(0xFF64748B)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
 
@@ -823,7 +821,7 @@ private fun Srs3DFlipCard(
                             modifier = Modifier
                                 .width(80.dp)
                                 .height(1.dp)
-                                .background(Color(0xFFE2E8F0))
+                                .background(EtymoTheme.divider())
                         )
                         Spacer(modifier = Modifier.height(12.dp))
 
@@ -831,14 +829,14 @@ private fun Srs3DFlipCard(
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = null,
-                                tint = Color(0xFF94A3B8),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "Chạm vào thẻ để lật xem nghĩa",
                                 fontSize = 13.sp,
-                                color = Color(0xFF94A3B8)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                         }
                     }
@@ -852,7 +850,7 @@ private fun Srs3DFlipCard(
                             text = "$currentIndex / $totalCards",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF64748B)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         LinearProgressIndicator(
@@ -862,7 +860,7 @@ private fun Srs3DFlipCard(
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp)),
                             color = Color(0xFF2563EB),
-                            trackColor = Color(0xFFE2E8F0)
+                            trackColor = EtymoTheme.divider()
                         )
                     }
                 }
@@ -894,7 +892,7 @@ private fun Srs3DFlipCard(
                             text = item.word.meaningSnapshot,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A),
+                            color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center,
                             lineHeight = 24.sp
                         )
@@ -905,7 +903,7 @@ private fun Srs3DFlipCard(
                                 text = "Hán-Việt: ${item.word.phoneticSnapshot}",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF1E40AF)
+                                color = if (EtymoTheme.isDark()) Color(0xFF93C5FD) else Color(0xFF1E40AF)
                             )
                         }
 
@@ -914,7 +912,7 @@ private fun Srs3DFlipCard(
                             Text(
                                 text = "Ví dụ: ${item.exampleSentenceKo}",
                                 fontSize = 12.sp,
-                                color = Color(0xFF475569),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,
                                 maxLines = 2
                             )
@@ -925,7 +923,7 @@ private fun Srs3DFlipCard(
                     Text(
                         text = "Chạm để lật lại mặt trước",
                         fontSize = 12.sp,
-                        color = Color(0xFF94A3B8)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -956,13 +954,13 @@ private fun SrsCompletedView(
             text = "Hoàn thành buổi ôn tập!",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF0F172A)
+            color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Bạn đã ôn tập xuất sắc $totalReviewed thẻ vựng hôm nay. Trí nhớ dài hạn đã được củng cố!",
             fontSize = 14.sp,
-            color = Color(0xFF64748B),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             lineHeight = 20.sp
         )

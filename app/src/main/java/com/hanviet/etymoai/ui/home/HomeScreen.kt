@@ -71,6 +71,7 @@ import com.hanviet.etymoai.ui.components.KoreanJamoKeyboardBottomSheet
 import com.hanviet.etymoai.ui.components.OfflineStatusPill
 import com.hanviet.etymoai.ui.components.VoiceSearchOverlay
 import com.hanviet.etymoai.ui.components.rememberBounceScale
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -206,14 +207,14 @@ fun HomeScreen(
                                         text = "HanViet",
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.ExtraBold,
-                                        color = Color(0xFF1E293B)
+                                        color = MaterialTheme.colorScheme.onBackground
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = "EtymoAI",
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF475569)
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -226,13 +227,13 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .size(32.dp)
                                     .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.8f))
+                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
                                     .clickable { onOpenSettings() }
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Settings,
                                     contentDescription = "Cài đặt",
-                                    tint = Color(0xFF334155),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -254,7 +255,7 @@ fun HomeScreen(
                             text = "Hiểu từ gốc • Giỏi ngôn ngữ • Kết nối văn hóa",
                             fontSize = 11.5.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF475569),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 46.dp)
                         )
                     }
@@ -283,7 +284,7 @@ fun HomeScreen(
                 item {
                     Card(
                         shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -294,7 +295,7 @@ fun HomeScreen(
                                 text = "Kết quả tìm kiếm cho \"$searchQuery\":",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF64748B)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             searchResults.take(6).forEach { result ->
@@ -311,7 +312,7 @@ fun HomeScreen(
                                                 text = result.headwordNfc,
                                                 fontSize = 15.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF0F172A)
+                                                color = MaterialTheme.colorScheme.onSurface
                                             )
                                             if (!result.phoneticVi.isNullOrBlank()) {
                                                 Spacer(modifier = Modifier.width(6.dp))
@@ -325,7 +326,7 @@ fun HomeScreen(
                                         Text(
                                             text = result.primaryMeaningVi,
                                             fontSize = 12.sp,
-                                            color = Color(0xFF64748B),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
@@ -333,10 +334,10 @@ fun HomeScreen(
                                     Icon(
                                         imageVector = Icons.Default.KeyboardArrowRight,
                                         contentDescription = null,
-                                        tint = Color(0xFF94A3B8)
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                             }
                         }
                     }
@@ -361,8 +362,8 @@ fun HomeScreen(
                     items(chips) { chipText ->
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = Color.White,
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = EtymoTheme.cardBorder(),
                             modifier = Modifier
                                 .height(26.dp)
                                 .clickable {
@@ -387,7 +388,7 @@ fun HomeScreen(
                                             text = chipText.substring(2),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Color(0xFF1E293B)
+                                            color = MaterialTheme.colorScheme.onSurface
                                         )
                                     }
                                 } else {
@@ -395,7 +396,7 @@ fun HomeScreen(
                                         text = chipText,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF1E293B)
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                             }
@@ -492,7 +493,8 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Card(
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = EtymoTheme.cardBorder(),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -507,7 +509,7 @@ fun HomeScreen(
                             Icon(
                                 imageVector = Icons.Default.History,
                                 contentDescription = null,
-                                tint = Color(0xFF334155),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -515,7 +517,7 @@ fun HomeScreen(
                                 text = "Tra cứu gần đây",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -527,14 +529,14 @@ fun HomeScreen(
                                         Icon(
                                             imageVector = Icons.Default.DeleteOutline,
                                             contentDescription = "Xóa lịch sử",
-                                            tint = Color(0xFF94A3B8),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(14.dp)
                                         )
                                         Spacer(modifier = Modifier.width(3.dp))
                                         Text(
                                             text = "Xóa",
                                             fontSize = 11.5.sp,
-                                            color = Color(0xFF94A3B8)
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                     Spacer(modifier = Modifier.width(10.dp))
@@ -560,7 +562,7 @@ fun HomeScreen(
                         }
 
                         Spacer(modifier = Modifier.height(10.dp))
-                        HorizontalDivider(color = Color(0xFFF1F5F9))
+                        HorizontalDivider(color = EtymoTheme.divider())
 
                         if (recentSearches.isEmpty()) {
                             // Khi chưa có lịch sử, thông báo tinh tế
@@ -576,7 +578,7 @@ fun HomeScreen(
                                     Text(
                                         text = "Chưa có lịch sử tra cứu gần đây.\nBắt đầu gõ từ bất kỳ để khám phá từ nguyên!",
                                         fontSize = 12.sp,
-                                        color = Color(0xFF94A3B8),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         textAlign = TextAlign.Center,
                                         lineHeight = 17.sp
                                     )
@@ -593,7 +595,7 @@ fun HomeScreen(
                                 )
                                 if (index < minOf(recentSearches.size, 5) - 1) {
                                     HorizontalDivider(
-                                        color = Color(0xFFF1F5F9),
+                                        color = EtymoTheme.divider(),
                                         modifier = Modifier.padding(start = 44.dp)
                                     )
                                 }
@@ -606,9 +608,10 @@ fun HomeScreen(
             // ================= 7. THẺ KHÁM PHÁ (EXPLORE PROMO BANNER) =================
             item {
                 Spacer(modifier = Modifier.height(14.dp))
+                val isDark = EtymoTheme.isDark()
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                    border = BorderStroke(1.dp, if (isDark) Color(0xFF334155) else Color(0xFFBFDBFE)),
                     color = Color.Transparent,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -621,7 +624,11 @@ fun HomeScreen(
                             .fillMaxWidth()
                             .background(
                                 Brush.horizontalGradient(
-                                    listOf(Color(0xFFE0EFFE), Color(0xFFE8F1FF))
+                                    if (isDark) {
+                                        listOf(Color(0xFF1E293B), Color(0xFF1E3A8A).copy(alpha = 0.5f))
+                                    } else {
+                                        listOf(Color(0xFFE0EFFE), Color(0xFFE8F1FF))
+                                    }
                                 )
                             )
                             .padding(horizontal = 14.dp, vertical = 10.dp)
@@ -636,12 +643,12 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .size(32.dp)
                                     .clip(CircleShape)
-                                    .background(Color.White)
+                                    .background(if (isDark) Color(0xFF0F172A) else Color.White)
                             ) {
                                 Text(
                                     text = "✦",
                                     fontSize = 15.sp,
-                                    color = Color(0xFF2563EB),
+                                    color = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -653,12 +660,12 @@ fun HomeScreen(
                                     text = "Khám phá HanViet EtymoAI",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1E3A8A)
+                                    color = if (isDark) MaterialTheme.colorScheme.onSurface else Color(0xFF1E3A8A)
                                 )
                                 Text(
                                     text = "Từ điển thông minh • Offline-first • Mã nguồn mở",
                                     fontSize = 10.5.sp,
-                                    color = Color(0xFF3B82F6)
+                                    color = if (isDark) Color(0xFF93C5FD) else Color(0xFF3B82F6)
                                 )
                             }
 
@@ -666,7 +673,7 @@ fun HomeScreen(
                                 text = "›",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2563EB)
+                                color = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB)
                             )
                         }
                     }
@@ -701,7 +708,7 @@ fun HomeScreen(
                     text = "Gói Dữ Liệu Offline NIKL",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             },
             text = {
@@ -715,12 +722,12 @@ fun HomeScreen(
                     Text(
                         text = "• 52.000+ mục từ tiếng Hàn – Việt",
                         fontSize = 12.5.sp,
-                        color = Color(0xFF334155)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "• 6.500+ chữ Hán chiết tự (Hanja master)",
                         fontSize = 12.5.sp,
-                        color = Color(0xFF334155)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "• Tìm kiếm FTS5 tức thì 0ms (Không cần internet)",
@@ -730,7 +737,7 @@ fun HomeScreen(
                     Text(
                         text = "• Giấy phép: CC BY-SA 2.0 KR (Viện Quốc ngữ Hàn Quốc)",
                         fontSize = 11.5.sp,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             },
@@ -772,7 +779,7 @@ private fun RealSearchHistoryRow(
             modifier = Modifier
                 .size(32.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFEFF6FF))
+                .background(EtymoTheme.hanjaBoxBg())
         ) {
             Text(text = contextIcon, fontSize = 14.sp)
         }
@@ -785,13 +792,13 @@ private fun RealSearchHistoryRow(
                 text = item.queryText,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+                color = MaterialTheme.colorScheme.onSurface
             )
             val resultNote = if (item.resultCount > 0) "${item.resultCount} kết quả" else "Tra cứu gần đây"
             Text(
                 text = resultNote,
                 fontSize = 11.5.sp,
-                color = Color(0xFF64748B)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -816,7 +823,7 @@ private fun RealSearchHistoryRow(
             Icon(
                 imageVector = Icons.Default.DeleteOutline,
                 contentDescription = "Xóa",
-                tint = Color(0xFF94A3B8),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -826,7 +833,7 @@ private fun RealSearchHistoryRow(
             text = "›",
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF94A3B8)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -850,10 +857,12 @@ private fun QuickTranslationCard(
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val isDark = EtymoTheme.isDark()
 
     Card(
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = EtymoTheme.cardBorder(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = modifier
             .fillMaxWidth()
@@ -869,13 +878,13 @@ private fun QuickTranslationCard(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFEFF6FF)),
+                        .background(EtymoTheme.hanjaBoxBg()),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Translate,
                         contentDescription = null,
-                        tint = Color(0xFF2563EB),
+                        tint = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB),
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -885,19 +894,20 @@ private fun QuickTranslationCard(
                         text = "Dịch thuật nhanh",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = if (isKoToVi) "Tiếng Hàn ➔ Tiếng Việt" else "Tiếng Việt ➔ Tiếng Hàn",
                         fontSize = 11.sp,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 // Switch language direction button
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFF1F5F9),
+                    color = EtymoTheme.subtleSurface(),
+                    border = BorderStroke(1.dp, EtymoTheme.border()),
                     modifier = Modifier
                         .clickable { isKoToVi = !isKoToVi }
                         .padding(2.dp)
@@ -909,7 +919,7 @@ private fun QuickTranslationCard(
                         Icon(
                             imageVector = Icons.Default.SwapHoriz,
                             contentDescription = "Đổi hướng dịch",
-                            tint = Color(0xFF2563EB),
+                            tint = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -917,7 +927,7 @@ private fun QuickTranslationCard(
                             text = if (isKoToVi) "KO ⇄ VI" else "VI ⇄ KO",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF2563EB)
+                            color = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB)
                         )
                     }
                 }
@@ -936,10 +946,14 @@ private fun QuickTranslationCard(
                 )
                 engines.forEach { (engine, label) ->
                     val isSelected = selectedEngine == engine
+                    val selectedBg = if (isDark) Color(0xFF1E3A8A) else Color(0xFFDBEAFE)
+                    val unselectedBg = EtymoTheme.subtleSurface()
+                    val selectedText = if (isDark) Color(0xFF93C5FD) else Color(0xFF1D4ED8)
+                    val unselectedText = MaterialTheme.colorScheme.onSurfaceVariant
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = if (isSelected) Color(0xFFDBEAFE) else Color(0xFFF8FAFC),
-                        border = BorderStroke(1.dp, if (isSelected) Color(0xFF2563EB) else Color(0xFFE2E8F0)),
+                        color = if (isSelected) selectedBg else unselectedBg,
+                        border = BorderStroke(1.dp, if (isSelected) Color(0xFF2563EB) else EtymoTheme.border()),
                         modifier = Modifier
                             .weight(1f)
                             .height(30.dp)
@@ -950,7 +964,7 @@ private fun QuickTranslationCard(
                                 text = label,
                                 fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) Color(0xFF1D4ED8) else Color(0xFF64748B)
+                                color = if (isSelected) selectedText else unselectedText
                             )
                         }
                     }
@@ -962,8 +976,8 @@ private fun QuickTranslationCard(
             // Text Input Box
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFF8FAFC),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                color = EtymoTheme.subtleSurface(),
+                border = BorderStroke(1.dp, EtymoTheme.border()),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(10.dp)) {
@@ -975,7 +989,7 @@ private fun QuickTranslationCard(
                         },
                         textStyle = TextStyle(
                             fontSize = 13.5.sp,
-                            color = Color(0xFF0F172A),
+                            color = MaterialTheme.colorScheme.onSurface,
                             lineHeight = 20.sp
                         ),
                         cursorBrush = SolidColor(Color(0xFF2563EB)),
@@ -984,7 +998,7 @@ private fun QuickTranslationCard(
                                 Text(
                                     text = if (isKoToVi) "Nhập câu tiếng Hàn cần dịch..." else "Nhập câu tiếng Việt cần dịch sang tiếng Hàn...",
                                     fontSize = 12.5.sp,
-                                    color = Color(0xFF94A3B8)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             innerTextField()
@@ -1007,7 +1021,7 @@ private fun QuickTranslationCard(
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Xoá",
-                                    tint = Color(0xFF94A3B8),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
@@ -1065,8 +1079,8 @@ private fun QuickTranslationCard(
                 Spacer(modifier = Modifier.height(10.dp))
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFEFF6FF),
-                    border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                    color = EtymoTheme.hanjaBoxBg(),
+                    border = BorderStroke(1.dp, EtymoTheme.hanjaBoxBorder()),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
@@ -1078,7 +1092,7 @@ private fun QuickTranslationCard(
                                 text = "Bản dịch:",
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF1D4ED8)
+                                color = if (isDark) Color(0xFF93C5FD) else Color(0xFF1D4ED8)
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             IconButton(
@@ -1091,7 +1105,7 @@ private fun QuickTranslationCard(
                                 Icon(
                                     imageVector = Icons.Default.ContentCopy,
                                     contentDescription = "Sao chép",
-                                    tint = Color(0xFF2563EB),
+                                    tint = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB),
                                     modifier = Modifier.size(15.dp)
                                 )
                             }
@@ -1102,7 +1116,7 @@ private fun QuickTranslationCard(
                             text = translatedText,
                             fontSize = 13.5.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF0F172A),
+                            color = MaterialTheme.colorScheme.onSurface,
                             lineHeight = 20.sp
                         )
 
@@ -1118,7 +1132,7 @@ private fun QuickTranslationCard(
                                 Icon(
                                     imageVector = Icons.Default.AccountTree,
                                     contentDescription = null,
-                                    tint = Color(0xFF2563EB),
+                                    tint = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB),
                                     modifier = Modifier.size(14.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
@@ -1126,7 +1140,7 @@ private fun QuickTranslationCard(
                                     text = "Phân tích ngữ pháp",
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF2563EB)
+                                    color = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB)
                                 )
                             }
                         }
@@ -1156,7 +1170,8 @@ private fun FeatureCard(
 
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = EtymoTheme.cardBorder(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = modifier
             .height(100.dp)
@@ -1228,7 +1243,7 @@ private fun FeatureCard(
                     text = "›",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF94A3B8)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -1239,7 +1254,7 @@ private fun FeatureCard(
                 text = title,
                 fontSize = 11.5.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A),
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1248,7 +1263,7 @@ private fun FeatureCard(
             Text(
                 text = subtitle,
                 fontSize = 9.sp,
-                color = Color(0xFF64748B),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1270,7 +1285,8 @@ private fun FloatingSearchBar(
 ) {
     Surface(
         shape = RoundedCornerShape(25.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder(),
         shadowElevation = 8.dp,
         modifier = modifier
             .fillMaxWidth()
@@ -1286,7 +1302,7 @@ private fun FloatingSearchBar(
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "Tìm kiếm",
-                tint = Color(0xFF64748B),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
 
@@ -1298,7 +1314,7 @@ private fun FloatingSearchBar(
                     Text(
                         text = "Nhập từ, câu tiếng Hàn, Hán-Việt hoặc tiếng Việt...",
                         fontSize = 12.sp,
-                        color = Color(0xFF94A3B8),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -1310,7 +1326,7 @@ private fun FloatingSearchBar(
                     textStyle = TextStyle(
                         fontSize = 13.5.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = { onSearchSubmit() }),
@@ -1327,7 +1343,7 @@ private fun FloatingSearchBar(
                 Icon(
                     imageVector = Icons.Default.Keyboard,
                     contentDescription = "Bàn phím Jamo tiếng Hàn",
-                    tint = Color(0xFF64748B),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -1354,7 +1370,7 @@ private fun FloatingSearchBar(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Xoá",
-                        tint = Color(0xFF64748B),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -1372,7 +1388,7 @@ private fun HomeBottomNavigationBar(
     onTabSelected: (Int) -> Unit
 ) {
     NavigationBar(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp,
         modifier = Modifier.height(64.dp)
     ) {
@@ -1404,10 +1420,10 @@ private fun HomeBottomNavigationBar(
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFF2563EB),
-                    selectedTextColor = Color(0xFF2563EB),
-                    unselectedIconColor = Color(0xFF64748B),
-                    unselectedTextColor = Color(0xFF64748B),
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     indicatorColor = Color.Transparent
                 )
             )

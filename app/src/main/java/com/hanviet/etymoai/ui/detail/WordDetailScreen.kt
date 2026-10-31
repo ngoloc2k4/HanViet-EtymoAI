@@ -59,6 +59,7 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -436,7 +437,7 @@ private fun WordDetailTopBar(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Quay lại",
-                            tint = Color(0xFF0F172A)
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
@@ -446,7 +447,7 @@ private fun WordDetailTopBar(
                         text = "Chi tiết từ",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
@@ -455,7 +456,7 @@ private fun WordDetailTopBar(
                         Icon(
                             imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                             contentDescription = "Lưu từ",
-                            tint = if (isBookmarked) Color(0xFF2563EB) else Color(0xFF64748B)
+                            tint = if (isBookmarked) Color(0xFF2563EB) else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -463,7 +464,7 @@ private fun WordDetailTopBar(
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "Tùy chọn",
-                            tint = Color(0xFF64748B)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -486,8 +487,8 @@ private fun HeroSummaryCard(
             .fillMaxWidth()
             .shadow(3.dp, RoundedCornerShape(16.dp), spotColor = Color(0x1A0F172A)),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder()
     ) {
         Column(
             modifier = Modifier
@@ -532,20 +533,20 @@ private fun HeroSummaryCard(
                             text = word.headword,
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         Spacer(modifier = Modifier.width(8.dp))
 
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = Color(0xFFDBEAFE)
+                            color = EtymoTheme.originBadgeBg(word.originType.name)
                         ) {
                             Text(
                                 text = word.originType.titleVi,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF1E40AF),
+                                color = EtymoTheme.originBadgeText(word.originType.name),
                                 modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
                             )
                         }
@@ -566,7 +567,7 @@ private fun HeroSummaryCard(
                             text = pronunciationDisplay,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF64748B)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         Spacer(modifier = Modifier.width(4.dp))
@@ -591,7 +592,7 @@ private fun HeroSummaryCard(
                         text = meaningDisplay,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF334155),
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -599,7 +600,7 @@ private fun HeroSummaryCard(
             }
 
             Spacer(modifier = Modifier.height(14.dp))
-            HorizontalDivider(color = Color(0xFFF1F5F9))
+            HorizontalDivider(color = EtymoTheme.divider())
             Spacer(modifier = Modifier.height(12.dp))
 
             // Thanh 3 thông số xác thực: 📖 Từ loại | 📊 Cấp độ | 🛡️ Nguồn
@@ -616,7 +617,7 @@ private fun HeroSummaryCard(
                         text = word.partOfSpeech ?: "Từ vựng",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF475569)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -624,7 +625,7 @@ private fun HeroSummaryCard(
                     modifier = Modifier
                         .width(1.dp)
                         .height(14.dp)
-                        .background(Color(0xFFE2E8F0))
+                        .background(EtymoTheme.divider())
                 )
 
                 // Thông số 2
@@ -635,7 +636,7 @@ private fun HeroSummaryCard(
                         text = "Trung cấp",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF475569)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -643,7 +644,7 @@ private fun HeroSummaryCard(
                     modifier = Modifier
                         .width(1.dp)
                         .height(14.dp)
-                        .background(Color(0xFFE2E8F0))
+                        .background(EtymoTheme.divider())
                 )
 
                 // Thông số 3: Huy hiệu bảo chứng KRDICT
@@ -690,7 +691,7 @@ private fun WordDetailInternalTabs(
             )
         },
         divider = {
-            HorizontalDivider(color = Color(0xFFE2E8F0))
+            HorizontalDivider(color = EtymoTheme.divider())
         }
     ) {
         tabs.forEachIndexed { index, title ->
@@ -703,7 +704,7 @@ private fun WordDetailInternalTabs(
                         text = title,
                         fontSize = 13.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color(0xFF2563EB) else Color(0xFF64748B)
+                        color = if (isSelected) (if (EtymoTheme.isDark()) Color(0xFF60A5FA) else Color(0xFF2563EB)) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             )
@@ -721,13 +722,14 @@ private fun VisualMorphemeEquationCard(
     word: WordEtymology,
     onHanjaClick: (String) -> Unit
 ) {
+    val isDark = EtymoTheme.isDark()
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0x140F172A)),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder()
     ) {
         Column(
             modifier = Modifier
@@ -743,7 +745,7 @@ private fun VisualMorphemeEquationCard(
                     text = "Phân tích từ nguyên",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -770,7 +772,7 @@ private fun VisualMorphemeEquationCard(
                                 text = "+",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF94A3B8),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 4.dp)
                             )
                         }
@@ -780,8 +782,8 @@ private fun VisualMorphemeEquationCard(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFF8FAFC),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    color = EtymoTheme.subtleSurface(),
+                    border = EtymoTheme.cardBorder()
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),
@@ -792,7 +794,7 @@ private fun VisualMorphemeEquationCard(
                         Text(
                             text = "Từ vựng thuộc nhóm ${word.originType.titleVi}, không cấu tạo từ các thành tố Hán tự.",
                             fontSize = 12.5.sp,
-                            color = Color(0xFF475569)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -804,8 +806,8 @@ private fun VisualMorphemeEquationCard(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFFFFBEB),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFDE68A))
+                color = if (isDark) Color(0xFF78350F).copy(alpha = 0.25f) else Color(0xFFFFFBEB),
+                border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) Color(0xFFB45309).copy(alpha = 0.5f) else Color(0xFFFDE68A))
             ) {
                 Column(
                     modifier = Modifier
@@ -819,7 +821,7 @@ private fun VisualMorphemeEquationCard(
                             text = "Ý nghĩa tổng hợp",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF92400E)
+                            color = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E)
                         )
                     }
 
@@ -834,7 +836,7 @@ private fun VisualMorphemeEquationCard(
                     Text(
                         text = word.adaptationNote ?: defaultNote,
                         fontSize = 13.sp,
-                        color = Color(0xFF78350F),
+                        color = if (isDark) Color(0xFFFEF3C7) else Color(0xFF78350F),
                         lineHeight = 18.sp
                     )
                 }
@@ -852,13 +854,14 @@ private fun MorphemeSegmentBox(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isDark = EtymoTheme.isDark()
     Surface(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(10.dp),
-        color = Color(0xFFF8FAFC),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        color = EtymoTheme.subtleSurface(),
+        border = EtymoTheme.cardBorder()
     ) {
         Column(
             modifier = Modifier
@@ -872,7 +875,7 @@ private fun MorphemeSegmentBox(
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Serif,
-                color = Color(0xFF1E3A8A)
+                color = if (isDark) Color(0xFF93C5FD) else Color(0xFF1E3A8A)
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -882,7 +885,7 @@ private fun MorphemeSegmentBox(
                 text = "${segment.syllableKo} • ${segment.readingVi ?: ""}",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF2563EB)
+                color = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB)
             )
 
             Spacer(modifier = Modifier.height(2.dp))
@@ -891,7 +894,7 @@ private fun MorphemeSegmentBox(
             Text(
                 text = segment.meaningVi ?: "",
                 fontSize = 10.sp,
-                color = Color(0xFF64748B),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -913,8 +916,8 @@ private fun DictionaryInfoCard(
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0x140F172A)),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder()
     ) {
         Column(
             modifier = Modifier
@@ -928,7 +931,7 @@ private fun DictionaryInfoCard(
                     text = "Thông tin từ điển",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -965,6 +968,7 @@ private fun DictionaryInfoRow(
     isHanja: Boolean = false,
     isHighlight: Boolean = false
 ) {
+    val isDark = EtymoTheme.isDark()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -974,14 +978,14 @@ private fun DictionaryInfoRow(
         Text(
             text = label,
             fontSize = 13.sp,
-            color = Color(0xFF64748B),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(115.dp)
         )
 
         Text(
             text = ":",
             fontSize = 13.sp,
-            color = Color(0xFF94A3B8),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
 
@@ -990,7 +994,7 @@ private fun DictionaryInfoRow(
             fontSize = if (isHanja) 15.sp else 13.sp,
             fontWeight = if (isHighlight || isHanja) FontWeight.Bold else FontWeight.Medium,
             fontFamily = if (isHanja) FontFamily.Serif else FontFamily.Default,
-            color = if (isHighlight) Color(0xFF2563EB) else Color(0xFF1E293B),
+            color = if (isHighlight) (if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB)) else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
     }
@@ -1012,14 +1016,14 @@ private fun DictionaryInfoPronounceRow(
         Text(
             text = label,
             fontSize = 13.sp,
-            color = Color(0xFF64748B),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(115.dp)
         )
 
         Text(
             text = ":",
             fontSize = 13.sp,
-            color = Color(0xFF94A3B8),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
 
@@ -1031,7 +1035,7 @@ private fun DictionaryInfoPronounceRow(
                 text = "$hangul / $roman",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF1E293B)
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.width(6.dp))
@@ -1065,8 +1069,8 @@ private fun OriginAndRelatedCard(
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0x140F172A)),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder()
     ) {
         Column(
             modifier = Modifier
@@ -1080,7 +1084,7 @@ private fun OriginAndRelatedCard(
                     text = "Từ vựng liên quan & Cùng gốc",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -1091,7 +1095,7 @@ private fun OriginAndRelatedCard(
                     text = "Từ có chung Hán tự gốc (${word.relatedWords.size}):",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF334155)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -1099,8 +1103,8 @@ private fun OriginAndRelatedCard(
                     word.relatedWords.forEach { rel ->
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFF8FAFC),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            color = EtymoTheme.subtleSurface(),
+                            border = EtymoTheme.cardBorder(),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onWordClick(rel.lexemeId) }
@@ -1118,7 +1122,7 @@ private fun OriginAndRelatedCard(
                                             text = rel.headword,
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 15.sp,
-                                            color = Color(0xFF0F172A)
+                                            color = MaterialTheme.colorScheme.onSurface
                                         )
                                         if (!rel.phoneticVi.isNullOrBlank()) {
                                             Spacer(modifier = Modifier.width(6.dp))
@@ -1126,7 +1130,7 @@ private fun OriginAndRelatedCard(
                                                 text = "• ${rel.phoneticVi}",
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Medium,
-                                                color = Color(0xFF2563EB)
+                                                color = if (EtymoTheme.isDark()) Color(0xFF60A5FA) else Color(0xFF2563EB)
                                             )
                                         }
                                     }
@@ -1134,7 +1138,7 @@ private fun OriginAndRelatedCard(
                                     Text(
                                         text = rel.meaningVi,
                                         fontSize = 12.sp,
-                                        color = Color(0xFF64748B),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1,
                                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                     )
@@ -1142,7 +1146,7 @@ private fun OriginAndRelatedCard(
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                     contentDescription = null,
-                                    tint = Color(0xFF94A3B8),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
@@ -1157,7 +1161,7 @@ private fun OriginAndRelatedCard(
                 text = "Cụm từ tra cứu nhanh:",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF64748B)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -1171,15 +1175,15 @@ private fun OriginAndRelatedCard(
                 chips.forEach { chipText ->
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFF1F5F9),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                        color = EtymoTheme.subtleSurface(),
+                        border = EtymoTheme.cardBorder(),
                         modifier = Modifier.clickable { onChipClick(chipText) }
                     ) {
                         Text(
                             text = chipText,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF1E293B),
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                         )
                     }
@@ -1202,8 +1206,8 @@ private fun ExampleSentenceCard(
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0x140F172A)),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder()
     ) {
         Column(
             modifier = Modifier
@@ -1222,19 +1226,19 @@ private fun ExampleSentenceCard(
                         text = "Ví dụ câu ngữ cảnh",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFEFF6FF)
+                    color = EtymoTheme.hanjaBoxBg()
                 ) {
                     Text(
                         text = "${examples.size} câu",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF2563EB),
+                        color = if (EtymoTheme.isDark()) Color(0xFF93C5FD) else Color(0xFF2563EB),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }
@@ -1245,7 +1249,7 @@ private fun ExampleSentenceCard(
             examples.forEachIndexed { idx, ex ->
                 if (idx > 0) {
                     HorizontalDivider(
-                        color = Color(0xFFF1F5F9),
+                        color = EtymoTheme.divider(),
                         modifier = Modifier.padding(vertical = 10.dp)
                     )
                 }
@@ -1260,14 +1264,14 @@ private fun ExampleSentenceCard(
                             text = ex.korean,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF0F172A),
+                            color = MaterialTheme.colorScheme.onSurface,
                             lineHeight = 20.sp
                         )
                         Spacer(modifier = Modifier.height(3.dp))
                         Text(
                             text = ex.vietnamese,
                             fontSize = 13.sp,
-                            color = Color(0xFF475569),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             lineHeight = 18.sp
                         )
                     }
@@ -1294,13 +1298,14 @@ private fun ExampleSentenceCard(
  */
 @Composable
 private fun EtymologyAdaptationCard(word: WordEtymology) {
+    val isDark = EtymoTheme.isDark()
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0x140F172A)),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder()
     ) {
         Column(
             modifier = Modifier
@@ -1314,7 +1319,7 @@ private fun EtymologyAdaptationCard(word: WordEtymology) {
                     text = "Quy tắc ngữ âm & Thích ứng chuyển ngữ",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -1322,7 +1327,7 @@ private fun EtymologyAdaptationCard(word: WordEtymology) {
 
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = Color(0xFFFEF3C7),
+                color = if (isDark) Color(0xFF78350F).copy(alpha = 0.3f) else Color(0xFFFEF3C7),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -1335,7 +1340,7 @@ private fun EtymologyAdaptationCard(word: WordEtymology) {
                         text = "Chứng nhận: ${word.verificationStatus.badgeLabel}",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF92400E)
+                        color = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E)
                     )
                 }
             }
@@ -1351,7 +1356,7 @@ private fun EtymologyAdaptationCard(word: WordEtymology) {
             Text(
                 text = note,
                 fontSize = 13.sp,
-                color = Color(0xFF334155),
+                color = MaterialTheme.colorScheme.onSurface,
                 lineHeight = 20.sp
             )
         }
@@ -1429,7 +1434,7 @@ private fun BottomActionArea(
             SecondaryActionButton(
                 icon = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                 label = if (isBookmarked) "Đã lưu" else "Lưu từ",
-                tint = if (isBookmarked) Color(0xFF2563EB) else Color(0xFF475569),
+                tint = if (isBookmarked) Color(0xFF2563EB) else MaterialTheme.colorScheme.onSurfaceVariant,
                 onClick = onBookmark,
                 modifier = Modifier.weight(1f)
             )
@@ -1438,7 +1443,7 @@ private fun BottomActionArea(
             SecondaryActionButton(
                 icon = Icons.Default.Style,
                 label = "Tạo flashcard",
-                tint = Color(0xFF475569),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 onClick = onFlashcard,
                 modifier = Modifier.weight(1f)
             )
@@ -1447,7 +1452,7 @@ private fun BottomActionArea(
             SecondaryActionButton(
                 icon = Icons.Default.Share,
                 label = "Chia sẻ",
-                tint = Color(0xFF475569),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 onClick = onShare,
                 modifier = Modifier.weight(1f)
             )
@@ -1468,8 +1473,8 @@ private fun SecondaryActionButton(
             .clip(RoundedCornerShape(10.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(10.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1))
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder()
     ) {
         Row(
             modifier = Modifier
@@ -1502,8 +1507,9 @@ private fun SecondaryActionButton(
 private fun WordDetailBottomBar(
     onTabClick: (Int) -> Unit
 ) {
+    val isDark = EtymoTheme.isDark()
     NavigationBar(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp
     ) {
         val navItems = listOf(
@@ -1535,11 +1541,11 @@ private fun WordDetailBottomBar(
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFF2563EB),
-                    selectedTextColor = Color(0xFF2563EB),
-                    indicatorColor = Color(0xFFDBEAFE),
-                    unselectedIconColor = Color(0xFF64748B),
-                    unselectedTextColor = Color(0xFF64748B)
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    indicatorColor = if (isDark) Color(0xFF1E3A8A) else Color(0xFFDBEAFE),
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }
@@ -1556,6 +1562,7 @@ private fun EtymologyFamilySheetContent(
     onClose: () -> Unit = {},
     onWordClick: (Long) -> Unit = {}
 ) {
+    val isDark = EtymoTheme.isDark()
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -1570,7 +1577,7 @@ private fun EtymologyFamilySheetContent(
                 fontSize = 38.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Serif,
-                color = Color(0xFFC62828)
+                color = if (isDark) Color(0xFFF87171) else Color(0xFFC62828)
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -1580,36 +1587,40 @@ private fun EtymologyFamilySheetContent(
                     text = "Âm Hán-Việt: ${familyNode.readingVi.uppercase()}",
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "Nghĩa: ${familyNode.meaningVi}",
                     fontSize = 13.sp,
-                    color = Color(0xFF475569)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 if (familyNode.radical != null) {
                     Text(
                         text = "Bộ thủ: ${familyNode.radical} • ${familyNode.strokeCount ?: 0} nét",
                         fontSize = 12.sp,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
             IconButton(onClick = onClose) {
-                Icon(imageVector = Icons.Default.Close, contentDescription = "Đóng")
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Đóng",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
-        HorizontalDivider(color = Color(0xFFE2E8F0))
+        HorizontalDivider(color = EtymoTheme.divider())
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = "Các từ vựng phái sinh có chung chữ '${familyNode.hanjaChar}':",
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF0F172A)
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -1625,7 +1636,8 @@ private fun EtymologyFamilySheetContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFF1F5F9))
+                        .background(EtymoTheme.subtleSurface())
+                        .border(1.dp, EtymoTheme.border(), RoundedCornerShape(8.dp))
                         .clickable { onWordClick(word.lexemeId) }
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -1636,14 +1648,14 @@ private fun EtymologyFamilySheetContent(
                                 text = word.headword,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2563EB)
+                                color = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB)
                             )
                             if (!word.phoneticVi.isNullOrBlank()) {
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = "(${word.phoneticVi})",
                                     fontSize = 12.sp,
-                                    color = Color(0xFF64748B)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -1651,7 +1663,7 @@ private fun EtymologyFamilySheetContent(
                         Text(
                             text = word.meaningVi,
                             fontSize = 13.sp,
-                            color = Color(0xFF334155)
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }

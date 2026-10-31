@@ -23,11 +23,13 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.SpaceBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -79,10 +81,11 @@ fun KoreanJamoKeyboardBottomSheet(
         }
     }
 
+    val isDark = EtymoTheme.isDark()
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        containerColor = Color(0xFFF1F5F9),
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
     ) {
         Column(
@@ -95,15 +98,15 @@ fun KoreanJamoKeyboardBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White)
-                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+                    .background(EtymoTheme.inputBackground())
+                    .border(1.dp, EtymoTheme.divider(), RoundedCornerShape(12.dp))
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
                 Text(
                     text = currentText.ifBlank { "Chạm các phím bên dưới để gõ chữ Hàn..." },
                     fontSize = 15.sp,
                     fontWeight = if (currentText.isBlank()) FontWeight.Normal else FontWeight.Bold,
-                    color = if (currentText.isBlank()) Color(0xFF94A3B8) else Color(0xFF0F172A)
+                    color = if (currentText.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -158,15 +161,15 @@ fun KoreanJamoKeyboardBottomSheet(
                         modifier = Modifier
                             .height(42.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White)
-                            .border(1.dp, Color(0xFFCBD5E1), RoundedCornerShape(8.dp))
+                            .background(EtymoTheme.subtleSurface())
+                            .border(1.dp, EtymoTheme.divider(), RoundedCornerShape(8.dp))
                             .clickable { appendJamo(jamo) }
                     ) {
                         Text(
                             text = jamo,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E293B)
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -186,22 +189,22 @@ fun KoreanJamoKeyboardBottomSheet(
                         .weight(1.5f)
                         .height(44.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(Color.White)
-                        .border(1.dp, Color(0xFFCBD5E1), RoundedCornerShape(10.dp))
+                        .background(EtymoTheme.subtleSurface())
+                        .border(1.dp, EtymoTheme.divider(), RoundedCornerShape(10.dp))
                         .clickable { onTextChange("$currentText ") }
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.SpaceBar,
                             contentDescription = "Space",
-                            tint = Color(0xFF64748B),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "Dấu cách",
                             fontSize = 12.sp,
-                            color = Color(0xFF64748B)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -213,14 +216,14 @@ fun KoreanJamoKeyboardBottomSheet(
                         .weight(1f)
                         .height(44.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFFFEE2E2))
-                        .border(1.dp, Color(0xFFFECDD3), RoundedCornerShape(10.dp))
+                        .background(if (isDark) Color(0xFF450A0A) else Color(0xFFFEE2E2))
+                        .border(1.dp, if (isDark) Color(0xFF7F1D1D) else Color(0xFFFECDD3), RoundedCornerShape(10.dp))
                         .clickable { handleBackspace() }
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Backspace,
                         contentDescription = "Backspace",
-                        tint = Color(0xFFDC2626),
+                        tint = if (isDark) Color(0xFFFCA5A5) else Color(0xFFDC2626),
                         modifier = Modifier.size(18.dp)
                     )
                 }

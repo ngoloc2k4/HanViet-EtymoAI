@@ -45,6 +45,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -107,6 +108,7 @@ fun SettingsOverviewScreen(
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = EtymoTheme.cardBorder(),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column {
@@ -119,7 +121,7 @@ fun SettingsOverviewScreen(
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(start = 56.dp),
-                            color = Color(0xFFF1F5F9)
+                            color = EtymoTheme.divider()
                         )
                         SettingsMenuItem(
                             icon = Icons.Default.Storage,
@@ -141,6 +143,7 @@ fun SettingsOverviewScreen(
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = EtymoTheme.cardBorder(),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column {
@@ -164,6 +167,7 @@ fun SettingsOverviewScreen(
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = EtymoTheme.cardBorder(),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column {
@@ -176,7 +180,7 @@ fun SettingsOverviewScreen(
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(start = 56.dp),
-                            color = Color(0xFFF1F5F9)
+                            color = EtymoTheme.divider()
                         )
                         SettingsMenuItem(
                             icon = Icons.Default.School,
@@ -187,7 +191,7 @@ fun SettingsOverviewScreen(
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(start = 56.dp),
-                            color = Color(0xFFF1F5F9)
+                            color = EtymoTheme.divider()
                         )
                         SettingsMenuItem(
                             icon = Icons.Default.BookmarkBorder,
@@ -198,7 +202,7 @@ fun SettingsOverviewScreen(
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(start = 56.dp),
-                            color = Color(0xFFF1F5F9)
+                            color = EtymoTheme.divider()
                         )
                         SettingsMenuItem(
                             icon = Icons.Default.History,
@@ -220,6 +224,7 @@ fun SettingsOverviewScreen(
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = EtymoTheme.cardBorder(),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column {
@@ -232,7 +237,7 @@ fun SettingsOverviewScreen(
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(start = 56.dp),
-                            color = Color(0xFFF1F5F9)
+                            color = EtymoTheme.divider()
                         )
                         SettingsMenuItem(
                             icon = Icons.Default.Info,
@@ -427,13 +432,13 @@ private fun SettingsMenuItem(
                 text = title,
                 fontSize = 14.5.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF1E293B)
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtitle,
                 fontSize = 11.5.sp,
-                color = Color(0xFF64748B),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 16.sp
             )
         }
@@ -441,7 +446,7 @@ private fun SettingsMenuItem(
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
             contentDescription = null,
-            tint = Color(0xFF94A3B8),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier.size(16.dp)
         )
     }
@@ -489,9 +494,9 @@ private fun SettingsOverviewBottomBar(
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Color(0xFF2563EB),
                     selectedTextColor = Color(0xFF2563EB),
-                    indicatorColor = Color(0xFFDBEAFE),
-                    unselectedIconColor = Color(0xFF64748B),
-                    unselectedTextColor = Color(0xFF64748B)
+                    indicatorColor = Color(0xFFDBEAFE).copy(alpha = if (EtymoTheme.isDark()) 0.2f else 1f),
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }

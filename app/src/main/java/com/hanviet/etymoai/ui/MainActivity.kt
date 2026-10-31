@@ -897,12 +897,12 @@ class MainActivity : ComponentActivity() {
                                         text = "HanViet-EtymoAI v1.0.0 (Beta)",
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF0F172A)
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         text = "Offline-First • SQLite FTS5 • NIKL & Hán Nôm",
                                         fontSize = 11.sp,
-                                        color = Color(0xFF64748B)
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -997,7 +997,7 @@ class MainActivity : ComponentActivity() {
                                 Text(
                                     text = "Bạn có thể bôi đen bất kỳ từ tiếng Hàn nào trong Chrome, KakaoTalk, PDF Reader hoặc YouTube, rồi chọn 'Tra Hán-Việt' trong menu bôi đen để mở nhanh bảng tra cứu mà không cần rời ứng dụng!",
                                     fontSize = 13.sp,
-                                    color = Color(0xFF334155),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     lineHeight = 19.sp
                                 )
                             },

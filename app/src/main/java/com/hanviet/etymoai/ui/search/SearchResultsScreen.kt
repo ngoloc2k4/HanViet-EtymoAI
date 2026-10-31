@@ -57,6 +57,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -356,8 +357,8 @@ fun SearchResultsScreen(
                                     .fillMaxWidth()
                                     .padding(horizontal = 8.dp),
                                 shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDBEAFE)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                border = EtymoTheme.cardBorder(),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                             ) {
                                 Column(
@@ -376,14 +377,14 @@ fun SearchResultsScreen(
                                             text = "Không tìm thấy trong CSDL 50k",
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF0F172A)
+                                            color = MaterialTheme.colorScheme.onSurface
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
                                         text = "Bạn có thể gửi cụm từ hoặc câu này sang Trợ lý AI để giải thích cấu trúc ngữ pháp và từ vựng mở rộng.",
                                         fontSize = 11.5.sp,
-                                        color = Color(0xFF64748B),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                         lineHeight = 16.sp
                                     )
@@ -434,7 +435,7 @@ fun SearchResultsScreen(
         ModalBottomSheet(
             onDismissRequest = { showAdvancedFilters = false },
             sheetState = sheetState,
-            containerColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
         ) {
             Column(
@@ -451,7 +452,7 @@ fun SearchResultsScreen(
                         text = "Bộ lọc tra cứu nâng cao",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     IconButton(onClick = { showAdvancedFilters = false }) {
                         Icon(imageVector = Icons.Default.Close, contentDescription = "Đóng")
@@ -464,7 +465,7 @@ fun SearchResultsScreen(
                     text = "Từ loại (Part of Speech):",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF334155)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -483,7 +484,7 @@ fun SearchResultsScreen(
                     text = "Cấp độ TOPIK:",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF334155)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -508,12 +509,12 @@ fun SearchResultsScreen(
                             text = "Chỉ hiện từ đã xác minh chữ Hán",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF0F172A)
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "Lọc riêng các mục từ có chiết tự Hanja chuẩn",
                             fontSize = 11.5.sp,
-                            color = Color(0xFF64748B)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     Switch(
@@ -560,7 +561,7 @@ private fun SearchResultsHeader() {
                 text = "Tra cứu từ điển",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
 
@@ -589,8 +590,8 @@ private fun SearchInputBar(
             .padding(horizontal = 16.dp)
             .shadow(3.dp, RoundedCornerShape(16.dp), spotColor = Color(0x1A1E3A8A)),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder()
     ) {
         Row(
             modifier = Modifier
@@ -614,7 +615,7 @@ private fun SearchInputBar(
                 textStyle = TextStyle(
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 ),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -624,7 +625,7 @@ private fun SearchInputBar(
                         Text(
                             text = "Nhập từ khóa tiếng Hàn, Hán tự hoặc tiếng Việt...",
                             fontSize = 13.5.sp,
-                            color = Color(0xFF94A3B8)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     innerTextField()
@@ -713,9 +714,10 @@ private fun OriginFilterChip(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val bgColor = if (isSelected) Color(0xFF2563EB) else Color.White
-    val textColor = if (isSelected) Color.White else Color(0xFF475569)
-    val borderColor = if (isSelected) Color(0xFF2563EB) else Color(0xFFE2E8F0)
+    val isDark = EtymoTheme.isDark()
+    val bgColor = if (isSelected) Color(0xFF2563EB) else (if (isDark) Color(0xFF1E293B) else Color.White)
+    val textColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    val borderColor = if (isSelected) Color(0xFF2563EB) else EtymoTheme.border()
 
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -835,8 +837,9 @@ private fun SearchResultCard(
 ) {
     val isExactMatch = item.matchTier == SearchMatchTier.EXACT_HEADWORD
     val isMorphology = item.matchTier == SearchMatchTier.MORPHOLOGY
+    val isDark = EtymoTheme.isDark()
 
-    val borderColor = if (isExactMatch) Color(0xFF93C5FD) else Color(0xFFE2E8F0)
+    val borderColor = if (isExactMatch) Color(0xFF2563EB) else EtymoTheme.border()
     val borderWidth = if (isExactMatch) 1.5.dp else 1.dp
 
     Surface(
@@ -845,7 +848,7 @@ private fun SearchResultCard(
             .clip(RoundedCornerShape(14.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         border = androidx.compose.foundation.BorderStroke(borderWidth, borderColor),
         shadowElevation = if (isExactMatch) 2.dp else 1.dp
     ) {
@@ -901,7 +904,7 @@ private fun SearchResultCard(
                             text = item.headword,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         Spacer(modifier = Modifier.width(8.dp))
@@ -909,23 +912,13 @@ private fun SearchResultCard(
                         // Huy hiệu Nguồn gốc
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = when (item.originType) {
-                                OriginType.SINO_KOREAN -> Color(0xFFEFF6FF)
-                                OriginType.NATIVE_KOREAN -> Color(0xFFE0F2FE)
-                                OriginType.LOANWORD -> Color(0xFFFFF1F2)
-                                OriginType.MIXED -> Color(0xFFECFDF5)
-                            }
+                            color = EtymoTheme.originBadgeBg(item.originType.name)
                         ) {
                             Text(
                                 text = item.originType.titleVi,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = when (item.originType) {
-                                    OriginType.SINO_KOREAN -> Color(0xFF2563EB)
-                                    OriginType.NATIVE_KOREAN -> Color(0xFF0284C7)
-                                    OriginType.LOANWORD -> Color(0xFFE11D48)
-                                    OriginType.MIXED -> Color(0xFF059669)
-                                },
+                                color = EtymoTheme.originBadgeText(item.originType.name),
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
@@ -935,13 +928,14 @@ private fun SearchResultCard(
                         // Huy hiệu Từ loại [Danh từ / Hán-Việt]
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = Color(0xFFF1F5F9)
+                            color = EtymoTheme.subtleSurface(),
+                            border = EtymoTheme.cardBorder()
                         ) {
                             Text(
                                 text = item.posTag,
                                 fontSize = 10.5.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = Color(0xFF475569),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
@@ -957,7 +951,7 @@ private fun SearchResultCard(
                             text = "[${item.pronunciationRoman}]",
                             fontSize = 12.5.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF64748B)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         Spacer(modifier = Modifier.width(6.dp))
@@ -984,7 +978,7 @@ private fun SearchResultCard(
                         val endIndex = startIndex + cleanQuery.length
                         val annotatedMeaning = buildAnnotatedString {
                             append(item.primaryMeaningVi.substring(0, startIndex))
-                            withStyle(SpanStyle(color = Color(0xFF2563EB), fontWeight = FontWeight.Bold)) {
+                            withStyle(SpanStyle(color = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB), fontWeight = FontWeight.Bold)) {
                                 append(item.primaryMeaningVi.substring(startIndex, endIndex))
                             }
                             append(item.primaryMeaningVi.substring(endIndex))
@@ -992,7 +986,7 @@ private fun SearchResultCard(
                         Text(
                             text = annotatedMeaning,
                             fontSize = 13.5.sp,
-                            color = Color(0xFF334155),
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -1000,7 +994,7 @@ private fun SearchResultCard(
                         Text(
                             text = item.primaryMeaningVi,
                             fontSize = 13.5.sp,
-                            color = Color(0xFF334155),
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -1013,7 +1007,7 @@ private fun SearchResultCard(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = "Chi tiết",
-                    tint = Color(0xFF94A3B8),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -1021,16 +1015,16 @@ private fun SearchResultCard(
             // Kiểu 2: Morphology Note (Dạng chia → Nguyên thể)
             if (isMorphology && item.morphologicalRule != null) {
                 Spacer(modifier = Modifier.height(8.dp))
-                HorizontalDivider(color = Color(0xFFF1F5F9))
+                HorizontalDivider(color = EtymoTheme.divider())
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = RoundedCornerShape(4.dp),
-                        color = Color(0xFFECFDF5)
+                        color = if (isDark) Color(0xFF064E3B) else Color(0xFFECFDF5)
                     ) {
                         Text(
                             text = "Dạng chia → Nguyên thể",
-                            color = Color(0xFF059669),
+                            color = if (isDark) Color(0xFF6EE7B7) else Color(0xFF059669),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -1040,7 +1034,7 @@ private fun SearchResultCard(
                     Text(
                         text = item.morphologicalRule,
                         fontSize = 11.5.sp,
-                        color = Color(0xFF047857)
+                        color = if (isDark) Color(0xFF6EE7B7) else Color(0xFF047857)
                     )
                 }
             }
@@ -1051,7 +1045,7 @@ private fun SearchResultCard(
                 Text(
                     text = "Khớp từ gốc ngoại lai: \"${item.headword}\" (✓ Đã xác minh)",
                     fontSize = 11.sp,
-                    color = Color(0xFFE11D48),
+                    color = if (isDark) Color(0xFFFDA4AF) else Color(0xFFE11D48),
                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                 )
             }

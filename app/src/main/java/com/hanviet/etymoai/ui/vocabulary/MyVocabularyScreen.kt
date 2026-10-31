@@ -56,6 +56,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -325,7 +326,7 @@ fun MyVocabularyScreen(
                     text = "Gói dữ liệu Offline NIKL",
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             },
             text = {
@@ -333,7 +334,7 @@ fun MyVocabularyScreen(
                     Text(
                         text = "• Phiên bản: Core NIKL v1.2.0 (52.000+ từ)\n• Bản quyền: CC BY-SA 2.0 KR\n• Trạng thái: Đã sẵn sàng tra cứu và lưu trữ offline 100%.",
                         fontSize = 13.sp,
-                        color = Color(0xFF334155),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 20.sp
                     )
                 }
@@ -369,7 +370,7 @@ private fun MyVocabularyHeader(
                         text = "Từ vựng của tôi",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     OfflineStatusPill(
@@ -434,8 +435,8 @@ private fun MyVocabularySearchBar(
             .padding(horizontal = 16.dp)
             .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0x1A1E3A8A)),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder()
     ) {
         Row(
             modifier = Modifier
@@ -459,7 +460,7 @@ private fun MyVocabularySearchBar(
                 textStyle = TextStyle(
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 ),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -469,7 +470,7 @@ private fun MyVocabularySearchBar(
                         Text(
                             text = "Tìm kiếm trong kho từ đã lưu...",
                             fontSize = 14.sp,
-                            color = Color(0xFF94A3B8)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     innerTextField()
@@ -481,7 +482,7 @@ private fun MyVocabularySearchBar(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Xóa",
-                        tint = Color(0xFF94A3B8),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -492,7 +493,7 @@ private fun MyVocabularySearchBar(
                 modifier = Modifier
                     .width(1.dp)
                     .height(20.dp)
-                    .background(Color(0xFFE2E8F0))
+                    .background(EtymoTheme.divider())
             )
             Spacer(modifier = Modifier.width(8.dp))
 
@@ -546,11 +547,12 @@ private fun FilterChipItem(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val scale = rememberBounceScale(interactionSource)
+    val isDark = EtymoTheme.isDark()
 
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = if (isSelected) Color(0xFF2563EB) else Color.White,
-        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
+        color = if (isSelected) Color(0xFF2563EB) else (if (isDark) Color(0xFF1E293B) else Color.White),
+        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, EtymoTheme.border()),
         modifier = Modifier
             .graphicsLayer {
                 scaleX = scale
@@ -566,7 +568,7 @@ private fun FilterChipItem(
             text = label,
             fontSize = 13.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) Color.White else Color(0xFF334155),
+            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
         )
     }
@@ -604,8 +606,8 @@ private fun SavedWordCard(
                 onClick = onClick
             ),
         shape = RoundedCornerShape(14.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder(),
         shadowElevation = 1.dp
     ) {
         Row(
@@ -615,12 +617,14 @@ private fun SavedWordCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Cột 1: Icon container
-            val (iconText, bgCol, fgCol) = when (word.originType) {
-                OriginType.SINO_KOREAN -> Triple("漢", Color(0xFFEFF6FF), Color(0xFF2563EB))
-                OriginType.LOANWORD -> Triple("🌐", Color(0xFFFFF1F2), Color(0xFFE11D48))
-                OriginType.NATIVE_KOREAN -> Triple("🌱", Color(0xFFE0F2FE), Color(0xFF0284C7))
-                OriginType.MIXED -> Triple("가", Color(0xFFECFDF5), Color(0xFF059669))
+            val iconText = when (word.originType) {
+                OriginType.SINO_KOREAN -> "漢"
+                OriginType.LOANWORD -> "🌐"
+                OriginType.NATIVE_KOREAN -> "🌱"
+                OriginType.MIXED -> "가"
             }
+            val bgCol = EtymoTheme.originBadgeBg(word.originType.name)
+            val fgCol = EtymoTheme.originBadgeText(word.originType.name)
 
             Box(
                 modifier = Modifier
@@ -647,28 +651,18 @@ private fun SavedWordCard(
                         text = word.headword,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = when (word.originType) {
-                            OriginType.SINO_KOREAN -> Color(0xFFDBEAFE)
-                            OriginType.LOANWORD -> Color(0xFFFEE2E2)
-                            OriginType.NATIVE_KOREAN -> Color(0xFFE0F2FE)
-                            OriginType.MIXED -> Color(0xFFECFDF5)
-                        }
+                        color = EtymoTheme.originBadgeBg(word.originType.name)
                     ) {
                         Text(
                             text = word.originType.titleVi,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = when (word.originType) {
-                                OriginType.SINO_KOREAN -> Color(0xFF1E40AF)
-                                OriginType.LOANWORD -> Color(0xFFBE123C)
-                                OriginType.NATIVE_KOREAN -> Color(0xFF0369A1)
-                                OriginType.MIXED -> Color(0xFF047857)
-                            },
+                            color = EtymoTheme.originBadgeText(word.originType.name),
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
@@ -677,13 +671,14 @@ private fun SavedWordCard(
                         Spacer(modifier = Modifier.width(6.dp))
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = Color(0xFFF1F5F9)
+                            color = EtymoTheme.subtleSurface(),
+                            border = EtymoTheme.cardBorder()
                         ) {
                             Text(
                                 text = "Bản lưu cá nhân",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = Color(0xFF475569),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                             )
                         }
@@ -696,7 +691,7 @@ private fun SavedWordCard(
                     Text(
                         text = "[${word.pronunciationRoman.ifBlank { word.pronunciationHangul }}]",
                         fontSize = 13.sp,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     IconButton(onClick = onSpeak, modifier = Modifier.size(20.dp)) {
@@ -712,7 +707,7 @@ private fun SavedWordCard(
                 Text(
                     text = word.meaningVi,
                     fontSize = 13.sp,
-                    color = Color(0xFF334155),
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -758,7 +753,7 @@ private fun SavedWordCard(
                 Icon(
                     imageVector = if (word.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                     contentDescription = "Yêu thích",
-                    tint = if (word.isFavorite) Color(0xFFF59E0B) else Color(0xFFCBD5E1),
+                    tint = if (word.isFavorite) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -785,7 +780,7 @@ private fun CustomWordBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
     ) {
         Column(
@@ -805,13 +800,13 @@ private fun CustomWordBottomSheet(
                     text = "Thêm từ vựng cá nhân",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Đóng",
-                        tint = Color(0xFF64748B)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -881,8 +876,8 @@ private fun CustomWordBottomSheet(
             // Switch SRS
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFF8FAFC),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                color = EtymoTheme.subtleSurface(),
+                border = EtymoTheme.cardBorder(),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -897,12 +892,12 @@ private fun CustomWordBottomSheet(
                             text = "Tạo thẻ Flashcard SRS",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF0F172A)
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "Tự động đưa vào chu kỳ ôn tập ngắt quãng",
                             fontSize = 12.sp,
-                            color = Color(0xFF64748B)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     Switch(

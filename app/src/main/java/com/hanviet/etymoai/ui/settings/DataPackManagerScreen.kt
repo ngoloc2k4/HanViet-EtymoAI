@@ -46,6 +46,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -228,7 +229,7 @@ fun DataPackManagerScreen(
                     text = "Gói dữ liệu đã cài đặt",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A),
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(start = 2.dp, top = 2.dp)
                 )
             }
@@ -238,7 +239,7 @@ fun DataPackManagerScreen(
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    border = EtymoTheme.cardBorder(),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -254,7 +255,7 @@ fun DataPackManagerScreen(
                             isInstalled = true
                         )
 
-                        HorizontalDivider(color = Color(0xFFF1F5F9))
+                        HorizontalDivider(color = EtymoTheme.divider())
 
                         // Gói không gian làm việc người dùng
                         val workspaceSizeFormatted = String.format(Locale.US, "%.1f MB", workspaceDbSizeBytes / (1024f * 1024f))
@@ -270,7 +271,7 @@ fun DataPackManagerScreen(
 
                         // Hiển thị các gói tùy chỉnh được người dùng nạp thêm
                         customDataPacks.forEach { customPack ->
-                            HorizontalDivider(color = Color(0xFFF1F5F9))
+                            HorizontalDivider(color = EtymoTheme.divider())
                             DataPackItemRow(
                                 icon = if (customPack.isLocal) Icons.Default.FolderOpen else Icons.Default.CloudDownload,
                                 iconTint = Color(0xFFD97706),
@@ -290,7 +291,7 @@ fun DataPackManagerScreen(
                     text = "Nguồn dữ liệu & Giấy phép bản quyền",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A),
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(start = 2.dp, top = 2.dp)
                 )
             }
@@ -486,14 +487,15 @@ fun DataPackManagerScreen(
                     )
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFF1F5F9),
+                        color = EtymoTheme.subtleSurface(),
+                        border = EtymoTheme.cardBorder(),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             text = computedHashText,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF0F172A),
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(10.dp)
                         )
                     }
@@ -560,7 +562,7 @@ private fun CurrentDataPackCard(
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -578,7 +580,7 @@ private fun CurrentDataPackCard(
                         modifier = Modifier
                             .size(38.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFFEFF6FF)),
+                            .background(Color(0xFFEFF6FF).copy(alpha = if (EtymoTheme.isDark()) 0.2f else 1f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -593,13 +595,13 @@ private fun CurrentDataPackCard(
                         text = "Gói dữ liệu hiện tại",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFDCFCE7)
+                    color = if (EtymoTheme.isDark()) Color(0xFF064E3B).copy(alpha = 0.5f) else Color(0xFFDCFCE7)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -616,7 +618,7 @@ private fun CurrentDataPackCard(
                             text = "Đã kích hoạt",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF15803D)
+                            color = if (EtymoTheme.isDark()) Color(0xFF6EE7B7) else Color(0xFF15803D)
                         )
                     }
                 }
@@ -628,7 +630,7 @@ private fun CurrentDataPackCard(
                 text = "KRDICT & Hán Tự v1.2.0 (dictionary_core.db)",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF1E293B)
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -636,12 +638,12 @@ private fun CurrentDataPackCard(
             Text(
                 text = "Cập nhật: 12/04/2025 • Viện Quốc ngữ NIKL & Hán Nôm",
                 fontSize = 12.sp,
-                color = Color(0xFF64748B)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = "Dung lượng: ${String.format(Locale.US, "%.1f MB", sizeMb)} • 52.000+ từ vựng & 6.500 chữ Hán",
                 fontSize = 12.sp,
-                color = Color(0xFF64748B)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -691,7 +693,7 @@ private fun UpdateCheckCard(
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -704,7 +706,7 @@ private fun UpdateCheckCard(
                     modifier = Modifier
                         .size(38.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFFFEF3C7)),
+                        .background(Color(0xFFFEF3C7).copy(alpha = if (EtymoTheme.isDark()) 0.2f else 1f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -720,12 +722,12 @@ private fun UpdateCheckCard(
                         text = "Cập nhật dữ liệu từ điển",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "Đối soát phiên bản và mã băm từ xa qua GitHub Releases",
                         fontSize = 12.sp,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -819,12 +821,12 @@ private fun DataPackItemRow(
                     text = title,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = Color(0xFFF1F5F9)
+                    color = EtymoTheme.subtleSurface()
                 ) {
                     Text(
                         text = statusLabel,
@@ -839,7 +841,7 @@ private fun DataPackItemRow(
             Text(
                 text = subtitle,
                 fontSize = 11.sp,
-                color = Color(0xFF64748B)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -853,7 +855,7 @@ private fun VerifiedSourcesCard() {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -876,17 +878,17 @@ private fun VerifiedSourcesCard() {
                         text = "Viện Quốc ngữ Quốc gia Hàn Quốc (NIKL - 국립국어원)",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "한국어기초사전 (KRDICT) • Giấy phép CC BY-SA 2.0 KR",
                         fontSize = 11.sp,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            HorizontalDivider(color = Color(0xFFF1F5F9))
+            HorizontalDivider(color = EtymoTheme.divider())
 
             // Nguồn Hán Nôm
             Row(verticalAlignment = Alignment.Top) {
@@ -902,17 +904,17 @@ private fun VerifiedSourcesCard() {
                         text = "Viện Nghiên cứu Hán Nôm & Từ điển Hán-Việt Thiều Chửu",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "Kho ngữ liệu 6.500+ Hán tự, chiết tự & âm đọc lịch sử • ODbL / Dữ liệu mở",
                         fontSize = 11.sp,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            HorizontalDivider(color = Color(0xFFF1F5F9))
+            HorizontalDivider(color = EtymoTheme.divider())
 
             // Bộ từ vựng TOPIK
             Row(verticalAlignment = Alignment.Top) {
@@ -928,12 +930,12 @@ private fun VerifiedSourcesCard() {
                         text = "Khung đánh giá năng lực Tiếng Hàn TOPIK I ~ VI (NIIED)",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "Bảng tần suất và phân tầng từ vựng theo độ khó học thuật",
                         fontSize = 11.sp,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -954,7 +956,7 @@ private fun StorageUsageCard(
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        border = EtymoTheme.cardBorder(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -971,7 +973,7 @@ private fun StorageUsageCard(
                     Icon(
                         imageVector = Icons.Default.PieChart,
                         contentDescription = null,
-                        tint = Color(0xFF475569),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
@@ -979,7 +981,7 @@ private fun StorageUsageCard(
                         text = "Dung lượng cơ sở dữ liệu",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
@@ -1000,7 +1002,7 @@ private fun StorageUsageCard(
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
                 color = Color(0xFF2563EB),
-                trackColor = Color(0xFFE2E8F0)
+                trackColor = if (EtymoTheme.isDark()) Color(0xFF334155) else Color(0xFFE2E8F0)
             )
         }
     }

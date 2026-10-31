@@ -39,6 +39,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -138,10 +139,10 @@ fun SearchHistoryScreen(
                         }
                     },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                         focusedBorderColor = Color(0xFF2563EB),
-                        unfocusedBorderColor = Color(0xFFE2E8F0)
+                        unfocusedBorderColor = EtymoTheme.divider()
                     ),
                     singleLine = true
                 )
@@ -303,17 +304,20 @@ private fun HistoryItemCard(
     onToggleFavorite: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val (badgeText, badgeBg, badgeTextColor) = when (item.originType) {
-        OriginType.SINO_KOREAN -> Triple("Hán-Hàn", Color(0xFFDBEAFE), Color(0xFF1D4ED8))
-        OriginType.NATIVE_KOREAN -> Triple("Thuần Hàn", Color(0xFFDCFCE7), Color(0xFF166534))
-        OriginType.LOANWORD -> Triple("Ngoại lai", Color(0xFFFEF3C7), Color(0xFF92400E))
-        OriginType.MIXED -> Triple("Hỗn hợp", Color(0xFFF3E8FF), Color(0xFF7E22CE))
-        else -> Triple("Chưa xác định", Color(0xFFF1F5F9), Color(0xFF475569))
+    val badgeText = when (item.originType) {
+        OriginType.SINO_KOREAN -> "Hán-Hàn"
+        OriginType.NATIVE_KOREAN -> "Thuần Hàn"
+        OriginType.LOANWORD -> "Ngoại lai"
+        OriginType.MIXED -> "Hỗn hợp"
+        else -> "Chưa xác định"
     }
+    val badgeBg = EtymoTheme.originBadgeBg(item.originType.name)
+    val badgeTextColor = EtymoTheme.originBadgeText(item.originType.name)
 
     Card(
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = EtymoTheme.cardBorder(),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier
             .fillMaxWidth()
@@ -331,7 +335,7 @@ private fun HistoryItemCard(
                         text = item.query,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
@@ -350,7 +354,7 @@ private fun HistoryItemCard(
                     Text(
                         text = item.timeFormatted,
                         fontSize = 11.sp,
-                        color = Color(0xFF94A3B8)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
 
@@ -359,7 +363,7 @@ private fun HistoryItemCard(
                 Text(
                     text = "${item.phoneticVi} • ${item.meaningSummary}",
                     fontSize = 12.5.sp,
-                    color = Color(0xFF475569),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
             }

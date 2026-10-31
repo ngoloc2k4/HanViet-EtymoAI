@@ -59,6 +59,7 @@ import com.hanviet.etymoai.ai.provider.LiveModelInfo
 import com.hanviet.etymoai.ai.provider.LiveModelService
 import com.hanviet.etymoai.ai.security.SecureApiKeyStorage
 import com.hanviet.etymoai.data.translation.TranslationEngine
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -173,8 +174,8 @@ fun SecuritySettingsScreen(
                 // Banner hỗ trợ đa model + Nút cấu hình nhanh
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = EtymoTheme.cardBorder(),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -190,13 +191,13 @@ fun SecuritySettingsScreen(
                                     text = "BYOK Đa Nền Tảng: Gemini 2.5, DeepSeek R1, GPT-4o, Claude 3.7",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF0F172A)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = "Tự do thiết lập API Key, tùy chỉnh Endpoint URL và chỉ định Model mới nhất để phân tích từ nguyên với chi phí tối ưu.",
                                     fontSize = 13.sp,
-                                    color = Color(0xFF64748B),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     lineHeight = 18.sp
                                 )
                             }
@@ -330,8 +331,8 @@ fun SecuritySettingsScreen(
                 // Khối cam kết quyền riêng tư cuối màn hình
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = Color(0xFFF1F5F9),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    color = EtymoTheme.subtleSurface(),
+                    border = EtymoTheme.cardBorder(),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -345,7 +346,7 @@ fun SecuritySettingsScreen(
                         Text(
                             text = "Chúng tôi cam kết bảo vệ quyền riêng tư của bạn. API Key và dữ liệu tra cứu được mã hóa và lưu trữ an toàn trên thiết bị của bạn.",
                             fontSize = 12.sp,
-                            color = Color(0xFF475569),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             lineHeight = 17.sp
                         )
                     }
@@ -402,14 +403,15 @@ fun SecuritySettingsScreen(
                             }
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = if (isSelected) Color(0xFF2563EB) else Color(0xFFF1F5F9),
+                                color = if (isSelected) Color(0xFF2563EB) else EtymoTheme.subtleSurface(),
+                                border = if (isSelected) null else EtymoTheme.cardBorder(),
                                 modifier = Modifier.clickable { switchProvider(provider) }
                             ) {
                                 Text(
                                     text = label,
                                     fontSize = 12.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) Color.White else Color(0xFF334155),
+                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
                                 )
                             }
@@ -671,12 +673,13 @@ fun SecuritySettingsScreen(
 
                     TranslationEngine.entries.forEach { engine ->
                         val isSelected = selectedEngine == engine
+                        val isDark = EtymoTheme.isDark()
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) Color(0xFFECFDF5) else Color(0xFFF8FAFC),
+                            color = if (isSelected) (if (isDark) Color(0xFF064E3B).copy(alpha = 0.4f) else Color(0xFFECFDF5)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
-                                if (isSelected) Color(0xFF10B981) else Color(0xFFE2E8F0)
+                                if (isSelected) Color(0xFF10B981) else EtymoTheme.divider()
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -702,13 +705,13 @@ fun SecuritySettingsScreen(
                                         text = engine.displayName,
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) Color(0xFF065F46) else Color(0xFF0F172A)
+                                        color = if (isSelected) (if (isDark) Color(0xFFA7F3D0) else Color(0xFF065F46)) else MaterialTheme.colorScheme.onSurface
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
                                         text = engine.description,
                                         fontSize = 11.sp,
-                                        color = Color(0xFF64748B),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         lineHeight = 15.sp
                                     )
                                 }
@@ -782,14 +785,14 @@ fun SecuritySettingsScreen(
                     text = "Dọn dẹp bộ nhớ đệm?",
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             },
             text = {
                 Text(
                     text = "Dung lượng hiện tại đang chiếm: ${formatByteSize(cacheSizeBytes)}. Hành động này sẽ xóa các tệp tạm, bộ nhớ đệm ảnh và phản hồi cache AI mà không làm mất từ vựng đã lưu.",
                     fontSize = 13.sp,
-                    color = Color(0xFF475569),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp
                 )
             },
@@ -834,7 +837,7 @@ fun SecuritySettingsScreen(
                 Text(
                     text = "Toàn bộ lịch sử tra cứu, từ vựng lưu trữ cá nhân và bộ nhớ đệm AI sẽ bị xóa vĩnh viễn khỏi thiết bị này.",
                     fontSize = 14.sp,
-                    color = Color(0xFF334155)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             confirmButton = {
@@ -947,8 +950,8 @@ private fun SettingMenuRow(
             .clip(RoundedCornerShape(14.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder(),
         shadowElevation = 0.5.dp
     ) {
         Row(
@@ -979,13 +982,13 @@ private fun SettingMenuRow(
                     text = title,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
                     fontSize = 12.sp,
-                    color = Color(0xFF64748B),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     lineHeight = 16.sp
                 )
@@ -996,7 +999,7 @@ private fun SettingMenuRow(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
-                tint = Color(0xFF94A3B8),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.size(16.dp)
             )
         }

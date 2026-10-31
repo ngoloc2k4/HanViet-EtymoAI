@@ -55,6 +55,7 @@ import androidx.compose.material3.MaterialTheme
 import com.hanviet.etymoai.data.repository.UserWorkspaceRepository
 import com.hanviet.etymoai.domain.srs.SrsRepository
 import com.hanviet.etymoai.ui.components.rememberBounceScale
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import kotlinx.coroutines.flow.flowOf
 
 data class LeechWordItem(
@@ -201,7 +202,7 @@ fun StudyStatsScreen(
                     text = "Tiến độ học tập",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A),
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(start = 2.dp, top = 2.dp)
                 )
             }
@@ -215,8 +216,8 @@ fun StudyStatsScreen(
                     // Card Donut Gauge
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = Color.White,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = EtymoTheme.cardBorder(),
                         modifier = Modifier
                             .weight(1f)
                             .height(180.dp)
@@ -229,9 +230,10 @@ fun StudyStatsScreen(
                             verticalArrangement = Arrangement.SpaceAround
                         ) {
                             Box(contentAlignment = Alignment.Center) {
+                                val trackCol = EtymoTheme.divider()
                                 Canvas(modifier = Modifier.size(76.dp)) {
                                     drawArc(
-                                        color = Color(0xFFE2E8F0),
+                                        color = trackCol,
                                         startAngle = -90f,
                                         sweepAngle = 360f,
                                         useCenter = false,
@@ -250,7 +252,7 @@ fun StudyStatsScreen(
                                     text = "$pct%",
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
 
@@ -258,7 +260,7 @@ fun StudyStatsScreen(
                                 Text(
                                     text = "Đã thuộc / Tổng từ",
                                     fontSize = 11.sp,
-                                    color = Color(0xFF64748B)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
                                     text = "$masteredCount / $totalSaved",
@@ -273,8 +275,8 @@ fun StudyStatsScreen(
                     // Card Bar Chart 7 ngày trong tuần
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = Color.White,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = EtymoTheme.cardBorder(),
                         modifier = Modifier
                             .weight(1.3f)
                             .height(180.dp)
@@ -293,7 +295,7 @@ fun StudyStatsScreen(
                                     text = "Tuần này",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
@@ -303,7 +305,7 @@ fun StudyStatsScreen(
                                             .background(Color(0xFF2563EB))
                                     )
                                     Spacer(modifier = Modifier.width(3.dp))
-                                    Text(text = "Đã học", fontSize = 10.sp, color = Color(0xFF64748B))
+                                    Text(text = "Đã học", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
 
@@ -330,7 +332,7 @@ fun StudyStatsScreen(
                                         Text(
                                             text = day,
                                             fontSize = 9.sp,
-                                            color = Color(0xFF64748B)
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
@@ -533,8 +535,8 @@ private fun TimeframeChipsRow(
 
             Surface(
                 shape = RoundedCornerShape(20.dp),
-                color = if (isSelected) Color(0xFF2563EB) else Color.White,
-                border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                color = if (isSelected) Color(0xFF2563EB) else MaterialTheme.colorScheme.surface,
+                border = if (isSelected) null else EtymoTheme.cardBorder(),
                 modifier = Modifier
                     .weight(1f)
                     .graphicsLayer {
@@ -551,7 +553,7 @@ private fun TimeframeChipsRow(
                     text = label,
                     fontSize = 12.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) Color.White else Color(0xFF334155),
+                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 7.dp),
                     textAlign = TextAlign.Center
                 )
@@ -570,8 +572,8 @@ private fun MetricCard(
 ) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = MaterialTheme.colorScheme.surface,
+        border = EtymoTheme.cardBorder(),
         modifier = modifier
     ) {
         Column(
@@ -583,7 +585,7 @@ private fun MetricCard(
             Text(
                 text = title,
                 fontSize = 11.sp,
-                color = Color(0xFF64748B)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(

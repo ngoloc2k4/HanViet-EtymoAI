@@ -37,6 +37,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.hanviet.etymoai.ui.theme.EtymoTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -131,12 +132,13 @@ fun HanjaExplorerScreen(
                 ) {
                     items(filteredHanjaList) { item ->
                         val isSelected = item.hanjaChar == selectedHanja.hanjaChar
+                        val isDark = EtymoTheme.isDark()
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) Color(0xFF1E3A8A) else Color.White,
+                            color = if (isSelected) (if (isDark) Color(0xFF2563EB) else Color(0xFF1E3A8A)) else MaterialTheme.colorScheme.surface,
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
-                                if (isSelected) Color(0xFF1E3A8A) else Color(0xFFE2E8F0)
+                                if (isSelected) (if (isDark) Color(0xFF3B82F6) else Color(0xFF1E3A8A)) else EtymoTheme.divider()
                             ),
                             modifier = Modifier.clickable { selectedHanja = item }
                         ) {
@@ -149,14 +151,14 @@ fun HanjaExplorerScreen(
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = FontFamily.Serif,
-                                    color = if (isSelected) Color.White else Color(0xFF0F172A)
+                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = item.readingVi,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = if (isSelected) Color(0xFFBFDBFE) else Color(0xFF64748B)
+                                    color = if (isSelected) Color(0xFFBFDBFE) else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -180,7 +182,7 @@ fun HanjaExplorerScreen(
                         text = "HỌ TỪ VỰNG CHỨA CHỮ 【${selectedHanja.hanjaChar}】 (${selectedHanja.derivedWords.size} từ)",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF64748B),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 0.5.sp
                     )
 
@@ -244,6 +246,7 @@ private fun HanjaMasterDetailCard(hanjaInfo: HanjaMasterInfo) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = EtymoTheme.cardBorder(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -254,8 +257,8 @@ private fun HanjaMasterDetailCard(hanjaInfo: HanjaMasterInfo) {
                     modifier = Modifier
                         .size(76.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFFEFF6FF))
-                        .border(1.5.dp, Color(0xFFBFDBFE), RoundedCornerShape(14.dp)),
+                        .background(EtymoTheme.hanjaBoxBg())
+                        .border(1.5.dp, EtymoTheme.hanjaBoxBorder(), RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -263,7 +266,7 @@ private fun HanjaMasterDetailCard(hanjaInfo: HanjaMasterInfo) {
                         fontSize = 44.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Serif,
-                        color = Color(0xFF1E3A8A)
+                        color = if (EtymoTheme.isDark()) Color(0xFF93C5FD) else Color(0xFF1E3A8A)
                     )
                 }
 
@@ -275,18 +278,18 @@ private fun HanjaMasterDetailCard(hanjaInfo: HanjaMasterInfo) {
                             text = hanjaInfo.readingVi,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFFDCFCE7)
+                            color = if (EtymoTheme.isDark()) Color(0xFF064E3B) else Color(0xFFDCFCE7)
                         ) {
                             Text(
                                 text = hanjaInfo.gradeLevel,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF166534),
+                                color = if (EtymoTheme.isDark()) Color(0xFFA7F3D0) else Color(0xFF166534),
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
@@ -297,7 +300,7 @@ private fun HanjaMasterDetailCard(hanjaInfo: HanjaMasterInfo) {
                     Text(
                         text = "Bộ thủ: ${hanjaInfo.radicalChar} • ${hanjaInfo.radicalMeaning}",
                         fontSize = 12.5.sp,
-                        color = Color(0xFF475569)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Spacer(modifier = Modifier.height(2.dp))
@@ -305,19 +308,19 @@ private fun HanjaMasterDetailCard(hanjaInfo: HanjaMasterInfo) {
                     Text(
                         text = "Số nét: ${hanjaInfo.strokeCount} nét",
                         fontSize = 12.sp,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
-            HorizontalDivider(color = Color(0xFFF1F5F9))
+            HorizontalDivider(color = EtymoTheme.divider())
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = "Nghĩa chữ Hán: ${hanjaInfo.meaningSummary}",
                 fontSize = 13.sp,
-                color = Color(0xFF334155),
+                color = MaterialTheme.colorScheme.onSurface,
                 lineHeight = 18.sp
             )
         }
@@ -333,6 +336,7 @@ private fun HanjaDerivedWordCard(
     Card(
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = EtymoTheme.cardBorder(),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier
             .fillMaxWidth()
@@ -357,18 +361,18 @@ private fun HanjaDerivedWordCard(
                         text = "(${word.hanjaCombo})",
                         fontSize = 13.sp,
                         fontFamily = FontFamily.Serif,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = Color(0xFFEFF6FF)
+                        color = if (EtymoTheme.isDark()) Color(0xFF1E3A8A).copy(alpha = 0.35f) else Color(0xFFEFF6FF)
                     ) {
                         Text(
                             text = word.readingVi,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF2563EB),
+                            color = if (EtymoTheme.isDark()) Color(0xFF93C5FD) else Color(0xFF2563EB),
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
@@ -379,7 +383,7 @@ private fun HanjaDerivedWordCard(
                 Text(
                     text = word.meaningVi,
                     fontSize = 12.5.sp,
-                    color = Color(0xFF475569),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
             }
@@ -388,7 +392,7 @@ private fun HanjaDerivedWordCard(
                 Icon(
                     imageVector = Icons.Default.VolumeUp,
                     contentDescription = "Phát âm",
-                    tint = Color(0xFF64748B),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -398,7 +402,7 @@ private fun HanjaDerivedWordCard(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
-                tint = Color(0xFF94A3B8),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.size(16.dp)
             )
         }
