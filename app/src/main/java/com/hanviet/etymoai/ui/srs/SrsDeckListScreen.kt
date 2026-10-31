@@ -84,6 +84,7 @@ fun SrsDeckListScreen(
     var showCreateDeckDialog by remember { mutableStateOf(false) }
     var newDeckTitle by remember { mutableStateOf("") }
     var newDeckDesc by remember { mutableStateOf("") }
+    var customDecks by remember { mutableStateOf(listOf<SrsDeckItem>()) }
 
     val savedWordsWithTags by (userWorkspaceRepository?.getAllSavedWordsFlow() ?: flowOf(emptyList()))
         .collectAsState(initial = emptyList())
@@ -104,7 +105,7 @@ fun SrsDeckListScreen(
     val loanWords = savedWordsWithTags.filter { it.word.originType == "LOANWORD" }
     val favoriteWords = savedWordsWithTags.filter { it.word.isFavorite }
 
-    val decks = remember(savedWordsWithTags, dueCards, allCards, leechCards) {
+    val builtInDecks = remember(savedWordsWithTags, dueCards, allCards, leechCards) {
         listOf(
             SrsDeckItem(
                 id = 1L,
@@ -167,6 +168,10 @@ fun SrsDeckListScreen(
                 badgeColor = Color(0xFFDC2626)
             )
         )
+    }
+
+    val decks = remember(builtInDecks, customDecks) {
+        builtInDecks + customDecks
     }
 
     Scaffold(
@@ -258,7 +263,7 @@ fun SrsDeckListScreen(
                 Button(
                     onClick = {
                         if (newDeckTitle.isNotBlank()) {
-                            decks = decks + SrsDeckItem(
+                            customDecks = customDecks + SrsDeckItem(
                                 id = System.currentTimeMillis(),
                                 title = newDeckTitle.trim(),
                                 description = newDeckDesc.ifBlank { "Bộ thẻ người dùng tự định nghĩa" },

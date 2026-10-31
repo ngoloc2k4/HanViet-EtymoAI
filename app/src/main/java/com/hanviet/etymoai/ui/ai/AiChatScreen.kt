@@ -226,14 +226,14 @@ fun AiChatScreen(
                                     val etymo = try {
                                         etymologyRepository?.getEtymologyForWord(res.lexemeId)
                                     } catch (_: Exception) { null }
-                                    val phonetic = if (!res.phoneticSnapshot.isNullOrBlank()) " (${res.phoneticSnapshot})" else ""
+                                    val phonetic = if (!res.phoneticVi.isNullOrBlank()) " (${res.phoneticVi})" else ""
                                     val originBadge = when (res.originType) {
                                         "SINO_KOREAN" -> "[Hán-Hàn]"
                                         "NATIVE_KOREAN" -> "[Thuần Hàn]"
                                         "LOANWORD" -> "[Ngoại lai]"
                                         else -> ""
                                     }
-                                    sb.append("${idx + 1}. **${res.headwordNfc}**$phonetic $originBadge: ${res.meaningSnapshot}\n")
+                                    sb.append("${idx + 1}. **${res.headwordNfc}**$phonetic $originBadge: ${res.primaryMeaningVi}\n")
                                     if (etymo != null && etymo.segments.isNotEmpty()) {
                                         val hanjaStr = etymo.segments.joinToString(" + ") { "${it.hanjaChar} (${it.readingVi})" }
                                         sb.append("   ↳ Chiết tự: $hanjaStr\n")
@@ -1163,15 +1163,15 @@ private fun buildOfflineEtymologyText(etymo: WordEtymology): String {
         sb.append("\n")
     }
 
-    if (!etymo.notes.isNullOrBlank()) {
-        sb.append("💡 **Ghi chú từ nguyên:** ${etymo.notes}\n\n")
+    if (!etymo.adaptationNote.isNullOrBlank()) {
+        sb.append("💡 **Ghi chú từ nguyên:** ${etymo.adaptationNote}\n\n")
     }
 
     if (etymo.examples.isNotEmpty()) {
         sb.append("📝 **Câu ví dụ minh họa:**\n")
         etymo.examples.take(2).forEach { ex ->
-            sb.append("• ${ex.sentenceKo}\n")
-            sb.append("  ↳ ${ex.sentenceVi}\n")
+            sb.append("• ${ex.korean}\n")
+            sb.append("  ↳ ${ex.vietnamese}\n")
         }
     }
     return sb.toString().trim()

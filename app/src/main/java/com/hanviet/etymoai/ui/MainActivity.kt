@@ -539,11 +539,6 @@ class MainActivity : ComponentActivity() {
                                     } else {
                                         // Nếu chưa có thẻ đến hạn hôm nay, hiển thị toàn bộ từ đã lưu để ôn tập
                                         savedWordsWithTags.mapIndexed { index, item ->
-                                            val segs = try {
-                                                etymologyRepository.getEtymologyForWordByHeadword(item.word.headwordSnapshot)?.segments ?: emptyList()
-                                            } catch (_: Exception) {
-                                                emptyList()
-                                            }
                                             SrsFlashcardData(
                                                 card = SrsCard(
                                                     cardId = (index + 1).toLong(),
@@ -553,7 +548,7 @@ class MainActivity : ComponentActivity() {
                                                     dueTimestamp = System.currentTimeMillis()
                                                 ),
                                                 word = item.word,
-                                                hanjaSegments = segs
+                                                hanjaSegments = emptyList()
                                             )
                                         }
                                     }
