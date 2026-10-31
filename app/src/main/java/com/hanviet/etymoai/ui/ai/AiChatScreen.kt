@@ -317,6 +317,7 @@ fun AiChatScreen(
                     .background(MaterialTheme.colorScheme.background)
                     .padding(top = 8.dp, bottom = 10.dp)
             ) {
+                val isDark = EtymoTheme.isDark()
                 // Hàng 1: Menu ☰, Logo + Tên App, Trạng thái Offline/Online
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -349,7 +350,6 @@ fun AiChatScreen(
                     Spacer(modifier = Modifier.weight(1f))
 
                     // Huy hiệu Chế độ Offline / Online AI (Bấm để chuyển đổi nhanh)
-                    val isDark = EtymoTheme.isDark()
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = if (isOfflineMode) (if (isDark) Color(0xFF064E3B) else Color(0xFFDCFCE7)) else (if (isDark) Color(0xFF312E81) else Color(0xFFEEF2FF)),
