@@ -453,7 +453,7 @@ private fun MyVocabularySearchBar(
 
             BasicTextField(
                 value = query,
-                onQueryChange = onQueryChange,
+                onValueChange = onQueryChange,
                 modifier = Modifier.weight(1f),
                 textStyle = TextStyle(
                     fontSize = 15.sp,

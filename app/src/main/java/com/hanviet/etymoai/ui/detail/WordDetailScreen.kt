@@ -208,7 +208,10 @@ fun WordDetailScreen(
                 isBookmarked = isBookmarked,
                 onBookmarkToggle = {
                     isBookmarked = !isBookmarked
-                    onSaveWord(targetWord)
+                    val wordToSave = etymology?.headword ?: headword?.trim() ?: ""
+                    if (wordToSave.isNotBlank()) {
+                        onSaveWord(wordToSave)
+                    }
                 },
                 onMenuClick = { /* More actions */ }
             )
