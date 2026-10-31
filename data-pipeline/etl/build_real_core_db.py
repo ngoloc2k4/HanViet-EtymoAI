@@ -91,18 +91,60 @@ def load_hanviet_mapping(filepath: str) -> Dict[str, str]:
     print(f"[✓] Đã nạp {len(mapping)} ký tự Hán tự từ {filepath}")
     return mapping
 
+ROMAN_CHOSEONG = [
+    "g", "kk", "n", "d", "tt", "r", "m", "b", "pp",
+    "s", "ss", "", "j", "jj", "ch", "k", "t", "p", "h"
+]
+ROMAN_JUNGSEONG = [
+    "a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o",
+    "wa", "wae", "oe", "yo", "u", "wo", "we", "wi", "yu",
+    "eu", "ui", "i"
+]
+ROMAN_JONGSEONG = [
+    "", "k", "k", "k", "n", "n", "n", "t", "l",
+    "k", "m", "l", "l", "l", "p", "l", "m", "p",
+    "p", "t", "t", "ng", "t", "t", "k", "t", "p", "t"
+]
+
+
+def romanize_syllable(ch: str) -> str:
+    code = ord(ch)
+    if not (0xAC00 <= code <= 0xD7A3):
+        return ch
+    s_idx = code - 0xAC00
+    c_idx = s_idx // (21 * 28)
+    j_idx = (s_idx % (21 * 28)) // 28
+    jong_idx = s_idx % 28
+    return f"{ROMAN_CHOSEONG[c_idx]}{ROMAN_JUNGSEONG[j_idx]}{ROMAN_JONGSEONG[jong_idx]}"
+
+
+def generate_romanization(text: str) -> str:
+    """Phiên âm Latinh quốc tế (tiếng Anh) theo chuẩn chính thức Revised Romanization of Korean."""
+    if not text:
+        return ""
+    words = text.strip().split()
+    res_words = []
+    for word in words:
+        syllables = []
+        buf = []
+        for ch in word:
+            code = ord(ch)
+            if 0xAC00 <= code <= 0xD7A3:
+                if buf:
+                    syllables.append("".join(buf))
+                    buf = []
+                syllables.append(romanize_syllable(ch))
+            else:
+                buf.append(ch)
+        if buf:
+            syllables.append("".join(buf))
+        res_words.append("-".join(syllables))
+    return " ".join(res_words)
+
+
 def generate_phonetic_vi(hangul: str) -> str:
-    """Phiên âm tiếng Việt gần đúng cho từ Hangul."""
-    # Quy tắc phiên âm cơ bản
-    ko_to_vi = {
-        "가": "ka", "나": "na", "다": "ta", "라": "ra", "마": "ma", "바": "pa", "사": "sa", "아": "a", "자": "cha", "차": "cha", "카": "kha", "타": "tha", "파": "pha", "하": "ha",
-        "기": "ki", "니": "ni", "디": "ti", "리": "ri", "미": "mi", "비": "pi", "시": "si", "이": "i", "지": "chi", "치": "chi", "키": "khi", "티": "thi", "피": "phi", "히": "hi",
-        "도": "to", "서": "sơ", "관": "koan", "학": "hắc", "생": "xeng", "교": "ki-ô", "행": "heng", "복": "búc", "사": "sa", "랑": "rang"
-    }
-    parts = []
-    for ch in hangul:
-        parts.append(ko_to_vi.get(ch, ch))
-    return "-".join(parts)
+    """Tương thích ngược: Sử dụng phiên âm Latinh quốc tế chuẩn Revised Romanization."""
+    return generate_romanization(hangul)
 
 def parse_entries_from_xml_content(
     content: str,

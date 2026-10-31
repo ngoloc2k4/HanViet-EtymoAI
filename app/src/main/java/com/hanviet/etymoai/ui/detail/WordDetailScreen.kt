@@ -88,6 +88,7 @@ import com.hanviet.etymoai.domain.etymology.RelatedWordSummary
 import com.hanviet.etymoai.domain.etymology.VerificationStatus
 import com.hanviet.etymoai.domain.etymology.WordEtymology
 import com.hanviet.etymoai.domain.etymology.WordExample
+import com.hanviet.etymoai.util.KoreanRomanizer
 import kotlinx.coroutines.launch
 
 /**
@@ -142,7 +143,7 @@ fun WordDetailScreen(
                     headword = "도서관",
                     originType = OriginType.SINO_KOREAN,
                     verificationStatus = VerificationStatus.VERIFIED_PRIMARY,
-                    phoneticVi = "Đồ Thư Quán",
+                    phoneticVi = "do-seo-gwan",
                     segments = listOf(
                         HanjaSegment(
                             segmentIndex = 0,
@@ -175,10 +176,10 @@ fun WordDetailScreen(
                         WordExample("도서관에서 책을 대출하고 반납했습니다.", "Tôi đã mượn và trả sách tại thư viện.")
                     ),
                     relatedWords = listOf(
-                        RelatedWordSummary(101L, "도서", "Đồ thư", "sách vở, tư liệu"),
-                        RelatedWordSummary(102L, "독서", "Độc thư", "việc đọc sách"),
-                        RelatedWordSummary(103L, "서점", "Thư tiệm", "hiệu sách"),
-                        RelatedWordSummary(104L, "박물관", "Bác vật quán", "viện bảo tàng")
+                        RelatedWordSummary(101L, "도서", "do-seo", "sách vở, tư liệu"),
+                        RelatedWordSummary(102L, "독서", "dok-seo", "việc đọc sách"),
+                        RelatedWordSummary(103L, "서점", "seo-jeom", "hiệu sách"),
+                        RelatedWordSummary(104L, "박물관", "bak-mul-gwan", "viện bảo tàng")
                     )
                 )
             } else {
@@ -558,8 +559,9 @@ private fun HeroSummaryCard(
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val pronunciationDisplay = if (!word.phoneticVi.isNullOrBlank()) {
-                            "[${word.headword} • ${word.phoneticVi}]"
+                        val roman = KoreanRomanizer.romanize(word.headword)
+                        val pronunciationDisplay = if (roman.isNotBlank()) {
+                            "[${word.headword} • $roman]"
                         } else {
                             "[${word.headword}]"
                         }
@@ -938,16 +940,16 @@ private fun DictionaryInfoCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             val hanjaFull = word.segments.mapNotNull { it.hanjaChar }.joinToString("").ifBlank { "—" }
-            val hanVietFull = word.segments.mapNotNull { it.readingVi }.joinToString(" - ").ifBlank { word.phoneticVi ?: "—" }
+            val hanVietFull = word.segments.mapNotNull { it.readingVi }.joinToString(" - ").ifBlank { "—" }
 
             DictionaryInfoRow(label = "Từ gốc Hán tự", value = hanjaFull, isHanja = hanjaFull != "—")
             DictionaryInfoRow(label = "Âm Hán-Việt", value = hanVietFull, isHighlight = true)
             DictionaryInfoRow(label = "Từ loại", value = word.partOfSpeech ?: "Danh từ")
             DictionaryInfoRow(label = "Nguồn gốc", value = word.originType.titleVi)
             DictionaryInfoPronounceRow(
-                label = "Phát âm",
+                label = "Phát âm chuẩn",
                 hangul = "[${word.headword}]",
-                roman = word.phoneticVi ?: word.headword,
+                roman = KoreanRomanizer.romanize(word.headword),
                 onSpeak = onSpeak
             )
             DictionaryInfoRow(
@@ -1124,10 +1126,11 @@ private fun OriginAndRelatedCard(
                                             fontSize = 15.sp,
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
-                                        if (!rel.phoneticVi.isNullOrBlank()) {
+                                        val relRoman = KoreanRomanizer.romanize(rel.headword)
+                                        if (relRoman.isNotBlank()) {
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text(
-                                                text = "• ${rel.phoneticVi}",
+                                                text = "• $relRoman",
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 color = if (EtymoTheme.isDark()) Color(0xFF60A5FA) else Color(0xFF2563EB)
@@ -1650,10 +1653,11 @@ private fun EtymologyFamilySheetContent(
                                 fontWeight = FontWeight.Bold,
                                 color = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB)
                             )
-                            if (!word.phoneticVi.isNullOrBlank()) {
+                            val roman = KoreanRomanizer.romanize(word.headword)
+                            if (roman.isNotBlank()) {
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "(${word.phoneticVi})",
+                                    text = "($roman)",
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

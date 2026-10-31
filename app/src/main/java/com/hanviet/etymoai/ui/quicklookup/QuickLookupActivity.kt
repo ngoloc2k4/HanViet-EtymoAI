@@ -69,7 +69,10 @@ open class QuickLookupActivity : ComponentActivity() {
                         startActivity(mainIntent)
                         finish()
                     },
-                    onDismiss = { finish() }
+                    onDismiss = { finish() },
+                    onSpeakClick = { word ->
+                        com.hanviet.etymoai.util.TtsManager.getInstance(applicationContext).speak(word)
+                    }
                 )
             }
         }

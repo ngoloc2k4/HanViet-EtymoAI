@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -111,6 +112,7 @@ import com.hanviet.etymoai.data.db.workspace.entity.SearchHistoryEntity
 import com.hanviet.etymoai.data.translation.TranslationEngine
 import com.hanviet.etymoai.data.translation.TranslationResult
 import com.hanviet.etymoai.domain.search.SearchResult
+import com.hanviet.etymoai.util.KoreanRomanizer
 import kotlinx.coroutines.launch
 
 /**
@@ -153,7 +155,8 @@ fun HomeScreen(
     onNavigateToAbout: () -> Unit = {},
     onNavigateToHistory: () -> Unit = {},
     onDeleteRecentSearch: (Long) -> Unit = {},
-    onBookmarkWord: (String) -> Unit = {}
+    onBookmarkWord: (String) -> Unit = {},
+    onSpeakWord: (String) -> Unit = {}
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var showJamoKeyboard by remember { mutableStateOf(false) }
@@ -314,11 +317,12 @@ fun HomeScreen(
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
-                                            if (!result.phoneticVi.isNullOrBlank()) {
+                                            val roman = KoreanRomanizer.romanize(result.headwordNfc)
+                                            if (roman.isNotBlank()) {
                                                 Spacer(modifier = Modifier.width(6.dp))
                                                 Text(
-                                                    text = "(${result.phoneticVi})",
-                                                    fontSize = 13.sp,
+                                                    text = "($roman)",
+                                                    fontSize = 12.sp,
                                                     color = Color(0xFF2563EB)
                                                 )
                                             }
@@ -329,6 +333,17 @@ fun HomeScreen(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { onSpeakWord(result.headwordNfc) },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.VolumeUp,
+                                            contentDescription = "Phát âm",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     }
                                     Icon(
@@ -484,7 +499,8 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 QuickTranslationCard(
                     onTranslate = onTranslate,
-                    onNavigateToSentenceAnalyzer = onNavigateToSentenceAnalyzer
+                    onNavigateToSentenceAnalyzer = onNavigateToSentenceAnalyzer,
+                    onSpeak = onSpeakWord
                 )
             }
 
@@ -591,7 +607,8 @@ fun HomeScreen(
                                     item = item,
                                     onClick = { onWordClick(item.queryText) },
                                     onDelete = { onDeleteRecentSearch(item.id) },
-                                    onBookmark = { onBookmarkWord(item.queryText) }
+                                    onBookmark = { onBookmarkWord(item.queryText) },
+                                    onSpeak = { onSpeakWord(item.queryText) }
                                 )
                                 if (index < minOf(recentSearches.size, 5) - 1) {
                                     HorizontalDivider(
@@ -758,7 +775,8 @@ private fun RealSearchHistoryRow(
     item: SearchHistoryEntity,
     onClick: () -> Unit,
     onDelete: () -> Unit = {},
-    onBookmark: () -> Unit = {}
+    onBookmark: () -> Unit = {},
+    onSpeak: () -> Unit = {}
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -786,7 +804,7 @@ private fun RealSearchHistoryRow(
 
         Spacer(modifier = Modifier.width(10.dp))
 
-        // Từ vựng và Nghĩa
+        // Từ vựng và Nghĩa kèm phiên âm tiếng Anh chuẩn
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.queryText,
@@ -795,11 +813,28 @@ private fun RealSearchHistoryRow(
                 color = MaterialTheme.colorScheme.onSurface
             )
             val resultNote = if (item.resultCount > 0) "${item.resultCount} kết quả" else "Tra cứu gần đây"
+            val roman = KoreanRomanizer.romanize(item.queryText)
+            val subtitle = if (roman.isNotBlank()) "$roman • $resultNote" else resultNote
             Text(
-                text = resultNote,
+                text = subtitle,
                 fontSize = 11.5.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+
+        // Nút Phát âm nếu là từ tiếng Hàn
+        if (item.queryText.any { it.code in 0xAC00..0xD7A3 }) {
+            IconButton(
+                onClick = onSpeak,
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.VolumeUp,
+                    contentDescription = "Phát âm",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
 
         // Nút Lưu nhanh (Bookmark)
@@ -846,6 +881,7 @@ private fun RealSearchHistoryRow(
 private fun QuickTranslationCard(
     onTranslate: (suspend (String, TranslationEngine, String, String) -> Result<TranslationResult>)?,
     onNavigateToSentenceAnalyzer: (String) -> Unit,
+    onSpeak: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var sourceText by remember { mutableStateOf("") }
@@ -1008,12 +1044,38 @@ private fun QuickTranslationCard(
                             .heightIn(min = 55.dp, max = 120.dp)
                     )
 
+                    if (isKoToVi && sourceText.isNotBlank()) {
+                        val inputRoman = KoreanRomanizer.romanize(sourceText.trim())
+                        if (inputRoman.isNotBlank()) {
+                            Text(
+                                text = inputRoman,
+                                fontSize = 11.5.sp,
+                                color = Color(0xFF2563EB),
+                                modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)
+                            )
+                        }
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (sourceText.isNotEmpty()) {
+                            if (sourceText.any { it.code in 0xAC00..0xD7A3 }) {
+                                IconButton(
+                                    onClick = { onSpeak(sourceText.trim()) },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.VolumeUp,
+                                        contentDescription = "Nghe tiếng Hàn",
+                                        tint = Color(0xFF2563EB),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
                             IconButton(
                                 onClick = { sourceText = ""; translatedText = "" },
                                 modifier = Modifier.size(24.dp)
@@ -1025,6 +1087,7 @@ private fun QuickTranslationCard(
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
+                            Spacer(modifier = Modifier.width(8.dp))
                         }
 
                         Button(
@@ -1095,6 +1158,20 @@ private fun QuickTranslationCard(
                                 color = if (isDark) Color(0xFF93C5FD) else Color(0xFF1D4ED8)
                             )
                             Spacer(modifier = Modifier.weight(1f))
+                            if (!isKoToVi && translatedText.any { it.code in 0xAC00..0xD7A3 }) {
+                                IconButton(
+                                    onClick = { onSpeak(translatedText.trim()) },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.VolumeUp,
+                                        contentDescription = "Nghe tiếng Hàn",
+                                        tint = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB),
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
                             IconButton(
                                 onClick = {
                                     clipboardManager.setText(AnnotatedString(translatedText))
@@ -1119,6 +1196,17 @@ private fun QuickTranslationCard(
                             color = MaterialTheme.colorScheme.onSurface,
                             lineHeight = 20.sp
                         )
+                        if (!isKoToVi && translatedText.isNotBlank()) {
+                            val outputRoman = KoreanRomanizer.romanize(translatedText.trim())
+                            if (outputRoman.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = outputRoman,
+                                    fontSize = 12.sp,
+                                    color = if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB)
+                                )
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {

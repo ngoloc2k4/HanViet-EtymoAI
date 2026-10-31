@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.VolumeUp
+import com.hanviet.etymoai.util.KoreanRomanizer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -73,7 +75,8 @@ data class HistoryItem(
 fun SearchHistoryScreen(
     onBackClick: () -> Unit = {},
     onItemClick: (String) -> Unit = {},
-    onClearAllHistory: () -> Unit = {}
+    onClearAllHistory: () -> Unit = {},
+    onSpeakWord: (String) -> Unit = {}
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showConfirmClearDialog by remember { mutableStateOf(false) }
@@ -81,14 +84,14 @@ fun SearchHistoryScreen(
     var historyItems by remember {
         mutableStateOf(
             listOf(
-                HistoryItem(1L, "도서관", "Đồ Thư Quán", OriginType.SINO_KOREAN, "Thư viện, nơi lưu trữ tài liệu", "Vừa xong", true),
-                HistoryItem(2L, "한국어", "Hàn Quốc Ngữ", OriginType.SINO_KOREAN, "Tiếng Hàn, ngôn ngữ Hàn Quốc", "15 phút trước", true),
-                HistoryItem(3L, "알바", "Arbeit", OriginType.LOANWORD, "Việc làm thêm, nghề phụ", "1 giờ trước", false),
-                HistoryItem(4L, "선생님", "Tiên Sinh", OriginType.SINO_KOREAN, "Thầy giáo, cô giáo", "Hôm nay, 08:30", true),
-                HistoryItem(5L, "나무", "Cây cối", OriginType.NATIVE_KOREAN, "Cây thân gỗ, gỗ xây dựng", "Hôm qua", false),
-                HistoryItem(6L, "경제", "Kinh Tế", OriginType.SINO_KOREAN, "Nền kinh tế, hoạt động tài chính", "Hôm qua", false),
-                HistoryItem(7L, "행복", "Hạnh Phúc", OriginType.SINO_KOREAN, "Trạng thái vui vẻ, hạnh phúc", "3 ngày trước", true),
-                HistoryItem(8L, "커피", "Coffee", OriginType.LOANWORD, "Cà phê, thức uống từ hạt cà phê", "5 ngày trước", false)
+                HistoryItem(1L, "도서관", "do-seo-gwan", OriginType.SINO_KOREAN, "Thư viện, nơi lưu trữ tài liệu", "Vừa xong", true),
+                HistoryItem(2L, "한국어", "han-guk-eo", OriginType.SINO_KOREAN, "Tiếng Hàn, ngôn ngữ Hàn Quốc", "15 phút trước", true),
+                HistoryItem(3L, "알바", "al-ba", OriginType.LOANWORD, "Việc làm thêm, nghề phụ", "1 giờ trước", false),
+                HistoryItem(4L, "선생님", "seon-saeng-nim", OriginType.SINO_KOREAN, "Thầy giáo, cô giáo", "Hôm nay, 08:30", true),
+                HistoryItem(5L, "나무", "na-mu", OriginType.NATIVE_KOREAN, "Cây thân gỗ, gỗ xây dựng", "Hôm qua", false),
+                HistoryItem(6L, "경제", "gyeong-je", OriginType.SINO_KOREAN, "Nền kinh tế, hoạt động tài chính", "Hôm qua", false),
+                HistoryItem(7L, "행복", "haeng-bok", OriginType.SINO_KOREAN, "Trạng thái vui vẻ, hạnh phúc", "3 ngày trước", true),
+                HistoryItem(8L, "커피", "keo-pi", OriginType.LOANWORD, "Cà phê, thức uống từ hạt cà phê", "5 ngày trước", false)
             )
         )
     }
@@ -201,7 +204,8 @@ fun SearchHistoryScreen(
                         },
                         onDelete = {
                             historyItems = historyItems.filterNot { it.id == item.id }
-                        }
+                        },
+                        onSpeak = { onSpeakWord(item.query) }
                     )
                 }
             }
@@ -302,7 +306,8 @@ private fun HistoryItemCard(
     item: HistoryItem,
     onClick: () -> Unit,
     onToggleFavorite: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onSpeak: () -> Unit = {}
 ) {
     val badgeText = when (item.originType) {
         OriginType.SINO_KOREAN -> "Hán-Hàn"
@@ -360,12 +365,25 @@ private fun HistoryItemCard(
 
                 Spacer(modifier = Modifier.height(3.dp))
 
+                val roman = KoreanRomanizer.romanize(item.query)
+                val detailText = if (roman.isNotBlank()) "$roman • ${item.meaningSummary}" else item.meaningSummary
                 Text(
-                    text = "${item.phoneticVi} • ${item.meaningSummary}",
+                    text = detailText,
                     fontSize = 12.5.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
+            }
+
+            if (item.query.any { it.code in 0xAC00..0xD7A3 }) {
+                IconButton(onClick = onSpeak, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.VolumeUp,
+                        contentDescription = "Phát âm",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
 
             IconButton(onClick = onToggleFavorite, modifier = Modifier.size(32.dp)) {

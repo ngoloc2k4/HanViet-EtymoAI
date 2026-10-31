@@ -62,6 +62,57 @@ def remove_vietnamese_accents(text: str) -> str:
     return normalized.lower().strip()
 
 
+ROMAN_CHOSEONG = [
+    "g", "kk", "n", "d", "tt", "r", "m", "b", "pp",
+    "s", "ss", "", "j", "jj", "ch", "k", "t", "p", "h"
+]
+ROMAN_JUNGSEONG = [
+    "a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o",
+    "wa", "wae", "oe", "yo", "u", "wo", "we", "wi", "yu",
+    "eu", "ui", "i"
+]
+ROMAN_JONGSEONG = [
+    "", "k", "k", "k", "n", "n", "n", "t", "l",
+    "k", "m", "l", "l", "l", "p", "l", "m", "p",
+    "p", "t", "t", "ng", "t", "t", "k", "t", "p", "t"
+]
+
+
+def romanize_syllable(ch: str) -> str:
+    code = ord(ch)
+    if not (0xAC00 <= code <= 0xD7A3):
+        return ch
+    s_idx = code - 0xAC00
+    c_idx = s_idx // (21 * 28)
+    j_idx = (s_idx % (21 * 28)) // 28
+    jong_idx = s_idx % 28
+    return f"{ROMAN_CHOSEONG[c_idx]}{ROMAN_JUNGSEONG[j_idx]}{ROMAN_JONGSEONG[jong_idx]}"
+
+
+def generate_romanization(text: str) -> str:
+    """Phiên âm Latinh quốc tế (tiếng Anh) theo chuẩn chính thức Revised Romanization of Korean."""
+    if not text:
+        return ""
+    words = text.strip().split()
+    res_words = []
+    for word in words:
+        syllables = []
+        buf = []
+        for ch in word:
+            code = ord(ch)
+            if 0xAC00 <= code <= 0xD7A3:
+                if buf:
+                    syllables.append("".join(buf))
+                    buf = []
+                syllables.append(romanize_syllable(ch))
+            else:
+                buf.append(ch)
+        if buf:
+            syllables.append("".join(buf))
+        res_words.append("-".join(syllables))
+    return " ".join(res_words)
+
+
 # ============================================================================
 # TẬP DỮ LIỆU MẪU CỐT LÕI (SAMPLE SEED DATA)
 # ============================================================================
@@ -551,7 +602,7 @@ def build_core_database(schema_path: str, output_path: str) -> None:
         stable_key = entry["stable_key"]
         orig_type = entry["origin_type"]
         orig_status = entry["origin_status"]
-        phonetic_vi = nfc(entry.get("phonetic_vi", ""))
+        phonetic_vi = generate_romanization(hw_nfc) or nfc(entry.get("phonetic_vi", ""))
         topik_lvl = entry.get("topik_level", 0)
         src_ds = entry["source_dataset"]
         src_id = entry.get("source_id", "")

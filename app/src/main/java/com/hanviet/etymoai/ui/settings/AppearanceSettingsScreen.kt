@@ -354,6 +354,20 @@ fun AppearanceSettingsScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
+                            IconButton(
+                                onClick = {
+                                    com.hanviet.etymoai.util.TtsManager.getInstance(context).speak("안녕하세요. 한국어 발음 테스트입니다.", currentTtsSpeed)
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.VolumeUp,
+                                    contentDescription = "Nghe thử phát âm",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                 contentDescription = null,
@@ -450,6 +464,7 @@ fun AppearanceSettingsScreen(
                                 .clickable {
                                     currentTtsSpeed = speed
                                     ThemePreferences.setTtsSpeed(context, speed)
+                                    com.hanviet.etymoai.util.TtsManager.getInstance(context).speak("안녕하세요. 한국어 발음 테스트입니다.", speed)
                                     Toast.makeText(context, "Đã cập nhật tốc độ phát âm: ${speed}x", Toast.LENGTH_SHORT).show()
                                     showTtsDialog = false
                                 }

@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hanviet.etymoai.domain.etymology.OriginType
 import com.hanviet.etymoai.ui.components.OriginTypeBadge
+import com.hanviet.etymoai.util.KoreanRomanizer
 
 @Composable
 fun QuickLookupBottomSheetContent(
@@ -46,6 +47,7 @@ fun QuickLookupBottomSheetContent(
     onSaveClick: () -> Unit,
     onOpenFullApp: (String) -> Unit,
     onDismiss: () -> Unit,
+    onSpeakClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -125,9 +127,10 @@ fun QuickLookupBottomSheetContent(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        if (!res.phoneticVi.isNullOrBlank()) {
+                        val roman = KoreanRomanizer.romanize(res.headwordNfc)
+                        if (roman.isNotBlank()) {
                             Text(
-                                text = "/${res.phoneticVi}/",
+                                text = "/$roman/",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -136,7 +139,15 @@ fun QuickLookupBottomSheetContent(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         OriginTypeBadge(originType = OriginType.fromString(res.originType))
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        IconButton(onClick = { onSpeakClick(res.headwordNfc) }) {
+                            Icon(
+                                imageVector = Icons.Default.VolumeUp,
+                                contentDescription = "Phát âm",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
                         IconButton(onClick = onSaveClick) {
                             Icon(
                                 imageVector = if (uiState.isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,

@@ -174,7 +174,7 @@ class MainActivity : ComponentActivity() {
     private val userWorkspaceRepository by lazy { DatabaseModule.provideUserWorkspaceRepository(workspaceDb) }
     private val apiKeyStorage by lazy { DatabaseModule.provideApiKeyStorage(this) }
     private val translationService by lazy { UnifiedTranslationService(apiKeyStorage) }
-    private val ttsManager by lazy { com.hanviet.etymoai.util.TtsManager(this) }
+    private val ttsManager by lazy { com.hanviet.etymoai.util.TtsManager.getInstance(applicationContext) }
 
     override fun onDestroy() {
         ttsManager.shutdown()
@@ -193,6 +193,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Kích hoạt sớm bộ đọc TTS tiếng Hàn trong nền để sẵn sàng phát âm ngay khi người dùng chạm
+        ttsManager
 
         setContent {
             var currentThemeMode by remember {
@@ -444,6 +446,9 @@ class MainActivity : ComponentActivity() {
                                                 isFavorite = true
                                             )
                                         }
+                                    },
+                                    onSpeakWord = { word ->
+                                        ttsManager.speak(word, ThemePreferences.getTtsSpeed(this@MainActivity))
                                     }
                                 )
                             }
@@ -865,6 +870,9 @@ class MainActivity : ComponentActivity() {
                                             "Đã dọn sạch toàn bộ lịch sử tra cứu",
                                             Toast.LENGTH_SHORT
                                         ).show()
+                                    },
+                                    onSpeakWord = { word ->
+                                        ttsManager.speak(word, ThemePreferences.getTtsSpeed(this@MainActivity))
                                     }
                                 )
                             }

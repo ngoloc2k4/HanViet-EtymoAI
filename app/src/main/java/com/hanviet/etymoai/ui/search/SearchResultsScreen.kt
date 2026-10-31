@@ -85,6 +85,7 @@ import com.hanviet.etymoai.domain.etymology.OriginType
 import com.hanviet.etymoai.domain.search.SearchMatchTier
 import com.hanviet.etymoai.domain.search.SearchPipeline
 import com.hanviet.etymoai.domain.search.SearchResult
+import com.hanviet.etymoai.util.KoreanRomanizer
 import com.hanviet.etymoai.ui.components.DatabaseStatus
 import com.hanviet.etymoai.ui.components.OfflineStatusPill
 import com.hanviet.etymoai.ui.components.rememberBounceScale
@@ -164,9 +165,9 @@ private fun SearchResult.toItem(): SearchResultItem {
         headword = headwordNfc,
         hanjaOriginal = null,
         originType = origin,
-        posTag = if (!phoneticVi.isNullOrBlank()) "Hán-Việt: $phoneticVi" else "Từ vựng",
+        posTag = if (!phoneticVi.isNullOrBlank() && origin == OriginType.SINO_KOREAN) "Hán-Việt: $phoneticVi" else "Từ vựng",
         pronunciationHangul = headwordNfc,
-        pronunciationRoman = phoneticVi ?: headwordNfc,
+        pronunciationRoman = KoreanRomanizer.romanize(headwordNfc).ifBlank { headwordNfc },
         primaryMeaningVi = primaryMeaningVi,
         badgeType = badge,
         matchTierTitle = tierLabel,

@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hanviet.etymoai.data.hanja.HanjaDerivedWord
 import com.hanviet.etymoai.data.hanja.HanjaMasterData
+import com.hanviet.etymoai.util.KoreanRomanizer
 import com.hanviet.etymoai.data.hanja.HanjaMasterInfo
 
 /**
@@ -356,6 +357,16 @@ private fun HanjaDerivedWordCard(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                    val roman = KoreanRomanizer.romanize(word.headwordKo)
+                    if (roman.isNotBlank()) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "[$roman]",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF2563EB)
+                        )
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "(${word.hanjaCombo})",

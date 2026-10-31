@@ -85,6 +85,7 @@ import com.hanviet.etymoai.domain.etymology.OriginType
 import com.hanviet.etymoai.ui.components.DatabaseStatus
 import com.hanviet.etymoai.ui.components.OfflineStatusPill
 import com.hanviet.etymoai.ui.components.rememberBounceScale
+import com.hanviet.etymoai.util.KoreanRomanizer
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
@@ -150,7 +151,7 @@ fun MyVocabularyScreen(
                 originType = origin,
                 posTag = if (isCustomWord) "Bản lưu cá nhân" else (entity.phoneticSnapshot?.let { "Hán-Việt: $it" } ?: "Từ đã lưu"),
                 pronunciationHangul = entity.headwordSnapshot,
-                pronunciationRoman = entity.phoneticSnapshot ?: "",
+                pronunciationRoman = KoreanRomanizer.romanize(entity.headwordSnapshot).ifBlank { entity.phoneticSnapshot ?: "" },
                 meaningVi = entity.meaningSnapshot,
                 personalNote = firstNote,
                 isCustom = isCustomWord,

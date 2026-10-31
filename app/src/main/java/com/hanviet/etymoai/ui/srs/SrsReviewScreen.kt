@@ -79,6 +79,7 @@ import com.hanviet.etymoai.domain.srs.SrsCard
 import com.hanviet.etymoai.domain.srs.SrsFlashcardData
 import com.hanviet.etymoai.ui.components.rememberBounceScale
 import com.hanviet.etymoai.ui.theme.EtymoTheme
+import com.hanviet.etymoai.util.KoreanRomanizer
 import kotlinx.coroutines.launch
 
 enum class SrsViewMode {
@@ -806,10 +807,11 @@ private fun Srs3DFlipCard(
                             }
                         }
 
-                        if (!item.word.phoneticSnapshot.isNullOrBlank()) {
+                        val roman = KoreanRomanizer.romanize(item.word.headwordSnapshot)
+                        if (roman.isNotBlank()) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "[${item.word.phoneticSnapshot}]",
+                                text = "[$roman]",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
